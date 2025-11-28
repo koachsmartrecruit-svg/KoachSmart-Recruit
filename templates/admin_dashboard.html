@@ -2,102 +2,80 @@
 
 {% block content %}
 <div class="container py-4">
-    <!-- Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="fw-bold">Academy Command Center</h2>
-        <a href="{{ url_for('new_job') }}" class="btn btn-primary">Post New Job</a>
+    <!-- Stats Row ... -->
+
+    <!-- MAIN PIPELINE -->
+    <div class="glass-card p-0 overflow-hidden mb-5">
+        <div class="d-flex border-bottom border-secondary bg-dark bg-opacity-50 px-4 pt-3">
+            <button class="btn btn-link text-white text-decoration-none border-bottom border-primary border-3 pb-3 fw-bold me-4 tab-btn active" data-target="all">All Candidates</button>
+            <button class="btn btn-link text-muted text-decoration-none pb-3 me-4 tab-btn" data-target="Shortlisted">Shortlisted</button>
+            <button class="btn btn-link text-muted text-decoration-none pb-3 tab-btn" data-target="Interview">Interviews</button>
+        </div>
+
+        <div class="p-4">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" style="border-collapse: separate; border-spacing: 0 10px;">
+                    <thead>
+                        <tr class="text-muted small text-uppercase">
+                            <th class="border-0">Candidate</th>
+                            <th class="border-0">Role</th>
+                            <th class="border-0">Match</th>
+                            <th class="border-0">Status</th>
+                            <th class="border-0">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for app in applications %}
+                        <tr class="glass-card border-0 mb-3 candidate-row" data-status="{{ app.status }}">
+                            <td class="border-0 rounded-start">
+                                <div class="d-flex align-items-center py-2">
+                                    <div class="bg-gradient bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold me-3" style="width: 40px; height: 40px;">
+                                        {{ app.applicant.username[0]|upper }}
+                                    </div>
+                                    <div>
+                                        <h6 class="fw-bold text-white mb-0">{{ app.applicant.profile.full_name }}</h6>
+                                        <small class="text-muted">{{ app.applicant.profile.experience_years }}y Exp</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="border-0 text-white">{{ app.job.title }}</td>
+                            <td class="border-0 text-success fw-bold">{{ app.match_score }}%</td>
+                            <td class="border-0"><span class="badge bg-secondary">{{ app.status }}</span></td>
+                            <td class="border-0 rounded-end">
+                                <button class="btn btn-outline-light btn-sm" data-bs-toggle="offcanvas" data-bs-target="#reviewCanvas{{ app.id }}">Review</button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
-    <!-- Applicants Table -->
+    <!-- JOB MANAGEMENT -->
     <div class="glass-card p-4">
-        <h4 class="mb-4">Candidate Pipeline</h4>
+        <h4 class="mb-4 text-white">Manage Jobs</h4>
         <div class="table-responsive">
-            <table class="table align-middle">
+            <table class="table align-middle text-white">
                 <thead>
-                    <tr>
-                        <th>Candidate</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                    </tr>
+                    <tr class="text-muted"><th>Job Title</th><th>Posted</th><th>Status</th><th>Action</th></tr>
                 </thead>
                 <tbody>
-                    {% for app in applications %}
+                    {% for job in jobs %}
                     <tr>
+                        <td>{{ job.title }}</td>
+                        <td>{{ job.posted_date.strftime('%d %b') }}</td>
                         <td>
-                            <div class="fw-bold text-white">{{ app.applicant.profile.full_name }}</div>
-                            <small class="text-muted">{{ app.job.title }}</small>
-                            <!-- Show average rating if available -->
-                            {% if app.applicant.profile.reviews %}
-                                <div class="text-warning small"><i class="fas fa-star"></i> Rated Coach</div>
+                            {% if job.is_active %}
+                                <span class="badge bg-success">Active</span>
+                            {% else %}
+                                <span class="badge bg-danger">Closed</span>
                             {% endif %}
                         </td>
                         <td>
-                            {% if app.status == 'Hired' %}<span class="badge bg-success">Hired</span>
-                            {% elif app.status == 'Shortlisted' %}<span class="badge bg-info">Shortlisted</span>
-                            {% elif app.status == 'Interview' %}<span class="badge bg-warning text-dark">Interviewing</span>
-                            {% else %}<span class="badge bg-secondary">Applied</span>{% endif %}
-                        </td>
-                        <td>
-                            <button class="btn btn-sm btn-outline-light" data-bs-toggle="modal" data-bs-target="#modal{{ app.id }}">Manage</button>
-
-                            <!-- MANAGE CANDIDATE MODAL -->
-                            <div class="modal fade" id="modal{{ app.id }}" tabindex="-1">
-                                <div class="modal-dialog modal-lg">
-                                    <div class="modal-content glass-card border-0 text-light">
-                                        <div class="modal-header border-bottom border-secondary">
-                                            <h5 class="modal-title">{{ app.applicant.profile.full_name }}</h5>
-                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                                        </div>
-                                        <div class="modal-body">
-                                            <div class="row">
-                                                <div class="col-md-6">
-                                                    <!-- Video/Bio Info here (reuse from previous) -->
-                                                    <p>{{ app.applicant.profile.bio }}</p>
-                                                    <div class="d-grid gap-2 mb-3">
-                                                        <a href="{{ url_for('update_status', app_id=app.id, new_status='Shortlisted') }}" class="btn btn-info">Shortlist</a>
-                                                        <a href="{{ url_for('update_status', app_id=app.id, new_status='Interview') }}" class="btn btn-warning">Interview</a>
-                                                        <a href="{{ url_for('update_status', app_id=app.id, new_status='Hired') }}" class="btn btn-success">Hire</a>
-                                                    </div>
-                                                </div>
-                                                <div class="col-md-6 border-start border-secondary ps-4">
-                                                    <!-- REVIEW SECTION -->
-                                                    <h6 class="text-warning fw-bold"><i class="fas fa-star me-2"></i>Rate this Coach</h6>
-                                                    <form action="{{ url_for('submit_review', profile_id=app.applicant.profile.id) }}" method="POST">
-                                                        <div class="mb-2">
-                                                            <label class="small text-muted">Rating (1-5)</label>
-                                                            <select name="rating" class="form-select form-select-sm">
-                                                                <option value="5">⭐⭐⭐⭐⭐ (Excellent)</option>
-                                                                <option value="4">⭐⭐⭐⭐ (Good)</option>
-                                                                <option value="3">⭐⭐⭐ (Average)</option>
-                                                                <option value="2">⭐⭐ (Poor)</option>
-                                                                <option value="1">⭐ (Bad)</option>
-                                                            </select>
-                                                        </div>
-                                                        <div class="mb-2">
-                                                            <textarea name="comment" class="form-control form-control-sm" rows="2" placeholder="Write a review..."></textarea>
-                                                        </div>
-                                                        <button type="submit" class="btn btn-sm btn-outline-warning w-100">Submit Review</button>
-                                                    </form>
-                                                    
-                                                    <!-- Previous Reviews -->
-                                                    <h6 class="mt-4 small text-muted">Past Reviews</h6>
-                                                    <div style="max-height: 150px; overflow-y: auto;">
-                                                        {% for rev in app.applicant.profile.reviews %}
-                                                        <div class="p-2 border border-secondary rounded mb-2 bg-dark">
-                                                            <div class="d-flex justify-content-between">
-                                                                <small class="text-warning">{{ "★" * rev.rating }}</small>
-                                                                <small class="text-muted" style="font-size: 10px;">{{ rev.date.strftime('%d/%m') }}</small>
-                                                            </div>
-                                                            <p class="small mb-0 text-light opacity-75">{{ rev.comment }}</p>
-                                                        </div>
-                                                        {% endfor %}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                            <a href="{{ url_for('toggle_job_status', job_id=job.id) }}" class="btn btn-sm btn-outline-light">
+                                {% if job.is_active %}Close Job{% else %}Re-open{% endif %}
+                            </a>
                         </td>
                     </tr>
                     {% endfor %}
@@ -106,4 +84,81 @@
         </div>
     </div>
 </div>
+
+<!-- REVIEW CANVAS -->
+{% for app in applications %}
+<div class="offcanvas offcanvas-end text-bg-dark border-start border-secondary" tabindex="-1" id="reviewCanvas{{ app.id }}" style="width: 500px;">
+    <div class="offcanvas-header border-bottom border-secondary p-4">
+        <h5 class="offcanvas-title fw-bold">Review Candidate</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+    </div>
+    
+    <div class="offcanvas-body p-4">
+        
+        <!-- SCREENING RESPONSES -->
+        {% if app.job.screening_questions and app.screening_answers %}
+            <div class="mb-4 p-3 border border-info rounded bg-dark bg-opacity-50">
+                <h6 class="text-info fw-bold mb-3"><i class="fas fa-clipboard-check me-2"></i>Screening Responses</h6>
+                {% set qs = app.job.screening_questions.split('|') %}
+                {% set ans = app.screening_answers.split('|') %}
+                
+                {% for q in qs %}
+                    <div class="mb-3">
+                        <small class="d-block text-muted mb-1">{{ q }}</small>
+                        <span class="text-white d-block ps-2 border-start border-primary">{{ ans[loop.index0] if loop.index0 < ans|length else 'No Answer' }}</span>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <!-- VIDEO & BIO -->
+        <div class="mb-4">
+            {% if app.applicant.profile.video_resume_path %}
+                <video class="w-100 rounded border border-secondary" controls>
+                    <source src="{{ url_for('static', filename='videos/' + app.applicant.profile.video_resume_path) }}" type="video/mp4">
+                </video>
+            {% else %}
+                <p class="text-muted border border-dashed p-3 text-center rounded">No Video Resume</p>
+            {% endif %}
+            <p class="mt-3 text-light opacity-75">{{ app.applicant.profile.bio }}</p>
+        </div>
+
+        <!-- INTERVIEW ACTION -->
+        {% if app.status == 'Shortlisted' %}
+            <div class="p-3 border border-warning rounded bg-dark mb-4">
+                <h6 class="text-warning mb-2">Schedule Interview</h6>
+                <form action="{{ url_for('update_status', app_id=app.id, new_status='Interview') }}" method="POST">
+                    <label class="small text-muted mb-1">Meeting Link (Zoom/Calendly)</label>
+                    <input type="text" name="meeting_link" class="form-control form-control-sm mb-2" required>
+                    <button type="submit" class="btn btn-warning w-100 fw-bold">Send Invite</button>
+                </form>
+            </div>
+        {% endif %}
+
+        <!-- ACTIONS -->
+        <div class="d-grid gap-2">
+            {% if app.status == 'Applied' %}
+                <a href="{{ url_for('update_status', app_id=app.id, new_status='Shortlisted') }}" class="btn btn-primary">Shortlist</a>
+                <a href="{{ url_for('update_status', app_id=app.id, new_status='Rejected') }}" class="btn btn-outline-danger">Reject</a>
+            {% elif app.status == 'Interview' %}
+                <a href="{{ url_for('update_status', app_id=app.id, new_status='Hired') }}" class="btn btn-success">Hire Candidate</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<script>
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.tab-btn').forEach(b => { b.classList.remove('active', 'border-primary', 'text-white'); b.classList.add('text-muted'); });
+            btn.classList.add('active', 'border-primary', 'text-white'); btn.classList.remove('text-muted');
+            const target = btn.getAttribute('data-target');
+            document.querySelectorAll('.candidate-row').forEach(row => {
+                const status = row.getAttribute('data-status');
+                row.style.display = (target === 'all' || status === target) ? '' : 'none';
+            });
+        });
+    });
+</script>
 {% endblock %}

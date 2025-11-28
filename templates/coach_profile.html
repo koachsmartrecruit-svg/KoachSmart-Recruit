@@ -3,10 +3,10 @@
 {% block content %}
 <div class="container py-5">
     <div class="row justify-content-center">
-        <div class="col-md-8">
+        <div class="col-md-9">
             <div class="glass-card p-4 p-md-5">
                 <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h3 class="fw-bold">Edit Profile</h3>
+                    <h3 class="fw-bold text-white">Edit Profile</h3>
                     {% if profile.is_verified %}
                         <span class="badge bg-success"><i class="fas fa-check-circle me-1"></i> Verified</span>
                     {% else %}
@@ -15,59 +15,160 @@
                 </div>
 
                 <form method="POST" enctype="multipart/form-data">
-                    <div class="row g-3 mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label text-muted small">Full Name</label>
-                            <input type="text" class="form-control" name="full_name" value="{{ profile.full_name or '' }}" required>
+                    
+                    <!-- 1. IDENTITY SECTION -->
+                    <h5 class="text-primary mb-3 border-bottom border-secondary pb-2">Identity & Contact</h5>
+                    <div class="row g-4 mb-4 align-items-center">
+                        <div class="col-md-3 text-center">
+                            <div class="position-relative d-inline-block">
+                                {% if current_user.profile_pic %}
+                                    <img src="{{ current_user.profile_pic }}" class="rounded-circle border border-primary p-1" width="100" height="100" style="object-fit: cover;">
+                                {% else %}
+                                    <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center mx-auto text-white fw-bold display-6" style="width: 100px; height: 100px;">
+                                        {{ profile.full_name[0]|upper }}
+                                    </div>
+                                {% endif %}
+                                <label class="btn btn-sm btn-primary position-absolute bottom-0 end-0 rounded-circle" style="width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas fa-camera"></i>
+                                    <input type="file" name="profile_image" accept="image/*" hidden onchange="this.form.submit()">
+                                </label>
+                            </div>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label text-muted small">Phone</label>
-                            <input type="tel" class="form-control" name="phone" value="{{ profile.phone or '' }}" placeholder="+91...">
+                        <div class="col-md-9">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted small">Full Name</label>
+                                    <input type="text" class="form-control" name="full_name" value="{{ profile.full_name or '' }}" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted small">Phone Number</label>
+                                    <input type="tel" class="form-control" name="phone" value="{{ profile.phone or '' }}" placeholder="+91...">
+                                </div>
+                            </div>
                         </div>
                     </div>
+                    <!-- 2. IDENTITY VERIFICATION (New) -->
+<h5 class="text-warning mb-3 border-bottom border-secondary pb-2 pt-2">Identity Verification</h5>
+<div class="row g-3 mb-4">
+    <div class="col-md-12">
+        <div class="p-3 border border-warning rounded bg-dark bg-opacity-25 d-flex align-items-center justify-content-between">
+            <div>
+                <label class="form-label text-white fw-bold mb-1"><i class="fas fa-id-card me-2"></i>Govt. ID Proof (Aadhaar/PAN)</label>
+                <p class="text-muted small mb-0">Required for the Verified Badge. Your ID name must match your profile name.</p>
+            </div>
+            <div class="d-flex align-items-center">
+                <input type="file" class="form-control form-control-sm me-2" name="id_proof" accept=".pdf,.jpg" style="width: 200px;">
+                {% if profile.id_proof_path %}
+                    <span class="badge bg-success"><i class="fas fa-check"></i> Uploaded</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
 
-                    <div class="row g-3 mb-3">
+<!-- ... [Also add this Link at the top right near buttons] ... -->
+<a href="{{ url_for('resume_builder') }}" class="btn btn-outline-info w-100 mb-4">
+    <i class="fas fa-magic me-2"></i> Generate AI Resume
+</a>
+                    <!-- 2. SPORTS & EXPERIENCE -->
+                    <h5 class="text-primary mb-3 border-bottom border-secondary pb-2 pt-2">Professional Details</h5>
+                    <div class="row g-3 mb-4">
                         <div class="col-md-6">
-                            <label class="form-label text-muted small">Sport</label>
+                            <label class="form-label text-muted small">Primary Sport</label>
                             <select class="form-select" name="sport">
                                 <option value="Cricket" {% if profile.sport == 'Cricket' %}selected{% endif %}>Cricket</option>
                                 <option value="Football" {% if profile.sport == 'Football' %}selected{% endif %}>Football</option>
                                 <option value="Tennis" {% if profile.sport == 'Tennis' %}selected{% endif %}>Tennis</option>
+                                <option value="Basketball" {% if profile.sport == 'Basketball' %}selected{% endif %}>Basketball</option>
+                                <option value="Badminton" {% if profile.sport == 'Badminton' %}selected{% endif %}>Badminton</option>
                             </select>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label text-muted small">Years Exp</label>
-                            <input type="number" class="form-control" name="experience_years" value="{{ profile.experience_years or 0 }}">
+                            <label class="form-label text-muted small">Years of Experience</label>
+                            <input type="number" class="form-control" name="experience_years" id="expYears" value="{{ profile.experience_years or 0 }}" min="0">
+                        </div>
+                    </div>
+
+                    <!-- PROOF UPLOAD (Conditionally Highlighted) -->
+                    <div class="mb-4 p-3 border border-secondary rounded bg-dark bg-opacity-25" id="expProofSection">
+                        <label class="form-label text-warning fw-bold mb-1">
+                            <i class="fas fa-file-contract me-2"></i>Experience Proof
+                        </label>
+                        <p class="text-muted small mb-2">Required if you have experience. Upload Service Letter or Certificate.</p>
+                        <div class="d-flex gap-2 align-items-center">
+                            <input type="file" class="form-control form-control-sm" name="experience_proof" accept=".pdf,.jpg,.png">
+                            {% if profile.experience_proof_path %}
+                                <span class="badge bg-success"><i class="fas fa-check"></i> Uploaded</span>
+                            {% endif %}
                         </div>
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label text-muted small">Bio</label>
+                        <label class="form-label text-muted small">Certifications (Comma Separated)</label>
+                        <input type="text" class="form-control" name="certifications" value="{{ profile.certifications or '' }}" placeholder="e.g. BCCI Level 1, NIS Diploma">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted small">Bio / Coaching Philosophy</label>
                         <textarea class="form-control" name="bio" rows="3">{{ profile.bio or '' }}</textarea>
                     </div>
 
+                    <!-- 3. DOCUMENTS -->
+                    <h5 class="text-primary mb-3 border-bottom border-secondary pb-2 pt-2">Documents & Media</h5>
                     <div class="row g-3 mb-4">
-                        <div class="col-md-6">
-                            <div class="p-3 border border-secondary rounded bg-dark bg-opacity-25">
-                                <label class="form-label text-primary fw-bold"><i class="fas fa-video me-2"></i>Video Resume</label>
-                                <input type="file" class="form-control form-control-sm" name="video_resume" accept="video/*">
+                        <div class="col-md-4">
+                            <div class="p-3 border border-secondary rounded bg-dark bg-opacity-25 h-100">
+                                <label class="form-label text-white fw-bold mb-1"><i class="fas fa-file-pdf me-2 text-danger"></i>Resume / CV</label>
+                                <input type="file" class="form-control form-control-sm mb-2" name="resume_pdf" accept=".pdf">
+                                {% if profile.resume_path %}
+                                    <small class="text-success d-block"><i class="fas fa-check-circle"></i> File on record</small>
+                                {% endif %}
                             </div>
                         </div>
-                        <div class="col-md-6">
-                            <div class="p-3 border border-secondary rounded bg-dark bg-opacity-25">
-                                <label class="form-label text-warning fw-bold"><i class="fas fa-file-alt me-2"></i>Certificates</label>
-                                <input type="file" class="form-control form-control-sm" name="cert_proof" accept=".pdf,.jpg">
+                        <div class="col-md-4">
+                            <div class="p-3 border border-secondary rounded bg-dark bg-opacity-25 h-100">
+                                <label class="form-label text-white fw-bold mb-1"><i class="fas fa-video me-2 text-primary"></i>Video Resume</label>
+                                <input type="file" class="form-control form-control-sm mb-2" name="video_resume" accept="video/*">
+                                {% if profile.video_resume_path %}
+                                    <small class="text-success d-block"><i class="fas fa-check-circle"></i> Video on record</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="p-3 border border-secondary rounded bg-dark bg-opacity-25 h-100">
+                                <label class="form-label text-white fw-bold mb-1"><i class="fas fa-certificate me-2 text-warning"></i>Certificates</label>
+                                <input type="file" class="form-control form-control-sm mb-2" name="cert_proof" accept=".pdf,.jpg">
+                                {% if profile.cert_proof_path %}
+                                    <small class="text-success d-block"><i class="fas fa-check-circle"></i> Proof on record</small>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
 
-                    <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-primary px-4">Save Changes</button>
+                    <div class="d-flex gap-2 justify-content-end">
                         <a href="{{ url_for('dashboard') }}" class="btn btn-outline-light px-4">Cancel</a>
+                        <button type="submit" class="btn btn-primary px-5 fw-bold">Save Profile</button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+    // Simple logic to highlight proof section if experience > 0
+    const expInput = document.getElementById('expYears');
+    const proofSection = document.getElementById('expProofSection');
+    
+    function checkExp() {
+        if (expInput.value > 0) {
+            proofSection.classList.add('border-warning');
+            proofSection.classList.remove('border-secondary');
+        } else {
+            proofSection.classList.remove('border-warning');
+            proofSection.classList.add('border-secondary');
+        }
+    }
+    expInput.addEventListener('input', checkExp);
+</script>
 {% endblock %}

@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    /* CRITICAL FIX: When button is selected (White BG), force text to be Dark */
+    .btn-check:checked + .btn-outline-light,
+    .btn-outline-light:hover {
+        background-color: white !important;
+        border-color: white !important;
+        color: #0f172a !important; /* Dark Slate Color */
+    }
+
+    /* Force the main title text to be dark */
+    .btn-check:checked + .btn-outline-light span, 
+    .btn-outline-light:hover span {
+        color: #0f172a !important;
+    }
+
+    /* Force the subtitle/small text to be dark grey */
+    .btn-check:checked + .btn-outline-light small, 
+    .btn-outline-light:hover small {
+        color: #475569 !important;
+    }
+</style>
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="glass-card p-5 text-center">
+                <h2 class="fw-bold mb-3">One Last Step!</h2>
+                <!-- NAME CHANGE HERE -->
+                <p class="text-light opacity-75 mb-5">
+                    Welcome to Koach Smart. To set up your dashboard correctly, please tell us who you are.
+                </p>
+
+                <form method="POST">
+                    <div class="row g-3">
+                        <!-- Option 1: Coach -->
+                        <div class="col-md-6">
+                            <input type="radio" class="btn-check" name="role" id="roleCoach" value="coach" checked>
+                            <label class="btn btn-outline-light w-100 p-4 h-100 d-flex flex-column align-items-center justify-content-center" for="roleCoach">
+                                <i class="fas fa-running fa-3x mb-3 text-primary"></i>
+                                <span class="fw-bold d-block">I am a Coach</span>
+                                <small class="text-muted mt-2">I want to find jobs.</small>
+                            </label>
+                        </div>
+
+                        <!-- Option 2: Employer -->
+                        <div class="col-md-6">
+                            <input type="radio" class="btn-check" name="role" id="roleEmp" value="employer">
+                            <label class="btn btn-outline-light w-100 p-4 h-100 d-flex flex-column align-items-center justify-content-center" for="roleEmp">
+                                <i class="fas fa-building fa-3x mb-3 text-secondary"></i>
+                                <span class="fw-bold d-block">I am an Academy</span>
+                                <small class="text-muted mt-2">I want to hire talent.</small>
+                            </label>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-lg w-100 mt-5">
+                        Complete Signup <i class="fas fa-arrow-right ms-2"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
