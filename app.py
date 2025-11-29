@@ -643,6 +643,37 @@ def delete_profile():
     logout_user()
     flash('Your account has been permanently deleted.')
     return redirect(url_for('home'))
+@app.route('/about')
+def about():
+    return render_template('pages/about.html')
+
+@app.route('/careers')
+def careers():
+    return render_template('pages/careers.html')
+
+@app.route('/success-stories')
+def success_stories():
+    return render_template('pages/success_stories.html')
+
+@app.route('/pricing')
+def pricing():
+    return render_template('pages/pricing.html')
+
+@app.route('/coach-guide')
+def coach_guide():
+    return render_template('pages/coach_guide.html')
+
+@app.route('/academy-guide')
+def academy_guide():
+    return render_template('pages/academy_guide.html')
+
+@app.route('/safety')
+def safety():
+    return render_template('pages/safety.html')
+
+@app.route('/help')
+def help_center():
+    return render_template('pages/help.html')
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
