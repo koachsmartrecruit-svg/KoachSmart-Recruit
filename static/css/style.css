@@ -957,3 +957,65 @@ html { scroll-behavior: smooth; }
     margin-bottom: 1rem;
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
+/* =========================================
+   FIXED MOBILE RESPONSIVENESS
+   ========================================= */
+@media (max-width: 768px) {
+
+    .hero-brutal {
+        height: 100vh; /* Use full height */
+        align-items: center; /* Center everything vertically */
+    }
+
+    /* 1. Text Sizing: Make it big but readable */
+    .brutal-text {
+        font-size: 26vw; /* Slightly smaller than before so it fits vertically */
+        line-height: 1;
+        left: 0; 
+        right: 0;
+        margin: auto; /* Ensures text stays centered */
+    }
+
+    /* 2. Position "KOACH" (Top Layer) */
+    .text-back {
+        top: 18%; /* Pushed down so it doesn't get cut off by the navbar */
+    }
+
+    /* 3. Position "SMART" (Bottom Layer) */
+    .text-front {
+        bottom: 28%; /* Lifted up to make room for buttons */
+    }
+
+    /* 4. FIX THE ATHLETE IMAGE (Centering) */
+    .hero-cutout-img {
+        height: 55vh; /* Reduce height so he fits between the words */
+        width: auto;
+        
+        /* FORCE CENTERING */
+        position: absolute;
+        left: 50% !important; 
+        transform: translateX(-50%) !important;
+        bottom: 15%; /* Position feet near the SMART text */
+        
+        z-index: 2;
+        max-width: none; /* Allows image to be wider than screen if needed */
+    }
+
+    /* 5. Fix Buttons & Bubble */
+    .brutal-content-layer {
+        bottom: 5%; /* Stick to bottom */
+        width: 100%;
+        padding: 0 1rem; /* Add side padding */
+    }
+
+    .brutal-content-layer p {
+        font-size: 0.8rem; /* Smaller text for bubble */
+        padding: 0.5rem 1rem;
+        max-width: 90%; /* Prevent bubble from hitting edges */
+    }
+    
+    .btn-lg {
+        padding: 0.6rem 1.5rem; /* Smaller buttons for mobile */
+        font-size: 1rem;
+    }
+}
