@@ -2,37 +2,78 @@
 
 {% block content %}
 
-<!-- HERO SECTION (Updated with Visual) -->
-<section class="hero-brutal">
+<!-- HERO SECTION – clean, no glow, no image -->
+<section class="hero-clean">
+  <div class="container hero-clean-grid">
     
-    <h1 class="brutal-text text-back glide-up">KOACH</h1>
+    <!-- LEFT: COPY -->
+    <div class="hero-clean-copy">
+      <div class="badge-pill">AI for Sports Hiring</div>
 
-    <img src="{{ url_for('static', filename='images/coach_cutout.png') }}" 
-         alt="Coach Athlete" 
-         class="hero-cutout-img glide-up"
-         style="transition-delay: 0.1s;">
+      <h1 class="hero-clean-title">
+        Hire <span class="highlight-blue">Verified Coaches</span><br>
+        in days, not months.
+      </h1>
 
-    <h1 class="brutal-text text-front glide-up" style="transition-delay: 0.2s;">SMART</h1>
+      <p class="hero-clean-subtitle">
+        KoachSmart-Recruit connects academies with verified multi-sport coaches.
+        AI match scores, smart filters and instant chat — all in one place.
+      </p>
 
-    <div class="brutal-content-layer glide-up" style="transition-delay: 0.3s;">
-        <p class="mb-4">India's First AI-Powered Sports Recruitment Platform</p>
-        
-        <div class="d-flex justify-content-center gap-3">
-            {% if not current_user.is_authenticated %}
-                <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg btn-biometric shadow-lg">
-                    <i class="fas fa-rocket me-2"></i> Get Started
-                </a>
-                <a href="#how-it-works" class="btn btn-light btn-lg shadow-md border">
-                    Learn More
-                </a>
-            {% else %}
-                <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-lg btn-biometric shadow-lg">
-                    Go to Dashboard
-                </a>
-            {% endif %}
-        </div>
+      <div class="hero-clean-cta-row">
+        {% if not current_user.is_authenticated %}
+          <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg hero-primary-cta">
+            <i class="fas fa-rocket me-2"></i> Get Started
+          </a>
+          <a href="#how-it-works" class="btn btn-outline-secondary btn-lg hero-secondary-cta">
+            Learn More
+          </a>
+        {% else %}
+          <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-lg hero-primary-cta">
+            Go to Dashboard
+          </a>
+        {% endif %}
+      </div>
+
+      <div class="hero-clean-meta">
+        <span>✓ Verified Coaches</span>
+        <span>⚡ AI Shortlisting</span>
+        <span>🔒 Secure Hiring</span>
+      </div>
     </div>
 
+    <!-- RIGHT: ANIMATION + KEY POINTS -->
+    <div class="hero-clean-visual">
+      <!-- LOTTIE ANIMATION (outside any box) -->
+      <div class="hero-lottie-wrapper">
+        <!-- Replace src with your chosen Lottie JSON URL -->
+        <lottie-player
+          src="https://lottie.host/e222d575-0e39-4628-8e3c-498cc5901b9b/jSq2nF8L6G.json"
+          background="transparent"
+          speed="1"
+          loop
+          autoplay
+        ></lottie-player>
+      </div>
+
+      <!-- KEY POINT PILLS -->
+      <div class="hero-kpi-row">
+        <div class="hero-kpi">
+          <span class="kpi-label">Verified Profiles</span>
+          <span class="kpi-value">500+</span>
+        </div>
+        <div class="hero-kpi">
+          <span class="kpi-label">Avg. Time to Hire</span>
+          <span class="kpi-value">7 days</span>
+        </div>
+        <div class="hero-kpi">
+          <span class="kpi-label">Match Score Accuracy</span>
+          <span class="kpi-value">92%</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
 </section>
 
 <!-- SEGMENT SECTION -->
