@@ -42,12 +42,10 @@
                         <li class="mb-2 text-dark"><i class="fas fa-check text-success me-2"></i> Priority Support</li>
                         <li class="mb-2 text-dark"><i class="fas fa-check text-success me-2"></i> All Basic Features</li>
                     </ul>
-                    
-                    <form action="{{ url_for('create_checkout_session') }}" method="POST" class="mt-auto">
-                        <input type="hidden" name="plan_type" value="basic"> <button type="submit" class="btn btn-success w-100 fw-bold shadow-sm">
-                            Upgrade to Premium <i class="fas fa-arrow-right ms-2"></i>
-                        </button>
+                    <form action="{{ url_for('create_checkout_session', plan='basic') }}" method="POST">
+                        <button type="submit" class="btn btn-primary w-100">Choose Basic</button>
                     </form>
+
                 </div>
             </div>
         </div>
@@ -64,12 +62,10 @@
                         <li class="mb-2 text-dark"><i class="fas fa-check text-primary me-2"></i> AI Salary Predictor</li>
                         <li class="mb-2 text-dark"><i class="fas fa-check text-primary me-2"></i> Verified Coach Badges</li>
                     </ul>
-                    
-                    <form action="{{ url_for('create_checkout_session') }}" method="POST" class="mt-auto">
-                        <input type="hidden" name="plan_type" value="pro"> <button type="submit" class="btn btn-primary w-100 fw-bold shadow-sm">
-                            Get Academy Pro
-                        </button>
+                    <form action="{{ url_for('create_checkout_session', plan='pro') }}" method="POST">
+                        <button type="submit" class="btn btn-dark w-100 mt-3">Choose Pro</button>
                     </form>
+                    
                 </div>
             </div>
         </div>

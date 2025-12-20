@@ -2,7 +2,7 @@ import os
 import math
 import requests
 import re
-import stripe # Added Stripe import
+import stripe 
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
@@ -149,6 +149,8 @@ class Application(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     status = db.Column(db.String(50), default='Applied')
     match_score = db.Column(db.Integer)
+    # NEW: Store the 'Why' behind the score
+    match_reasons = db.Column(db.Text) 
     applied_date = db.Column(db.DateTime, default=datetime.utcnow)
     custom_resume_path = db.Column(db.String(300))
     screening_answers = db.Column(db.Text)
@@ -210,17 +212,46 @@ def haversine(lat1, lon1, lat2, lon2):
     c = 2 * math.asin(math.sqrt(a))
     return c * 6371
 
+# ----------------------------------------------------
+# UPDATED AI EXPLAINABILITY LOGIC
+# ----------------------------------------------------
 def calculate_ai_score(job, profile):
     score = 0
+    reasons = [] # List to track the "Why"
+
     if not profile:
-        return 0
-    if job.sport.lower() in profile.sport.lower(): score += 40
-    if profile.experience_years and profile.experience_years >= 2: score += 30
-    if profile.is_verified: score += 20
+        return 0, "Profile incomplete"
+
+    # 1. Sport Match (+40)
+    if job.sport.lower() in profile.sport.lower():
+        score += 40
+        reasons.append("Sport Match (+40)")
+
+    # 2. Experience Level (+30)
+    if profile.experience_years and profile.experience_years >= 2:
+        score += 30
+        reasons.append(f"Experience > 2y (+30)")
+    
+    # 3. Trust Factor (+20)
+    if profile.is_verified:
+        score += 20
+        reasons.append("Verified Badge (+20)")
+
+    # 4. Certification Keyword Matching (+10)
     if job.requirements and profile.certifications:
-        if any(word in profile.certifications.lower() for word in job.requirements.lower().split()):
+        # Normalize and split into sets of words
+        job_keywords = set(job.requirements.lower().replace(',', '').split())
+        cert_keywords = set(profile.certifications.lower().replace(',', '').split())
+        
+        # Check intersection
+        common_words = job_keywords.intersection(cert_keywords)
+        if common_words:
             score += 10
-    return min(score, 100)
+            matched_terms = list(common_words)[:2] # Take first 2 matched words
+            reasons.append(f"Cert Match: {', '.join(matched_terms)} (+10)")
+
+    # Return Tuple: (Score, Reasons String)
+    return min(score, 100), " | ".join(reasons)
 
 def predict_salary_ai(sport, location, description, job_type):
     base = 15000
@@ -669,6 +700,9 @@ def toggle_job_status(job_id):
     db.session.commit()
     return redirect(url_for('dashboard'))
 
+# ----------------------------------------------------
+# UPDATED APPLY JOB ROUTE - SAVING AI REASONS
+# ----------------------------------------------------
 @app.route('/job/apply/<int:job_id>', methods=['POST'])
 @login_required
 def apply_job(job_id):
@@ -677,17 +711,21 @@ def apply_job(job_id):
     if Application.query.filter_by(job_id=job_id, user_id=current_user.id).first():
         flash("Already applied.")
         return redirect(url_for('dashboard'))
+    
     job = Job.query.get_or_404(job_id)
     profile = Profile.query.filter_by(user_id=current_user.id).first()
+    
     if get_profile_completion(profile) < 50:
         flash("Your profile is incomplete!")
         return redirect(url_for('dashboard'))
+    
     resume_path = None
     file = request.files.get('custom_resume')
     if file and file.filename != '':
         filename = secure_filename(f"resume_{current_user.id}_{job_id}_{file.filename}")
         file.save(os.path.join(app.config['RESUME_FOLDER'], filename))
         resume_path = filename
+    
     answers_list = []
     if job.screening_questions:
         qs = job.screening_questions.split('|')
@@ -695,16 +733,21 @@ def apply_job(job_id):
             ans = request.form.get(f'answer_{i}')
             answers_list.append(ans if ans else "No Answer")
     final_answers_str = "|".join(answers_list) if answers_list else None
-    score = calculate_ai_score(job, profile)
+    
+    # UNPACK SCORE AND REASONS
+    score, match_reasons = calculate_ai_score(job, profile)
+    
     new_app = Application(
         job_id=job_id,
         user_id=current_user.id,
         match_score=score,
+        match_reasons=match_reasons, # SAVE REASONS TO DB
         custom_resume_path=resume_path,
         screening_answers=final_answers_str
     )
     db.session.add(new_app)
     db.session.commit()
+    
     flash(f"Applied! Match: {score}%")
     return redirect(url_for('dashboard'))
 
@@ -815,6 +858,7 @@ def edit_job(job_id):
     if job.employer_id != current_user.id:
         flash("Unauthorized access!")
         return redirect(url_for('dashboard'))
+
     if request.method == 'POST':
         job.title = request.form.get('title')
         job.sport = request.form.get('sport')
@@ -825,16 +869,20 @@ def edit_job(job_id):
         job.salary_range = request.form.get('salary')
         job.job_type = request.form.get('job_type')
         job.working_hours = request.form.get('working_hours')
+
         lat = request.form.get('lat')
         lng = request.form.get('lng')
         if lat and lng and lat.strip() != '' and lng.strip() != '':
             job.lat = float(lat)
             job.lng = float(lng)
+
         db.session.commit()
         flash("Job Updated Successfully!")
         return redirect(url_for('dashboard'))
+
     return render_template('job_edit.html', job=job)
 
+# --- FORGOT PASSWORD ROUTES ---
 @app.route('/forgot-password', methods=['GET', 'POST'])
 def forgot_password():
     if request.method == 'POST':
@@ -854,26 +902,33 @@ def reset_password_mock():
         return redirect(url_for('login'))
     return render_template('reset_password.html')
 
+# ==============================
+#      CHAT ROUTES (UPDATED)
+# ==============================
 @app.route('/chat')
 @app.route('/chat/<int:receiver_id>')
 @login_required
 def chat(receiver_id=None):
+    # Build contacts list based on role
     if current_user.role == 'employer':
         my_jobs = Job.query.filter_by(employer_id=current_user.id).all()
         job_ids = [j.id for j in my_jobs]
         apps = Application.query.filter(Application.job_id.in_(job_ids)).all()
-        contacts = list({app.applicant for app in apps})
+        contacts = list({app.applicant for app in apps})  # distinct applicants
     else:
         my_apps = Application.query.filter_by(user_id=current_user.id).all()
-        contacts = list({app.job.employer for app in my_apps})
+        contacts = list({app.job.employer for app in my_apps})  # distinct employers
 
+    # Enrich contacts with sidebar info
     for u in contacts:
+        # last message in this conversation
         last_msg = Message.query.filter(
             ((Message.sender_id == current_user.id) & (Message.receiver_id == u.id)) |
             ((Message.sender_id == u.id) & (Message.receiver_id == current_user.id))
         ).order_by(Message.timestamp.desc()).first()
         u.last_message = last_msg.content if last_msg else None
         u.last_message_time = last_msg.timestamp.isoformat() if last_msg else None
+        # unread count: messages from them -> me, not read
         u.unread_count = Message.query.filter_by(sender_id=u.id, receiver_id=current_user.id, is_read=False).count()
 
     active_contact = None
@@ -884,10 +939,14 @@ def chat(receiver_id=None):
         active_contact = User.query.get_or_404(receiver_id)
         user_ids = sorted([current_user.id, receiver_id])
         room = f"chat_{user_ids[0]}_{user_ids[1]}"
+
+        # conversation messages
         messages = Message.query.filter(
             ((Message.sender_id == current_user.id) & (Message.receiver_id == receiver_id)) |
             ((Message.sender_id == receiver_id) & (Message.receiver_id == current_user.id))
         ).order_by(Message.timestamp.asc()).all()
+
+        # mark their messages to me as read
         changed = False
         for m in messages:
             if m.receiver_id == current_user.id and not m.is_read:
@@ -901,8 +960,44 @@ def chat(receiver_id=None):
                            active_contact=active_contact,
                            messages=messages,
                            room=room)
+# =========================================
+#             STRIPE WEBHOOK
+# =========================================
+@app.route('/stripe/webhook', methods=['POST'])
+def stripe_webhook():
+    payload = request.data
+    sig_header = request.headers.get('stripe-signature')
+    endpoint_secret = app.config['STRIPE_WEBHOOK_SECRET']
 
-# --- SOCKET EVENTS ---
+    try:
+        event = stripe.Webhook.construct_event(payload, sig_header, endpoint_secret)
+
+    except Exception:
+        return "Invalid signature", 400
+
+    # Payment succeeded → activate user
+    if event['type'] == 'checkout.session.completed':
+        data = event['data']['object']
+        user = User.query.filter_by(email=data['customer_email']).first()
+        if user:
+            user.subscription_status = 'active'
+            user.stripe_customer_id = data.get('customer')
+            db.session.commit()
+
+    # Subscription expired/cancelled
+    if event['type'] in ['customer.subscription.deleted', 'invoice.payment_failed']:
+        sub = event['data']['object']
+        user = User.query.filter_by(stripe_customer_id=sub.get('customer')).first()
+        if user:
+            user.subscription_status = 'free'
+            db.session.commit()
+
+    return "OK", 200
+
+# ==============================
+#      SOCKET EVENTS (UPDATED)
+# ==============================
+
 @socketio.on('join')
 def on_join(data):
     room = data.get('room')
@@ -914,7 +1009,7 @@ def handle_send_message_event(data):
     content = data.get('message', '')
     receiver_id = data.get('receiver_id')
     room = data.get('room')
-    client_id = data.get('client_id')
+    client_id = data.get('client_id')  # optional from frontend
 
     if not current_user.is_authenticated or not room or not content.strip():
         return
@@ -928,6 +1023,7 @@ def handle_send_message_event(data):
         'client_id': client_id,
         'content': new_msg.content,
         'sender_id': current_user.id,
+        # ISO string so JS can show Today/Yesterday 10:30 AM
         'timestamp': new_msg.timestamp.isoformat(),
         'status': 'sent',
         'sender_name': current_user.username
@@ -936,98 +1032,42 @@ def handle_send_message_event(data):
 @socketio.on('typing')
 def handle_typing(data):
     room = data.get('room')
-    if not room or not current_user.is_authenticated:
+    if not room:
+        return
+    if not current_user.is_authenticated:
         return
     emit('typing', {'sender_id': current_user.id}, room=room, include_self=False)
 
 @socketio.on('stop_typing')
 def handle_stop_typing(data):
     room = data.get('room')
-    if not room or not current_user.is_authenticated:
+    if not room:
+        return
+    if not current_user.is_authenticated:
         return
     emit('stop_typing', {'sender_id': current_user.id}, room=room, include_self=False)
-
-# --- STRIPE PAYMENT ROUTES ---
-@app.route('/create-checkout-session', methods=['POST'])
-@login_required
-def create_checkout_session():
-    plan_type = request.form.get('plan_type') 
-    
-    if plan_type == 'basic':
-        price_id = app.config['STRIPE_PRICE_BASIC']
-    elif plan_type == 'pro':
-        price_id = app.config['STRIPE_PRICE_PRO']
-    else:
-        flash("Invalid plan selected")
-        return redirect(url_for('show_plans'))
-
-    try:
-        checkout_session = stripe.checkout.Session.create(
-            payment_method_types=['card'],
-            line_items=[
-                {
-                    'price': price_id,
-                    'quantity': 1,
-                },
-            ],
-            mode='subscription', 
-            success_url=url_for('payment_success', _external=True) + '?session_id={CHECKOUT_SESSION_ID}',
-            cancel_url=url_for('show_plans', _external=True),
-            customer_email=current_user.email, 
-            metadata={'user_id': current_user.id, 'plan_type': plan_type}
-        )
-        return redirect(checkout_session.url, code=303)
-    except Exception as e:
-        flash(f"Error creating checkout session: {str(e)}")
-        return redirect(url_for('show_plans'))
-
 @app.route('/payment-success')
-@login_required
 def payment_success():
     session_id = request.args.get('session_id')
     if not session_id:
-        return redirect(url_for('dashboard'))
-    
-    try:
-        session_info = stripe.checkout.Session.retrieve(session_id)
-        plan = session_info.metadata.get('plan_type', 'free')
-        
-        current_user.subscription_status = plan
-        db.session.commit()
-        
-        flash(f"Subscription successful! You are now on the {plan.upper()} plan.")
-        return redirect(url_for('dashboard'))
-    except Exception as e:
-        flash("Error verifying payment.")
-        return redirect(url_for('dashboard'))
+        return "Invalid session"
 
-@app.route('/stripe_webhook', methods=['POST'])
-def stripe_webhook():
-    payload = request.get_data(as_text=True)
-    sig_header = request.headers.get('Stripe-Signature')
+    session_data = stripe.checkout.Session.retrieve(session_id)
+    subscription_id = session_data.get('subscription')
 
-    try:
-        event = stripe.Webhook.construct_event(
-            payload, sig_header, app.config['STRIPE_WEBHOOK_SECRET']
-        )
-    except ValueError as e:
-        return 'Invalid payload', 400
-    except stripe.error.SignatureVerificationError as e:
-        return 'Invalid signature', 400
+    user = current_user
+    user.subscription_status = "active"
+    user.stripe_customer_id = session_data.get("customer")
+    db.session.commit()
 
-    if event['type'] == 'checkout.session.completed':
-        session = event['data']['object']
-        user_id = session.get('metadata', {}).get('user_id')
-        plan_type = session.get('metadata', {}).get('plan_type')
-        
-        if user_id:
-            user = User.query.get(user_id)
-            if user:
-                user.subscription_status = plan_type
-                user.stripe_customer_id = session.get('customer')
-                db.session.commit()
+    flash("🎉 Payment Successful! Subscription Activated.")
+    return redirect(url_for('dashboard'))
 
-    return 'Success', 200
+
+@app.route('/payment-cancel')
+def payment_cancel():
+    flash("Payment cancelled. No charges applied.")
+    return redirect(url_for('show_plans'))
 
 # --- STATIC PAGES ---
 @app.route('/about')
@@ -1070,6 +1110,39 @@ def page_not_found(e):
 @app.errorhandler(500)
 def internal_server_error(e):
     return render_template('error.html', error_code=500), 500
+# =========================================
+#      STRIPE CHECKOUT SESSION ROUTE
+# =========================================
+@app.route('/create-checkout-session/<plan>', methods=['POST'])
+@login_required
+def create_checkout_session(plan):
+    try:
+        price_id = None
+
+        if plan == "basic":
+            price_id = app.config['STRIPE_PRICE_BASIC']
+        elif plan == "pro":
+            price_id = app.config['STRIPE_PRICE_PRO']
+        else:
+            return "Invalid plan", 400
+
+        session_stripe = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            customer_email=current_user.email,
+            line_items=[{
+                'price': price_id,
+                'quantity': 1,
+            }],
+            mode='subscription',
+            success_url=url_for('dashboard', _external=True),
+            cancel_url=url_for('show_plans', _external=True),
+        )
+
+        return redirect(session_stripe.url, code=303)
+
+    except Exception as e:
+        return str(e), 400
+
 
 if __name__ == '__main__':
     with app.app_context():

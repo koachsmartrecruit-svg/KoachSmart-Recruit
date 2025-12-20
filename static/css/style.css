@@ -985,3 +985,35 @@ html { scroll-behavior: smooth; }
 .msg-status[data-status="sending"] .status-text::after { content: " •"; opacity:0.7;}
 .msg-status[data-status="sent"] .status-text::after { content: " ✓"; opacity:0.9;}
 .msg-status[data-status="read"] .status-text::after { content: " ✓✓"; color:#34d399; opacity:1;}
+.mini-parallax {
+  height: 50vh; /* small height */
+  width: 100%;
+  background-image: url('/static/images/reveal-sports.jpeg');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed; /* MAGIC */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: white;
+  position: relative;
+}
+
+.mini-parallax-inner {
+  background: rgba(255, 255, 255, 0.4);
+  padding: 20px 40px;
+  border-radius: 8px;
+}
+
+.parallax-heading {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color:rgb(0, 0, 0);
+}
+
+.parallax-sub {
+  font-size: 1.1rem;
+  opacity: 0.9;
+}

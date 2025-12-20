@@ -256,7 +256,12 @@
 
     </div>
 </section>
-
+<section class="mini-parallax">
+  <div class="mini-parallax-inner">
+    <h2 class="parallax-heading">Trusted By Coaches Everywhere</h2>
+    <p class="parallax-sub">AI-powered hiring built for sports.</p>
+  </div>
+</section>
 <section class="testimonials-section py-5">
     <div class="container">
         <div class="text-center mb-5 glide-up">
@@ -312,6 +317,7 @@
         </div>
     </div>
 </section>
+
 
 <section class="tech-section py-5 bg-white">
     <div class="container">
@@ -414,6 +420,28 @@
             btnCoach.classList.add('btn-outline-dark', 'text-muted', 'border-0');
         }
     }
+    document.addEventListener("DOMContentLoaded", () => {
+    const img = document.querySelector('.scroll-parallax-image');
+
+    const revealObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+        if (entry.isIntersecting) img.classList.add('visible');
+        });
+    }, { threshold: 0.15 });
+
+    revealObserver.observe(img);
+
+    window.addEventListener('scroll', () => {
+        const section = document.querySelector('.scroll-parallax');
+        const rect = section.getBoundingClientRect();
+
+        let progress = (window.innerHeight - rect.top) / (window.innerHeight + rect.height);
+        progress = Math.min(Math.max(progress, 0), 1);
+
+        const moveY = 120 - (progress * 240);
+        img.style.transform = `translateY(${moveY}px)`;
+    });
+    });
 </script>
 
 {% endblock %}
