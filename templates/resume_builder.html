@@ -4,72 +4,110 @@
 <div class="container py-5">
     <div class="row justify-content-center">
         <div class="col-lg-8">
-            <!-- Header (Theme Aware) -->
+
+            <!-- Header -->
             <div class="glass-card p-4 mb-4 text-center">
                 <h2 class="fw-bold mb-2">AI Resume Builder</h2>
-                <p class="text-muted opacity-75 small">Generated based on your profile data & AI Optimization.</p>
+                <p class="text-muted opacity-75 small">
+                    Generate your resume by speaking — no typing required.
+                </p>
+
                 <div class="alert alert-info py-2 mb-3 small d-inline-block">
-                    <i class="fas fa-pen me-2"></i> Click on any text below to edit it before downloading!
+                    🎙️ Speak your experience in Hindi or English. Edit before download.
                 </div>
-                <br>
-                <button onclick="window.print()" class="btn btn-primary mt-2"><i class="fas fa-download me-2"></i>Download PDF</button>
+
+                <!-- Voice Controls -->
+                <div class="d-flex justify-content-center gap-2 flex-wrap mb-3">
+                    <select id="voiceLang" class="form-select form-select-sm w-auto">
+                        <option value="en-IN">English</option>
+                        <option value="hi-IN">Hindi</option>
+                    </select>
+
+                    <button id="startVoice" class="btn btn-outline-primary btn-sm">
+                        🎙️ Speak Resume
+                    </button>
+
+                    <span id="voiceStatus" class="small text-muted align-self-center"></span>
+                </div>
+
+                <button onclick="window.print()" class="btn btn-primary">
+                    <i class="fas fa-download me-2"></i>Download PDF
+                </button>
             </div>
 
-            <!-- RESUME SHEET (Always White Paper, Dark Text) -->
-            <div class="p-5 rounded shadow-lg" id="printableResume" style="background-color: #ffffff !important; color: #212529 !important;">
-                <div class="d-flex justify-content-between border-bottom border-3 pb-4 mb-4" style="border-color: #212529 !important;">
+            <!-- RESUME SHEET -->
+            <div class="p-5 rounded shadow-lg"
+                 id="printableResume"
+                 style="background-color:#fff;color:#212529;">
+
+                <!-- Header Row -->
+                <div class="d-flex justify-content-between border-bottom pb-4 mb-4">
                     <div>
-                        <h1 class="fw-bold display-5 text-uppercase mb-1" style="color: #000000 !important;" contenteditable="true">{{ profile.full_name }}</h1>
-                        <h5 class="fw-bold" style="color: #0d6efd !important;" contenteditable="true">{{ profile.sport }} Coach | {{ profile.experience_years }} Years Experience</h5>
+                        <h1 class="fw-bold display-5 mb-1" contenteditable="true">
+                            {{ profile.full_name }}
+                        </h1>
+                        <h5 class="fw-bold text-primary" contenteditable="true">
+                            {{ profile.sport }} Coach | {{ profile.experience_years }} Years Experience
+                        </h5>
                     </div>
                     <div class="text-end">
-                        <p class="mb-0 fw-bold" style="color: #212529 !important;" contenteditable="true">{{ profile.user.email }}</p>
-                        <p class="mb-0 fw-bold" style="color: #212529 !important;" contenteditable="true">{{ profile.phone }}</p>
+                        <p class="fw-bold mb-0" contenteditable="true">{{ profile.user.email }}</p>
+                        <p class="fw-bold mb-0" contenteditable="true">{{ profile.phone }}</p>
                         {% if profile.is_verified %}
-                            <span class="badge bg-success mt-2" style="color: #ffffff !important;">Verified Professional</span>
+                        <span class="badge bg-success mt-2">Verified Professional</span>
                         {% endif %}
                     </div>
                 </div>
 
                 <!-- Professional Summary -->
                 <div class="mb-5">
-                    <h4 class="fw-bold text-uppercase border-bottom pb-2 mb-3" style="border-color: #dee2e6 !important; color: #495057 !important;">Professional Summary</h4>
-                    <p class="lead" style="font-size: 1.1rem; line-height: 1.6; color: #212529 !important;" contenteditable="true">
+                    <h4 class="fw-bold text-uppercase border-bottom pb-2 mb-3">
+                        Professional Summary
+                    </h4>
+                    <p class="lead"
+                       id="summaryField"
+                       contenteditable="true"
+                       style="line-height:1.6;">
                         {{ ai_summary }}
                     </p>
                 </div>
 
-                <!-- Expertise -->
+                <!-- Core Competencies -->
                 <div class="mb-5">
-                    <h4 class="fw-bold text-uppercase border-bottom pb-2 mb-3" style="border-color: #dee2e6 !important; color: #495057 !important;">Core Competencies</h4>
+                    <h4 class="fw-bold text-uppercase border-bottom pb-2 mb-3">
+                        Core Competencies
+                    </h4>
                     <div class="d-flex flex-wrap gap-2" contenteditable="true">
                         {% if profile.certifications %}
                             {% for cert in profile.certifications.split(',') %}
-                                <span class="badge p-2 px-3" style="background-color: #212529 !important; color: #ffffff !important;">{{ cert.strip() }}</span>
+                                <span class="badge bg-dark px-3 py-2">{{ cert.strip() }}</span>
                             {% endfor %}
                         {% endif %}
-                        <span class="badge p-2 px-3" style="background-color: #0d6efd !important; color: #ffffff !important;">Athlete Development</span>
-                        <span class="badge p-2 px-3" style="background-color: #0d6efd !important; color: #ffffff !important;">Team Strategy</span>
-                        <span class="badge p-2 px-3" style="background-color: #0d6efd !important; color: #ffffff !important;">Performance Analytics</span>
+                        <span class="badge bg-primary px-3 py-2">Athlete Development</span>
+                        <span class="badge bg-primary px-3 py-2">Team Strategy</span>
+                        <span class="badge bg-primary px-3 py-2">Performance Analysis</span>
                     </div>
                 </div>
 
                 <!-- Experience -->
                 <div class="mb-5">
-                    <h4 class="fw-bold text-uppercase border-bottom pb-2 mb-3" style="border-color: #dee2e6 !important; color: #495057 !important;">Experience Highlights</h4>
+                    <h4 class="fw-bold text-uppercase border-bottom pb-2 mb-3">
+                        Experience Highlights
+                    </h4>
                     <ul class="list-unstyled">
-                        <li class="mb-3">
-                            <div class="d-flex justify-content-between">
-                                <h5 class="fw-bold mb-0" style="color: #000000 !important;" contenteditable="true">Professional Coaching Practice</h5>
-                                <span class="fw-bold text-muted" style="color: #6c757d !important;" contenteditable="true">20XX - Present</span>
-                            </div>
-                            <p style="color: #212529 !important;" contenteditable="true">Implemented advanced training drills and improved team win-rate by strategic analysis.</p>
+                        <li>
+                            <h5 class="fw-bold" contenteditable="true">
+                                Professional Coaching Practice
+                            </h5>
+                            <p contenteditable="true">
+                                Conducted structured training sessions and improved athlete performance through focused coaching.
+                            </p>
                         </li>
                     </ul>
                 </div>
 
-                <div class="text-center mt-5 pt-5 border-top" style="border-color: #dee2e6 !important;">
-                    <small class="text-muted" style="color: #6c757d !important;">Generated by KOACHSMART AI</small>
+                <div class="text-center pt-4 border-top">
+                    <small class="text-muted">Generated by KOACHSMART</small>
                 </div>
             </div>
         </div>
@@ -77,28 +115,57 @@
 </div>
 
 <style>
-    /* Visual cue for editable areas on hover */
-    [contenteditable="true"]:hover {
-        background-color: rgba(255, 255, 0, 0.1); /* Subtle yellow highlight */
-        outline: 1px dashed #ccc;
-        cursor: text;
+[contenteditable="true"]:hover {
+    background: rgba(255, 255, 0, 0.12);
+    outline: 1px dashed #ccc;
+    cursor: text;
+}
+
+@media print {
+    body * { visibility: hidden; }
+    #printableResume, #printableResume * { visibility: visible; }
+    #printableResume {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        box-shadow: none;
     }
-    
-    /* Print Styles */
-    @media print {
-        body * { visibility: hidden; }
-        #printableResume, #printableResume * { visibility: visible; }
-        #printableResume { 
-            position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 0; 
-            box-shadow: none !important; border: none !important; 
-        }
-        .glass-card, .navbar, footer { display: none; }
-        
-        /* Remove edit highlights when printing */
-        [contenteditable="true"]:hover {
-            background-color: transparent;
-            outline: none;
-        }
-    }
+    .glass-card, .navbar, footer { display: none; }
+}
 </style>
+
+<script>
+let recognition;
+
+document.getElementById("startVoice").addEventListener("click", () => {
+    const lang = document.getElementById("voiceLang").value;
+    const status = document.getElementById("voiceStatus");
+
+    if (!("webkitSpeechRecognition" in window || "SpeechRecognition" in window)) {
+        alert("Voice input works best on Chrome or Edge.");
+        return;
+    }
+
+    recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+    recognition.lang = lang;
+    recognition.interimResults = false;
+    recognition.continuous = false;
+
+    status.innerText = "🎙️ Listening...";
+
+    recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        document.getElementById("summaryField").innerText = transcript;
+        status.innerText = "✅ Voice added. You can edit it.";
+    };
+
+    recognition.onerror = () => {
+        status.innerText = "❌ Voice error. Try again.";
+    };
+
+    recognition.start();
+});
+</script>
+
 {% endblock %}
