@@ -15,6 +15,14 @@ from dotenv import load_dotenv
 import PyPDF2
 import docx
 from flask_socketio import SocketIO, emit, join_room, leave_room
+import os
+import json
+import whisper
+import requests
+from flask import Flask, request, jsonify
+from local_resume_parser import build_resume_from_transcript
+
+
 
 load_dotenv()
 
@@ -23,7 +31,10 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'default-key')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
+# Load Whisper once (important)
+whisper_model = whisper.load_model("base")
 # Initialize SocketIO
 socketio = SocketIO(app, cors_allowed_origins="*")
 
@@ -892,6 +903,19 @@ def edit_job(job_id):
         return redirect(url_for('dashboard'))
 
     return render_template('job_edit.html', job=job)
+@app.route("/voice-to-resume", methods=["POST"])
+def voice_to_resume():
+    audio = request.files.get("audio")
+    if not audio:
+        return jsonify({"error": "No audio received"}), 400
+
+    audio.save("temp.wav")
+
+    result = whisper_model.transcribe("temp.wav", task="translate")
+    transcript = result.get("text", "")
+
+    resume = build_resume_from_transcript(transcript)
+    return jsonify(resume)
 
 # --- FORGOT PASSWORD ROUTES ---
 @app.route('/forgot-password', methods=['GET', 'POST'])

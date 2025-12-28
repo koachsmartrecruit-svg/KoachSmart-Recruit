@@ -1,171 +1,280 @@
 {% extends "base.html" %}
-
 {% block content %}
+
 <div class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-lg-8">
+  <div class="row justify-content-center">
+    <div class="col-lg-9">
 
-            <!-- Header -->
-            <div class="glass-card p-4 mb-4 text-center">
-                <h2 class="fw-bold mb-2">AI Resume Builder</h2>
-                <p class="text-muted opacity-75 small">
-                    Generate your resume by speaking — no typing required.
-                </p>
+      <!-- HEADER -->
+      <div class="glass-card p-4 mb-4 text-center">
+        <h2 class="fw-bold mb-1">AI Voice Resume Builder</h2>
+        <p class="small text-muted">
+          Speak naturally. We build the entire resume.
+        </p>
 
-                <div class="alert alert-info py-2 mb-3 small d-inline-block">
-                    🎙️ Speak your experience in Hindi or English. Edit before download.
-                </div>
+        <!-- 🔔 INSTRUCTIONS -->
+        <div id="instructionsBox" class="alert alert-warning text-start small mb-3">
+        <strong id="instructionTitle">
+            अच्छे परिणाम के लिए कृपया ध्यान से पढ़ें:
+        </strong>
 
-                <!-- Voice Controls -->
-                <div class="d-flex justify-content-center gap-2 flex-wrap mb-3">
-                    <select id="voiceLang" class="form-select form-select-sm w-auto">
-                        <option value="en-IN">English</option>
-                        <option value="hi-IN">Hindi</option>
-                    </select>
+        <ul id="instructionList" class="mb-1 ps-3">
+            <li>सबसे पहले अपना <b>पूरा नाम स्पष्ट रूप से</b> बोलें, फिर थोड़ी देर रुकें</li>
+            <li><b>छोटे और स्पष्ट वाक्यों</b> में बोलें</li>
+            <li>अनुभव को <b>सालों की संख्या</b> में बताएं</li>
+            <li>प्रमाणपत्र स्पष्ट रूप से बोलें (जैसे: “बीसीसीआई लेवल वन”)</li>
+        </ul>
 
-                    <button id="startVoice" class="btn btn-outline-primary btn-sm">
-                        🎙️ Speak Resume
-                    </button>
-
-                    <span id="voiceStatus" class="small text-muted align-self-center"></span>
-                </div>
-
-                <button onclick="window.print()" class="btn btn-primary">
-                    <i class="fas fa-download me-2"></i>Download PDF
-                </button>
-            </div>
-
-            <!-- RESUME SHEET -->
-            <div class="p-5 rounded shadow-lg"
-                 id="printableResume"
-                 style="background-color:#fff;color:#212529;">
-
-                <!-- Header Row -->
-                <div class="d-flex justify-content-between border-bottom pb-4 mb-4">
-                    <div>
-                        <h1 class="fw-bold display-5 mb-1" contenteditable="true">
-                            {{ profile.full_name }}
-                        </h1>
-                        <h5 class="fw-bold text-primary" contenteditable="true">
-                            {{ profile.sport }} Coach | {{ profile.experience_years }} Years Experience
-                        </h5>
-                    </div>
-                    <div class="text-end">
-                        <p class="fw-bold mb-0" contenteditable="true">{{ profile.user.email }}</p>
-                        <p class="fw-bold mb-0" contenteditable="true">{{ profile.phone }}</p>
-                        {% if profile.is_verified %}
-                        <span class="badge bg-success mt-2">Verified Professional</span>
-                        {% endif %}
-                    </div>
-                </div>
-
-                <!-- Professional Summary -->
-                <div class="mb-5">
-                    <h4 class="fw-bold text-uppercase border-bottom pb-2 mb-3">
-                        Professional Summary
-                    </h4>
-                    <p class="lead"
-                       id="summaryField"
-                       contenteditable="true"
-                       style="line-height:1.6;">
-                        {{ ai_summary }}
-                    </p>
-                </div>
-
-                <!-- Core Competencies -->
-                <div class="mb-5">
-                    <h4 class="fw-bold text-uppercase border-bottom pb-2 mb-3">
-                        Core Competencies
-                    </h4>
-                    <div class="d-flex flex-wrap gap-2" contenteditable="true">
-                        {% if profile.certifications %}
-                            {% for cert in profile.certifications.split(',') %}
-                                <span class="badge bg-dark px-3 py-2">{{ cert.strip() }}</span>
-                            {% endfor %}
-                        {% endif %}
-                        <span class="badge bg-primary px-3 py-2">Athlete Development</span>
-                        <span class="badge bg-primary px-3 py-2">Team Strategy</span>
-                        <span class="badge bg-primary px-3 py-2">Performance Analysis</span>
-                    </div>
-                </div>
-
-                <!-- Experience -->
-                <div class="mb-5">
-                    <h4 class="fw-bold text-uppercase border-bottom pb-2 mb-3">
-                        Experience Highlights
-                    </h4>
-                    <ul class="list-unstyled">
-                        <li>
-                            <h5 class="fw-bold" contenteditable="true">
-                                Professional Coaching Practice
-                            </h5>
-                            <p contenteditable="true">
-                                Conducted structured training sessions and improved athlete performance through focused coaching.
-                            </p>
-                        </li>
-                    </ul>
-                </div>
-
-                <div class="text-center pt-4 border-top">
-                    <small class="text-muted">Generated by KOACHSMART</small>
-                </div>
-            </div>
+        <div id="instructionExample" class="fst-italic text-muted">
+            उदाहरण: <br>
+            “मेरा नाम अमित वर्मा है।  
+            मैं फुटबॉल कोच हूँ।  
+            मुझे पाँच साल का अनुभव है।  
+            मैं एआईएफएफ लेवल वन प्रमाणित हूँ।”
         </div>
+        </div>
+
+
+        <!-- CONTROLS -->
+        <div class="d-flex justify-content-center gap-2 mb-3 flex-wrap">
+          <select id="voiceLang" class="form-select form-select-sm w-auto">
+            <option value="en-IN">English</option>
+            <option value="hi-IN">Hindi</option>
+          </select>
+
+          <button id="startVoice" class="btn btn-success btn-sm">
+            🎙️ Start Recording
+          </button>
+
+          <button id="stopVoice" class="btn btn-danger btn-sm d-none">
+            ⏹ Stop Recording
+          </button>
+
+          <span id="voiceStatus" class="small text-muted align-self-center"></span>
+        </div>
+
+        <button onclick="window.print()" class="btn btn-primary btn-sm">
+          Download PDF
+        </button>
+
+        <p class="text-muted small mt-2">
+          This resume is auto-generated using voice input. You can edit any section before downloading.
+        </p>
+      </div>
+
+      <!-- RESUME -->
+      <div id="printableResume" class="bg-white p-5 shadow rounded">
+
+        <!-- NAME -->
+        <div class="d-flex justify-content-between border-bottom pb-3 mb-4">
+          <div>
+            <h1 id="resumeName" class="fw-bold display-5" contenteditable="true">
+              {{ profile.full_name }}
+            </h1>
+            <h5 id="resumeHeadline" class="text-primary fw-bold" contenteditable="true">
+              {{ profile.sport }} Coach | {{ profile.experience_years }} Years
+            </h5>
+          </div>
+          <div class="text-end small">
+            <div contenteditable="true">{{ profile.user.email }}</div>
+            <div contenteditable="true">{{ profile.phone }}</div>
+          </div>
+        </div>
+
+        <!-- SUMMARY -->
+        <section class="mb-4">
+          <h4 class="fw-bold border-bottom pb-2">Professional Summary</h4>
+          <p id="resumeSummary" contenteditable="true" class="lead">
+            {{ ai_summary }}
+          </p>
+        </section>
+
+        <!-- SKILLS -->
+        <section class="mb-4">
+          <h4 class="fw-bold border-bottom pb-2">Core Skills</h4>
+          <div id="resumeSkills" class="d-flex flex-wrap gap-2" contenteditable="true">
+            <span class="badge bg-primary">Coaching</span>
+            <span class="badge bg-primary">Fitness</span>
+          </div>
+        </section>
+
+        <!-- EXPERIENCE -->
+        <section class="mb-4">
+          <h4 class="fw-bold border-bottom pb-2">Experience</h4>
+          <ul id="resumeExperience" class="list-unstyled">
+            <li>
+              <strong>Coach</strong>
+              <p>Conducted training sessions.</p>
+            </li>
+          </ul>
+        </section>
+
+        <!-- CERTIFICATIONS -->
+        <section class="mb-4">
+          <h4 class="fw-bold border-bottom pb-2">Certifications</h4>
+          <ul id="resumeCerts">
+            <li>BCCI / AIFF Certified</li>
+          </ul>
+        </section>
+
+        <!-- ACHIEVEMENTS -->
+        <section>
+          <h4 class="fw-bold border-bottom pb-2">Achievements</h4>
+          <ul id="resumeAchievements">
+            <li>Improved athlete performance</li>
+          </ul>
+        </section>
+
+      </div>
     </div>
+  </div>
 </div>
 
 <style>
 [contenteditable="true"]:hover {
-    background: rgba(255, 255, 0, 0.12);
-    outline: 1px dashed #ccc;
-    cursor: text;
+  background: rgba(255,255,0,.12);
+  outline: 1px dashed #ccc;
 }
 
 @media print {
-    body * { visibility: hidden; }
-    #printableResume, #printableResume * { visibility: visible; }
-    #printableResume {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-        box-shadow: none;
-    }
-    .glass-card, .navbar, footer { display: none; }
+  body * { visibility: hidden; }
+  #printableResume, #printableResume * { visibility: visible; }
+  #printableResume {
+    position:absolute;
+    top:0;
+    left:0;
+    width:100%;
+    box-shadow:none;
+  }
+  .glass-card { display:none; }
 }
 </style>
 
 <script>
-let recognition;
+const voiceLangSelect = document.getElementById("voiceLang");
 
-document.getElementById("startVoice").addEventListener("click", () => {
-    const lang = document.getElementById("voiceLang").value;
-    const status = document.getElementById("voiceStatus");
+function updateInstructions(lang) {
+  const title = document.getElementById("instructionTitle");
+  const list = document.getElementById("instructionList");
+  const example = document.getElementById("instructionExample");
 
-    if (!("webkitSpeechRecognition" in window || "SpeechRecognition" in window)) {
-        alert("Voice input works best on Chrome or Edge.");
-        return;
-    }
+  if (lang === "hi-IN") {
+    // ✅ PURE HINDI
+    title.innerText = "अच्छे परिणाम के लिए कृपया ध्यान से पढ़ें:";
 
-    recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-    recognition.lang = lang;
-    recognition.interimResults = false;
-    recognition.continuous = false;
+    list.innerHTML = `
+      <li>सबसे पहले अपना <b>पूरा नाम स्पष्ट रूप से</b> बोलें, फिर थोड़ी देर रुकें</li>
+      <li><b>छोटे और स्पष्ट वाक्यों</b> में बोलें</li>
+      <li>अनुभव को <b>सालों की संख्या</b> में बताएं</li>
+      <li>प्रमाणपत्र स्पष्ट रूप से बोलें (जैसे: “बीसीसीआई लेवल वन”)</li>
+    `;
 
-    status.innerText = "🎙️ Listening...";
+    example.innerHTML = `
+      उदाहरण: <br>
+      “मेरा नाम अमित वर्मा है।  
+      मैं फुटबॉल कोच हूँ।  
+      मुझे पाँच साल का अनुभव है।  
+      मैं एआईएफएफ लेवल वन प्रमाणित हूँ।”
+    `;
+  } else {
+    // ✅ PURE ENGLISH
+    title.innerText = "How to get best results (please read):";
 
-    recognition.onresult = (event) => {
-        const transcript = event.results[0][0].transcript;
-        document.getElementById("summaryField").innerText = transcript;
-        status.innerText = "✅ Voice added. You can edit it.";
-    };
+    list.innerHTML = `
+      <li>Say your <b>full name clearly first</b>, then pause</li>
+      <li>Speak in <b>short, clear sentences</b></li>
+      <li>Mention experience as <b>number of years</b></li>
+      <li>Say certifications clearly (example: “BCCI Level One”)</li>
+    `;
 
-    recognition.onerror = () => {
-        status.innerText = "❌ Voice error. Try again.";
-    };
+    example.innerHTML = `
+      Example: <br>
+      “My name is Amit Varma.  
+      I am a football coach.  
+      I have five years experience.  
+      I am AIFF Level One certified.”
+    `;
+  }
+}
 
-    recognition.start();
+// Page load par set karo
+updateInstructions(voiceLangSelect.value);
+
+// Language change par update karo
+voiceLangSelect.addEventListener("change", () => {
+  updateInstructions(voiceLangSelect.value);
 });
+let mediaRecorder;
+let audioChunks = [];
+
+const startBtn = document.getElementById("startVoice");
+const stopBtn = document.getElementById("stopVoice");
+const status = document.getElementById("voiceStatus");
+
+startBtn.onclick = async () => {
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+  audioChunks = [];
+  mediaRecorder = new MediaRecorder(stream);
+  mediaRecorder.start();
+
+  mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+
+  startBtn.classList.add("d-none");
+  stopBtn.classList.remove("d-none");
+  status.innerText = "🎙️ Recording... Click Stop when finished";
+};
+
+stopBtn.onclick = async () => {
+  mediaRecorder.stop();
+
+  startBtn.classList.remove("d-none");
+  stopBtn.classList.add("d-none");
+  status.innerText = "⏳ Processing voice...";
+
+  mediaRecorder.onstop = async () => {
+    const audioBlob = new Blob(audioChunks, { type: "audio/wav" });
+    const formData = new FormData();
+    formData.append("audio", audioBlob);
+
+    const res = await fetch("/voice-to-resume", {
+      method: "POST",
+      body: formData
+    });
+
+    const data = await res.json();
+
+    document.getElementById("resumeName").innerText = data.full_name;
+    document.getElementById("resumeHeadline").innerText = data.headline;
+    document.getElementById("resumeSummary").innerText = data.summary;
+
+    const skills = document.getElementById("resumeSkills");
+    skills.innerHTML = "";
+    data.skills.forEach(s =>
+      skills.innerHTML += `<span class="badge bg-primary">${s}</span>`
+    );
+
+    const exp = document.getElementById("resumeExperience");
+    exp.innerHTML = "";
+    data.experience.forEach(e =>
+      exp.innerHTML += `<li><strong>${e.role}</strong><p>${e.description}</p></li>`
+    );
+
+    const certs = document.getElementById("resumeCerts");
+    certs.innerHTML = "";
+    data.certifications.forEach(c =>
+      certs.innerHTML += `<li>${c}</li>`
+    );
+
+    const ach = document.getElementById("resumeAchievements");
+    ach.innerHTML = "";
+    data.achievements.forEach(a =>
+      ach.innerHTML += `<li>${a}</li>`
+    );
+
+    status.innerText = "✅ Resume updated successfully";
+  };
+};
 </script>
 
 {% endblock %}
