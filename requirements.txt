@@ -12,3 +12,4 @@ PyPDF2
 python-docx
 flask-socketio
 stripe
+psycopg2-binary
