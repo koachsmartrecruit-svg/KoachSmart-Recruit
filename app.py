@@ -17,7 +17,6 @@ import docx
 from flask_socketio import SocketIO, emit, join_room, leave_room
 import os
 import json
-import whisper
 import requests
 from flask import Flask, request, jsonify
 from local_resume_parser import build_resume_from_transcript
@@ -33,8 +32,6 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
-# Load Whisper once (important)
-whisper_model = whisper.load_model("base")
 # Initialize SocketIO
 socketio = SocketIO(app, cors_allowed_origins="*")
 
