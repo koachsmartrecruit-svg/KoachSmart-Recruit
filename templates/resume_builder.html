@@ -3,81 +3,69 @@
 
 <div class="container py-5">
   <div class="row justify-content-center">
-    <div class="col-lg-9">
+    <div class="col-lg-10">
 
-      <!-- HEADER -->
+      <!-- ================= HEADER ================= -->
       <div class="glass-card p-4 mb-4 text-center">
-        <h2 class="fw-bold mb-1">AI Voice Resume Builder</h2>
-        <p class="small text-muted">
-          Speak naturally. We build the entire resume.
+        <h2 class="fw-bold mb-1">AI Resume Builder</h2>
+        <p class="text-muted small mb-2">
+          Type in Hindi or English. Resume will be generated automatically.
         </p>
 
-        <!-- 🔔 INSTRUCTIONS -->
-        <div id="instructionsBox" class="alert alert-warning text-start small mb-3">
-        <strong id="instructionTitle">
-            अच्छे परिणाम के लिए कृपया ध्यान से पढ़ें:
-        </strong>
-
-        <ul id="instructionList" class="mb-1 ps-3">
-            <li>सबसे पहले अपना <b>पूरा नाम स्पष्ट रूप से</b> बोलें, फिर थोड़ी देर रुकें</li>
-            <li><b>छोटे और स्पष्ट वाक्यों</b> में बोलें</li>
-            <li>अनुभव को <b>सालों की संख्या</b> में बताएं</li>
-            <li>प्रमाणपत्र स्पष्ट रूप से बोलें (जैसे: “बीसीसीआई लेवल वन”)</li>
-        </ul>
-
-        <div id="instructionExample" class="fst-italic text-muted">
-            उदाहरण: <br>
-            “मेरा नाम अमित वर्मा है।  
-            मैं फुटबॉल कोच हूँ।  
-            मुझे पाँच साल का अनुभव है।  
-            मैं एआईएफएफ लेवल वन प्रमाणित हूँ।”
-        </div>
+        <!-- UNDER DEVELOPMENT NOTE -->
+        <div class="alert alert-warning small mb-3">
+          🚧 <strong>Voice Resume Builder</strong> is currently under development.<br>
+          Please type your details below for now.
         </div>
 
-
-        <!-- CONTROLS -->
-        <div class="d-flex justify-content-center gap-2 mb-3 flex-wrap">
-          <select id="voiceLang" class="form-select form-select-sm w-auto">
-            <option value="en-IN">English</option>
-            <option value="hi-IN">Hindi</option>
-          </select>
-
-          <button id="startVoice" class="btn btn-success btn-sm">
-            🎙️ Start Recording
-          </button>
-
-          <button id="stopVoice" class="btn btn-danger btn-sm d-none">
-            ⏹ Stop Recording
-          </button>
-
-          <span id="voiceStatus" class="small text-muted align-self-center"></span>
+        <!-- INSTRUCTIONS -->
+        <div class="alert alert-info text-start small mb-3">
+          <strong>How to get best results:</strong>
+          <ul class="mb-1 ps-3">
+            <li>Write one sentence per line</li>
+            <li>Mention experience in numbers (example: 5 years)</li>
+            <li>Write certifications clearly (AIFF Level One, BCCI Level One)</li>
+            <li>Hindi or English both are supported</li>
+          </ul>
+          <em>
+            Resume will be generated using professional English templates.
+            Full Hindi-to-English AI translation is coming soon.
+          </em>
         </div>
 
-        <button onclick="window.print()" class="btn btn-primary btn-sm">
-          Download PDF
+        <!-- INPUT AREA -->
+        <textarea id="resumeInput"
+          class="form-control mb-3"
+          rows="7"
+          placeholder="मेरा नाम अमित वर्मा है।
+मैं फुटबॉल कोच हूँ।
+मुझे 5 साल का अनुभव है।
+मैं अंडर 14 और अंडर 16 खिलाड़ियों को प्रशिक्षण देता हूँ।
+मैं फिटनेस और अनुशासन पर ध्यान देता हूँ।
+मैं AIFF Level One certified हूँ।"></textarea>
+
+        <button class="btn btn-primary" onclick="generateResume()">
+          Generate Resume
         </button>
 
-        <p class="text-muted small mt-2">
-          This resume is auto-generated using voice input. You can edit any section before downloading.
-        </p>
+        <p id="statusText" class="small text-muted mt-2"></p>
       </div>
 
-      <!-- RESUME -->
+      <!-- ================= RESUME OUTPUT ================= -->
       <div id="printableResume" class="bg-white p-5 shadow rounded">
 
-        <!-- NAME -->
+        <!-- HEADER -->
         <div class="d-flex justify-content-between border-bottom pb-3 mb-4">
           <div>
             <h1 id="resumeName" class="fw-bold display-5" contenteditable="true">
-              {{ profile.full_name }}
+              Professional Coach
             </h1>
             <h5 id="resumeHeadline" class="text-primary fw-bold" contenteditable="true">
-              {{ profile.sport }} Coach | {{ profile.experience_years }} Years
+              Sports Coach
             </h5>
           </div>
           <div class="text-end small">
-            <div contenteditable="true">{{ profile.user.email }}</div>
-            <div contenteditable="true">{{ profile.phone }}</div>
+            <div contenteditable="true">{{ current_user.email }}</div>
           </div>
         </div>
 
@@ -85,54 +73,49 @@
         <section class="mb-4">
           <h4 class="fw-bold border-bottom pb-2">Professional Summary</h4>
           <p id="resumeSummary" contenteditable="true" class="lead">
-            {{ ai_summary }}
+            Resume summary will appear here.
           </p>
         </section>
 
         <!-- SKILLS -->
         <section class="mb-4">
           <h4 class="fw-bold border-bottom pb-2">Core Skills</h4>
-          <div id="resumeSkills" class="d-flex flex-wrap gap-2" contenteditable="true">
-            <span class="badge bg-primary">Coaching</span>
-            <span class="badge bg-primary">Fitness</span>
-          </div>
+          <div id="resumeSkills" class="d-flex flex-wrap gap-2" contenteditable="true"></div>
         </section>
 
         <!-- EXPERIENCE -->
         <section class="mb-4">
           <h4 class="fw-bold border-bottom pb-2">Experience</h4>
-          <ul id="resumeExperience" class="list-unstyled">
-            <li>
-              <strong>Coach</strong>
-              <p>Conducted training sessions.</p>
-            </li>
-          </ul>
+          <ul id="resumeExperience" class="list-unstyled"></ul>
         </section>
 
         <!-- CERTIFICATIONS -->
         <section class="mb-4">
           <h4 class="fw-bold border-bottom pb-2">Certifications</h4>
-          <ul id="resumeCerts">
-            <li>BCCI / AIFF Certified</li>
-          </ul>
+          <ul id="resumeCerts"></ul>
         </section>
 
         <!-- ACHIEVEMENTS -->
         <section>
           <h4 class="fw-bold border-bottom pb-2">Achievements</h4>
-          <ul id="resumeAchievements">
-            <li>Improved athlete performance</li>
-          </ul>
+          <ul id="resumeAchievements"></ul>
         </section>
 
+        <div class="text-center mt-4">
+          <button onclick="window.print()" class="btn btn-outline-primary btn-sm">
+            Download PDF
+          </button>
+        </div>
       </div>
+
     </div>
   </div>
 </div>
 
+<!-- ================= STYLES ================= -->
 <style>
 [contenteditable="true"]:hover {
-  background: rgba(255,255,0,.12);
+  background: rgba(255,255,0,0.12);
   outline: 1px dashed #ccc;
 }
 
@@ -140,141 +123,56 @@
   body * { visibility: hidden; }
   #printableResume, #printableResume * { visibility: visible; }
   #printableResume {
-    position:absolute;
-    top:0;
-    left:0;
-    width:100%;
-    box-shadow:none;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    box-shadow: none;
   }
-  .glass-card { display:none; }
 }
 </style>
 
+<!-- ================= SCRIPT ================= -->
 <script>
-const voiceLangSelect = document.getElementById("voiceLang");
+async function generateResume() {
+  const input = document.getElementById("resumeInput").value;
+  const status = document.getElementById("statusText");
 
-function updateInstructions(lang) {
-  const title = document.getElementById("instructionTitle");
-  const list = document.getElementById("instructionList");
-  const example = document.getElementById("instructionExample");
-
-  if (lang === "hi-IN") {
-    // ✅ PURE HINDI
-    title.innerText = "अच्छे परिणाम के लिए कृपया ध्यान से पढ़ें:";
-
-    list.innerHTML = `
-      <li>सबसे पहले अपना <b>पूरा नाम स्पष्ट रूप से</b> बोलें, फिर थोड़ी देर रुकें</li>
-      <li><b>छोटे और स्पष्ट वाक्यों</b> में बोलें</li>
-      <li>अनुभव को <b>सालों की संख्या</b> में बताएं</li>
-      <li>प्रमाणपत्र स्पष्ट रूप से बोलें (जैसे: “बीसीसीआई लेवल वन”)</li>
-    `;
-
-    example.innerHTML = `
-      उदाहरण: <br>
-      “मेरा नाम अमित वर्मा है।  
-      मैं फुटबॉल कोच हूँ।  
-      मुझे पाँच साल का अनुभव है।  
-      मैं एआईएफएफ लेवल वन प्रमाणित हूँ।”
-    `;
-  } else {
-    // ✅ PURE ENGLISH
-    title.innerText = "How to get best results (please read):";
-
-    list.innerHTML = `
-      <li>Say your <b>full name clearly first</b>, then pause</li>
-      <li>Speak in <b>short, clear sentences</b></li>
-      <li>Mention experience as <b>number of years</b></li>
-      <li>Say certifications clearly (example: “BCCI Level One”)</li>
-    `;
-
-    example.innerHTML = `
-      Example: <br>
-      “My name is Amit Varma.  
-      I am a football coach.  
-      I have five years experience.  
-      I am AIFF Level One certified.”
-    `;
+  if (!input.trim()) {
+    status.innerText = "⚠️ Please enter some details first.";
+    return;
   }
+
+  status.innerText = "⏳ Generating resume...";
+
+  const res = await fetch("/text-to-resume", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text: input })
+  });
+
+  const data = await res.json();
+
+  document.getElementById("resumeName").innerText = data.full_name;
+  document.getElementById("resumeHeadline").innerText = data.headline;
+  document.getElementById("resumeSummary").innerText = data.summary;
+
+  document.getElementById("resumeSkills").innerHTML =
+    data.skills.map(s => `<span class="badge bg-primary">${s}</span>`).join("");
+
+  document.getElementById("resumeExperience").innerHTML =
+    data.experience.map(e =>
+      `<li><strong>${e.role}</strong><p>${e.description}</p></li>`
+    ).join("");
+
+  document.getElementById("resumeCerts").innerHTML =
+    data.certifications.map(c => `<li>${c}</li>`).join("");
+
+  document.getElementById("resumeAchievements").innerHTML =
+    data.achievements.map(a => `<li>${a}</li>`).join("");
+
+  status.innerText = "✅ Resume generated successfully. You can edit before downloading.";
 }
-
-// Page load par set karo
-updateInstructions(voiceLangSelect.value);
-
-// Language change par update karo
-voiceLangSelect.addEventListener("change", () => {
-  updateInstructions(voiceLangSelect.value);
-});
-let mediaRecorder;
-let audioChunks = [];
-
-const startBtn = document.getElementById("startVoice");
-const stopBtn = document.getElementById("stopVoice");
-const status = document.getElementById("voiceStatus");
-
-startBtn.onclick = async () => {
-  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-
-  audioChunks = [];
-  mediaRecorder = new MediaRecorder(stream);
-  mediaRecorder.start();
-
-  mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-
-  startBtn.classList.add("d-none");
-  stopBtn.classList.remove("d-none");
-  status.innerText = "🎙️ Recording... Click Stop when finished";
-};
-
-stopBtn.onclick = async () => {
-  mediaRecorder.stop();
-
-  startBtn.classList.remove("d-none");
-  stopBtn.classList.add("d-none");
-  status.innerText = "⏳ Processing voice...";
-
-  mediaRecorder.onstop = async () => {
-    const audioBlob = new Blob(audioChunks, { type: "audio/wav" });
-    const formData = new FormData();
-    formData.append("audio", audioBlob);
-
-    const res = await fetch("/voice-to-resume", {
-      method: "POST",
-      body: formData
-    });
-
-    const data = await res.json();
-
-    document.getElementById("resumeName").innerText = data.full_name;
-    document.getElementById("resumeHeadline").innerText = data.headline;
-    document.getElementById("resumeSummary").innerText = data.summary;
-
-    const skills = document.getElementById("resumeSkills");
-    skills.innerHTML = "";
-    data.skills.forEach(s =>
-      skills.innerHTML += `<span class="badge bg-primary">${s}</span>`
-    );
-
-    const exp = document.getElementById("resumeExperience");
-    exp.innerHTML = "";
-    data.experience.forEach(e =>
-      exp.innerHTML += `<li><strong>${e.role}</strong><p>${e.description}</p></li>`
-    );
-
-    const certs = document.getElementById("resumeCerts");
-    certs.innerHTML = "";
-    data.certifications.forEach(c =>
-      certs.innerHTML += `<li>${c}</li>`
-    );
-
-    const ach = document.getElementById("resumeAchievements");
-    ach.innerHTML = "";
-    data.achievements.forEach(a =>
-      ach.innerHTML += `<li>${a}</li>`
-    );
-
-    status.innerText = "✅ Resume updated successfully";
-  };
-};
 </script>
 
 {% endblock %}

@@ -19,8 +19,7 @@ import os
 import json
 import requests
 from flask import Flask, request, jsonify
-from local_resume_parser import build_resume_from_transcript
-
+from local_resume_parser import parse_resume_text
 
 
 load_dotenv()
@@ -900,19 +899,6 @@ def edit_job(job_id):
         return redirect(url_for('dashboard'))
 
     return render_template('job_edit.html', job=job)
-@app.route("/voice-to-resume", methods=["POST"])
-def voice_to_resume():
-    audio = request.files.get("audio")
-    if not audio:
-        return jsonify({"error": "No audio received"}), 400
-
-    audio.save("temp.wav")
-
-    result = whisper_model.transcribe("temp.wav", task="translate")
-    transcript = result.get("text", "")
-
-    resume = build_resume_from_transcript(transcript)
-    return jsonify(resume)
 
 # --- FORGOT PASSWORD ROUTES ---
 @app.route('/forgot-password', methods=['GET', 'POST'])
@@ -992,6 +978,16 @@ def chat(receiver_id=None):
                            active_contact=active_contact,
                            messages=messages,
                            room=room)
+
+
+@app.route("/text-to-resume", methods=["POST"])
+def text_to_resume():
+    data = request.json
+    text = data.get("text", "")
+
+    parsed = parse_resume_text(text)
+    return jsonify(parsed)
+
 # =========================================
 #             STRIPE WEBHOOK
 # =========================================
@@ -1078,28 +1074,22 @@ def handle_stop_typing(data):
     if not current_user.is_authenticated:
         return
     emit('stop_typing', {'sender_id': current_user.id}, room=room, include_self=False)
-@app.route('/payment-success')
+@app.route("/payment/success")
+@login_required
 def payment_success():
-    session_id = request.args.get('session_id')
-    if not session_id:
-        return "Invalid session"
+    mode = request.args.get("mode", "unknown")
 
-    session_data = stripe.checkout.Session.retrieve(session_id)
-    subscription_id = session_data.get('subscription')
+    # IMPORTANT: do NOT auto-upgrade here
+    # Just log or flash message
 
-    user = current_user
-    user.subscription_status = "active"
-    user.stripe_customer_id = session_data.get("customer")
-    db.session.commit()
-
-    flash("🎉 Payment Successful! Subscription Activated.")
-    return redirect(url_for('dashboard'))
+    flash("Payment submitted. Awaiting verification.")
+    return render_template("payment_success.html")
 
 
-@app.route('/payment-cancel')
-def payment_cancel():
-    flash("Payment cancelled. No charges applied.")
-    return redirect(url_for('show_plans'))
+@app.route("/payment/pending")
+@login_required
+def payment_pending():
+    return render_template("payment_pending.html")
 
 # --- STATIC PAGES ---
 @app.route('/about')
@@ -1176,4 +1166,4 @@ def create_checkout_session(plan):
         return str(e), 400
 db.init_app(app)
 if __name__ == "__main__":
-    socketio.run(app, debug=True)
+    app.run(debug=False)
