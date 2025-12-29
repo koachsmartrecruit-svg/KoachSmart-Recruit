@@ -1,75 +1,156 @@
 {% extends "base.html" %}
-
 {% block content %}
+
 <div class="container py-5">
-    
-    <div class="text-center mb-5">
-        <h2 class="fw-bold text-dark">Simple, Transparent Pricing</h2>
-        <p class="text-muted">Choose the plan that fits your goals.</p>
+
+  <div class="text-center mb-5">
+    <h2 class="fw-bold">Simple, Transparent Pricing</h2>
+    <p class="text-muted">Choose the plan that fits your goals</p>
+  </div>
+
+  <div class="row justify-content-center g-4">
+
+    <!-- FREE -->
+    <div class="col-md-4">
+      <div class="card h-100 shadow-sm">
+        <div class="card-body text-center d-flex flex-column">
+          <h4>Coach Basic</h4>
+          <h1 class="fw-bold my-3">Free</h1>
+          <ul class="list-unstyled text-start flex-grow-1">
+            <li>✔ Create Profile</li>
+            <li>✔ Apply to Jobs</li>
+            <li class="text-muted">✖ Top Search</li>
+          </ul>
+          <a href="{{ url_for('dashboard') }}" class="btn btn-outline-dark w-100">
+            Continue Free
+          </a>
+        </div>
+      </div>
     </div>
 
-    <div class="row justify-content-center g-4">
-        
-        <div class="col-md-4">
-            <div class="card shadow-sm h-100 border-0">
-                <div class="card-body p-4 text-center d-flex flex-column">
-                    <h4 class="text-secondary fw-bold">Coach Basic</h4>
-                    <h1 class="display-4 my-3 fw-bold text-dark">Free</h1>
-                    <p class="text-muted mb-4">/forever</p>
-                    
-                    <ul class="list-unstyled text-start mb-4 flex-grow-1">
-                        <li class="mb-2 text-dark"><i class="fas fa-check text-success me-2"></i> Create Digital Profile</li>
-                        <li class="mb-2 text-dark"><i class="fas fa-check text-success me-2"></i> Apply to Jobs</li>
-                        <li class="mb-2 text-muted text-decoration-line-through"><i class="fas fa-times me-2"></i> Top of Search Results</li>
-                    </ul>
-                    
-                    <a href="{{ url_for('dashboard') }}" class="btn btn-outline-dark w-100 mt-auto">Continue Free</a>
-                </div>
-            </div>
+    <!-- COACH PREMIUM -->
+    <div class="col-md-4">
+      <div class="card h-100 shadow border-success">
+        <div class="card-body text-center d-flex flex-column">
+          <h4 class="text-success">Coach Premium</h4>
+          <h1 class="fw-bold my-3">₹1500/mo</h1>
+
+          <ul class="list-unstyled text-start flex-grow-1">
+            <li>✔ Top of Search</li>
+            <li>✔ Profile Analytics</li>
+            <li>✔ Priority Support</li>
+          </ul>
+
+          <button class="btn btn-success w-100"
+                  onclick="openPaymentModal('Coach Premium',1500)">
+            Choose Plan
+          </button>
         </div>
-
-        <div class="col-md-4">
-            <div class="card shadow h-100 border-2 border-success position-relative overflow-hidden">
-                <div class="position-absolute top-0 end-0 bg-success text-white px-3 py-1 small fw-bold rounded-bottom-start">POPULAR</div>
-                
-                <div class="card-body p-4 text-center d-flex flex-column">
-                    <h4 class="text-success fw-bold">Coach Premium</h4>
-                    <h1 class="display-4 my-3 fw-bold text-dark">₹1500<span class="fs-6 text-muted fw-normal">/mo</span></h1>
-                    
-                    <ul class="list-unstyled text-start mb-4 flex-grow-1">
-                        <li class="mb-2 text-dark"><i class="fas fa-check text-success me-2"></i> <strong>Top of Search Results</strong></li>
-                        <li class="mb-2 text-dark"><i class="fas fa-check text-success me-2"></i> Profile Analytics</li>
-                        <li class="mb-2 text-dark"><i class="fas fa-check text-success me-2"></i> Priority Support</li>
-                        <li class="mb-2 text-dark"><i class="fas fa-check text-success me-2"></i> All Basic Features</li>
-                    </ul>
-                    <form action="{{ url_for('create_checkout_session', plan='basic') }}" method="POST">
-                        <button type="submit" class="btn btn-primary w-100">Choose Basic</button>
-                    </form>
-
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-4">
-            <div class="card shadow-sm h-100 border-primary" style="background: #f8fbff;">
-                <div class="card-body p-4 text-center d-flex flex-column">
-                    <h4 class="text-primary fw-bold">Academy Pro</h4>
-                    <h1 class="display-4 my-3 fw-bold text-dark">₹4500<span class="fs-6 text-muted fw-normal">/mo</span></h1>
-                    
-                    <ul class="list-unstyled text-start mb-4 flex-grow-1">
-                        <li class="mb-2 text-dark"><i class="fas fa-check text-primary me-2"></i> Unlimited Job Posts</li>
-                        <li class="mb-2 text-dark"><i class="fas fa-check text-primary me-2"></i> Access Verified Database</li>
-                        <li class="mb-2 text-dark"><i class="fas fa-check text-primary me-2"></i> AI Salary Predictor</li>
-                        <li class="mb-2 text-dark"><i class="fas fa-check text-primary me-2"></i> Verified Coach Badges</li>
-                    </ul>
-                    <form action="{{ url_for('create_checkout_session', plan='pro') }}" method="POST">
-                        <button type="submit" class="btn btn-dark w-100 mt-3">Choose Pro</button>
-                    </form>
-                    
-                </div>
-            </div>
-        </div>
-
+      </div>
     </div>
+
+    <!-- ACADEMY PRO -->
+    <div class="col-md-4">
+      <div class="card h-100 shadow border-primary">
+        <div class="card-body text-center d-flex flex-column">
+          <h4 class="text-primary">Academy Pro</h4>
+          <h1 class="fw-bold my-3">₹4500/mo</h1>
+
+          <ul class="list-unstyled text-start flex-grow-1">
+            <li>✔ Unlimited Jobs</li>
+            <li>✔ Verified Coaches</li>
+            <li>✔ AI Tools</li>
+          </ul>
+
+          <button class="btn btn-primary w-100"
+                  onclick="openPaymentModal('Academy Pro',4500)">
+            Choose Plan
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
 </div>
+
+<!-- ================= PAYMENT MODAL ================= -->
+<div class="modal fade" id="paymentModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title" id="planTitle"></h5>
+        <button class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+
+        <!-- PAYMENT TABS -->
+        <ul class="nav nav-pills justify-content-center mb-4">
+          <li class="nav-item">
+            <button class="nav-link active">UPI</button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link disabled">Net Banking</button>
+          </li>
+          <li class="nav-item">
+            <button class="nav-link disabled">Card</button>
+          </li>
+        </ul>
+
+        <!-- UPI SECTION -->
+        <div class="text-center">
+          <h4 class="fw-bold mb-2">Pay ₹<span id="planAmount"></span> via UPI</h4>
+
+          <div id="upiQR" class="d-flex justify-content-center my-3"></div>
+
+          <a id="upiLink" class="btn btn-success w-100 mb-2">
+            Open UPI App
+          </a>
+
+          <button class="btn btn-outline-primary w-100"
+                  onclick="confirmPayment()">
+            I’ve completed payment
+          </button>
+
+          <small class="text-muted d-block mt-2">
+            ⚠️ Test mode · No real money deducted
+          </small>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- QR LIB -->
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
+
+<script>
+let qr;
+
+function openPaymentModal(plan, amount) {
+  document.getElementById("planTitle").innerText = plan;
+  document.getElementById("planAmount").innerText = amount;
+
+  const upiURL =
+    `upi://pay?pa=koachsmart@upi&pn=KoachSmart&am=${amount}&cu=INR`;
+
+  document.getElementById("upiLink").href = upiURL;
+
+  document.getElementById("upiQR").innerHTML = "";
+  qr = new QRCode(document.getElementById("upiQR"), {
+    text: upiURL,
+    width: 200,
+    height: 200
+  });
+
+  new bootstrap.Modal(document.getElementById("paymentModal")).show();
+}
+
+function confirmPayment() {
+  window.location.href = "/payment/success?mode=upi_test";
+}
+</script>
+
 {% endblock %}

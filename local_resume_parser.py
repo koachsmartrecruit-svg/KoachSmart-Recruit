@@ -1,230 +1,180 @@
 import re
 
-# =============================
-# CONSTANTS
-# =============================
+# ===============================
+# CONSTANT MAPS
+# ===============================
 
-SPORTS = [
-    "cricket", "football", "tennis", "badminton",
-    "basketball", "swimming", "athletics", "hockey"
-]
+SPORT_MAP = {
+    "फुटबॉल": "Football",
+    "football": "Football",
+    "क्रिकेट": "Cricket",
+    "cricket": "Cricket",
+    "बैडमिंटन": "Badminton",
+    "badminton": "Badminton",
+    "हॉकी": "Hockey",
+    "hockey": "Hockey",
+}
 
-CERTIFICATIONS = [
-    "bcci", "aiff", "nsca", "fifa",
-    "icc", "afc", "nccp",
-    "level one", "level 1",
-    "level two", "level 2"
-]
-
-SKILL_KEYWORDS = {
+SKILL_MAP = {
+    "फिटनेस": "Fitness Training",
     "fitness": "Fitness Training",
-    "strength": "Strength & Conditioning",
-    "batting": "Batting Technique",
-    "bowling": "Bowling Technique",
-    "fielding": "Fielding Skills",
+    "अनुशासन": "Discipline Building",
+    "discipline": "Discipline Building",
+    "प्रशिक्षण": "Athlete Development",
+    "training": "Athlete Development",
+    "रणनीति": "Match Strategy",
     "strategy": "Match Strategy",
-    "analysis": "Performance Analysis",
-    "discipline": "Discipline & Mentorship",
-    "team": "Team Management",
-    "nutrition": "Sports Nutrition"
 }
 
-WORD_NUMBERS = {
-    "one": 1, "two": 2, "three": 3,
-    "four": 4, "five": 5, "six": 6,
-    "seven": 7, "eight": 8,
-    "nine": 9, "ten": 10
-}
+# ===============================
+# MAIN PARSER
+# ===============================
 
-# =============================
-# NORMALIZATION
-# =============================
+def parse_resume_text(text: str):
+    warnings = []
+    score = 0
 
-def normalize(text: str) -> str:
-    text = text.lower()
-    text = text.replace(",", " ")
-    text = re.sub(r"\s+", " ", text)
-    return text.strip()
+    text = text.strip()
+    text_lower = text.lower()
 
-# =============================
-# EXTRACTION HELPERS
-# =============================
+    # ---------------------------
+    # NAME
+    # ---------------------------
+    name = "Professional Coach"
 
-def extract_name(text: str) -> str:
-    patterns = [
-        r"my name is ([a-z ]+?)(?:\.|,|$)",
-        r"mera naam ([a-z ]+?) hai",
-        r"^([a-z ]+?) i am a",
-        r"^([a-z ]+?) i am"
-    ]
-    for p in patterns:
-        match = re.search(p, text)
-        if match:
-            return match.group(1).title()
-    return ""
+    hi_name = re.search(r"मेरा नाम (.+?) है", text)
+    en_name = re.search(r"my name is ([a-zA-Z\s]+)", text_lower)
 
-def extract_sport(text: str) -> str:
-    for sport in SPORTS:
-        if sport in text:
-            return sport.title()
-    return ""
+    if hi_name:
+        name = hi_name.group(1).strip()
+        score += 20
+    elif en_name:
+        name = en_name.group(1).strip().title()
+        score += 20
+    else:
+        warnings.append("Name not clearly mentioned.")
 
-def extract_experience_years(text: str) -> int:
-    # digit based (5 years)
-    match = re.search(r"(\d+)\s+(year|years)", text)
-    if match:
-        return int(match.group(1))
+    # ---------------------------
+    # SPORT
+    # ---------------------------
+    sport = "Sports"
+    for k, v in SPORT_MAP.items():
+        if k.lower() in text_lower:
+            sport = v
+            score += 20
+            break
+    if sport == "Sports":
+        warnings.append("Sport not clearly detected.")
 
-    # word based (five years)
-    for word, num in WORD_NUMBERS.items():
-        if f"{word} year" in text or f"{word} years" in text:
-            return num
+    # ---------------------------
+    # EXPERIENCE
+    # ---------------------------
+    experience = "0"
 
-    return 0
+    hi_exp = re.search(r"(\d+)\s*साल", text)
+    en_exp = re.search(r"(\d+)\s*years", text_lower)
 
-def extract_certifications(text: str) -> list:
-    certs = []
+    if hi_exp:
+        experience = hi_exp.group(1)
+        score += 20
+    elif en_exp:
+        experience = en_exp.group(1)
+        score += 20
+    else:
+        warnings.append("Experience not mentioned in years.")
 
-    # --- BCCI ---
-    if "bcci" in text:
-        if "level one" in text or "level 1" in text:
-            certs.append("BCCI Level One")
-        elif "level two" in text or "level 2" in text:
-            certs.append("BCCI Level Two")
-        else:
-            certs.append("BCCI Certified")
+    # ---------------------------
+    # AGE GROUP
+    # ---------------------------
+    age_groups = []
+    if "under 14" in text_lower or "अंडर 14" in text:
+        age_groups.append("Under-14")
+        score += 5
+    if "under 16" in text_lower or "अंडर 16" in text:
+        age_groups.append("Under-16")
+        score += 5
 
-    # --- AIFF ---
-    if "aiff" in text:
-        if "level one" in text or "level 1" in text:
-            certs.append("AIFF Level One")
-        elif "level two" in text or "level 2" in text:
-            certs.append("AIFF Level Two")
-        else:
-            certs.append("AIFF Certified")
+    # ---------------------------
+    # SKILLS
+    # ---------------------------
+    skills = set()
+    for k, v in SKILL_MAP.items():
+        if k.lower() in text_lower:
+            skills.add(v)
 
-    # --- Other generic certifications ---
-    if "nsca" in text:
-        certs.append("NSCA Certified")
-    if "fifa" in text:
-        certs.append("FIFA Certified")
+    if skills:
+        score += 15
+    else:
+        warnings.append("Skills not clearly mentioned.")
+        skills = {"Athlete Development", "Fitness Training"}
 
-    return certs
+    # ---------------------------
+    # CERTIFICATIONS
+    # ---------------------------
+    certifications = []
 
-def extract_skills(text: str) -> list:
-    skills = []
-    for key, label in SKILL_KEYWORDS.items():
-        if key in text:
-            skills.append(label)
+    if "aiff" in text_lower or "एआईएफएफ" in text:
+        certifications.append("AIFF")
+    if "bcci" in text_lower or "बीसीसीआई" in text:
+        certifications.append("BCCI")
+    if (
+        "level one" in text_lower
+        or "level 1" in text_lower
+        or "लेवल वन" in text
+    ):
+        certifications.append("Level One")
 
-    return list(set(skills))
+    final_certs = []
+    if "AIFF" in certifications and "Level One" in certifications:
+        final_certs.append("AIFF Level One")
+        score += 10
+    if "BCCI" in certifications and "Level One" in certifications:
+        final_certs.append("BCCI Level One")
+        score += 10
 
-def extract_experience_points(text: str) -> list:
-    points = []
+    if not final_certs:
+        warnings.append("Certifications not clearly detected.")
+        final_certs = ["Not specified"]
 
-    if "under" in text:
-        points.append(
-            "Trained age-group athletes including Under-14 and Under-16 players."
-        )
-
-    if "academy" in text:
-        points.append(
-            "Conducted structured training sessions at academy level."
-        )
-
-    if "school" in text:
-        points.append(
-            "Provided coaching for school-level sports teams."
-        )
-
-    if "fitness" in text:
-        points.append(
-            "Improved player fitness, stamina, and injury prevention."
-        )
-
-    if not points:
-        points.append(
-            "Delivered structured coaching programs to improve athlete performance."
-        )
-
-    return points
-
-def extract_achievements(text: str) -> list:
-    achievements = []
-
-    if "district" in text:
-        achievements.append(
-            "Led teams to district-level tournaments."
-        )
-
-    if "state" in text:
-        achievements.append(
-            "Prepared athletes for state-level competitions."
-        )
-
-    if not achievements:
-        achievements.append(
-            "Consistently improved athlete performance and discipline."
-        )
-
-    return achievements
-
-# =============================
-# SUMMARY GENERATOR
-# =============================
-
-def generate_summary(sport: str, years: int) -> str:
-    if not sport:
-        sport = "Sports"
-
-    if years > 0:
-        return (
-            f"Dedicated and results-driven {sport} Coach with over {years} years of "
-            f"hands-on experience in athlete development, performance training, "
-            f"and competitive preparation."
-        )
-
-    return (
-        f"Motivated {sport} Coach with practical experience in training athletes, "
-        f"improving fitness levels, and building discipline through structured coaching."
+    # ---------------------------
+    # SUMMARY
+    # ---------------------------
+    summary = (
+        f"Motivated {sport} Coach with over {experience} years of practical "
+        f"experience in athlete development, fitness training, and discipline-based coaching."
     )
 
-# =============================
-# MAIN BUILDER
-# =============================
+    # ---------------------------
+    # EXPERIENCE SECTION
+    # ---------------------------
+    experience_section = [{
+        "role": f"{sport} Coach",
+        "description": (
+            "Delivered structured coaching programs"
+            + (f" for {', '.join(age_groups)} athletes." if age_groups else ".")
+        )
+    }]
 
-def build_resume_from_transcript(transcript: str) -> dict:
-    text = normalize(transcript)
+    # ---------------------------
+    # ACHIEVEMENTS
+    # ---------------------------
+    achievements = [
+        "Consistently improved athlete performance and discipline."
+    ]
 
-    name = extract_name(text)
-    sport = extract_sport(text)
-    years = extract_experience_years(text)
+    # ---------------------------
+    # CONFIDENCE SCORE CLAMP
+    # ---------------------------
+    confidence_score = min(score, 100)
 
-    # 🔒 NAME SAFETY CLEANUP (IMPORTANT)
-    if name and " i am " in name.lower():
-        name = name.lower().split(" i am ")[0].title()
-
-    resume = {
+    return {
         "full_name": name,
-        "headline": (
-            f"{sport} Coach | {years} Years Experience"
-            if sport and years > 0
-            else "Professional Coach"
-        ),
-        "summary": generate_summary(sport, years),
-        "skills": extract_skills(text) or [
-            "Athlete Development",
-            "Fitness Training",
-            "Match Strategy"
-        ],
-        "experience": [
-            {
-                "role": f"{sport} Coach" if sport else "Coach",
-                "description": " ".join(extract_experience_points(text))
-            }
-        ],
-        "certifications": extract_certifications(text),
-        "achievements": extract_achievements(text)
+        "headline": f"{sport} Coach | {experience} Years Experience",
+        "summary": summary,
+        "skills": list(skills),
+        "experience": experience_section,
+        "certifications": final_certs,
+        "achievements": achievements,
+        "confidence_score": confidence_score,
+        "warnings": warnings
     }
-
-    return resume
