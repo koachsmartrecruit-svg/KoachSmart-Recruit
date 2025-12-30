@@ -1,99 +1,205 @@
 {% extends "base.html" %}
+{% block title %}Super Admin Dashboard{% endblock %}
 
 {% block content %}
-<div class="container py-4">
-    <!-- Header -->
-    <div class="glass-card p-4 mb-4 bg-warning bg-opacity-10 border-warning">
-        <div class="d-flex justify-content-between align-items-center">
-            <div>
-                <h2 class="text-warning fw-bold mb-0"><i class="fas fa-user-shield me-2"></i> Super Admin</h2>
-                <p class="text-light opacity-75 mb-0">Verification Center</p>
-            </div>
-            <div>
-                <span class="badge bg-warning text-dark fs-6">{{ coaches|length }} Pending</span>
-            </div>
-        </div>
+<div class="superadmin-page">
+  <div class="container-fluid py-4">
+
+    <!-- Page header -->
+    <div class="d-flex justify-content-between align-items-center mb-4 superadmin-header">
+      <div>
+        <h1 class="h3 mb-0">Super Admin Dashboard</h1>
+        <small>Monitor users, coaches, jobs and subscriptions</small>
+      </div>
+      <div>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary btn-sm">
+          Back to App
+        </a>
+        <a href="{{ url_for('logout') }}" class="btn btn-danger btn-sm">
+          Logout
+        </a>
+      </div>
     </div>
 
-    <!-- Verification List -->
-    <div class="glass-card p-4">
-        <h4 class="mb-4">Pending Verifications</h4>
-        {% if coaches %}
-        <div class="table-responsive">
-            <table class="table align-middle">
-                <thead>
-                    <tr>
-                        <th>Coach Profile</th>
-                        <th>Sport</th>
-                        <th>Documents</th>
-                        <th>ID Check</th> <!-- NEW COLUMN -->
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for coach in coaches %}
-                    <tr>
-                        <td>
-                            <div class="d-flex align-items-center">
-                                <div class="bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center me-3 fw-bold" style="width: 40px; height: 40px;">
-                                    {{ coach.full_name[0]|upper }}
-                                </div>
-                                <div>
-                                    <div class="fw-bold text-white">{{ coach.full_name }}</div>
-                                    <small class="text-muted">{{ coach.user.email }}</small>
-                                </div>
-                            </div>
-                        </td>
-                        <td>
-                            <span class="badge bg-dark border border-secondary">{{ coach.sport }}</span>
-                        </td>
-                        <td>
-                            <div class="d-flex gap-2">
-                                <a href="{{ url_for('static', filename='certs/' + coach.cert_proof_path) }}" target="_blank" class="btn btn-sm btn-outline-light" title="View Certificate">
-                                    <i class="fas fa-certificate text-warning me-1"></i> Cert
-                                </a>
-                                {% if coach.resume_path %}
-                                    <a href="{{ url_for('static', filename='resumes/' + coach.resume_path) }}" target="_blank" class="btn btn-sm btn-outline-light" title="View Resume">
-                                        <i class="fas fa-file-pdf text-danger"></i>
-                                    </a>
-                                {% endif %}
-                            </div>
-                            <small class="text-muted d-block mt-1">{{ coach.certifications }}</small>
-                        </td>
-                        
-                        <!-- NEW ID PROOF COLUMN -->
-                        <td>
-                            {% if coach.id_proof_path %}
-                                <a href="{{ url_for('static', filename='id_proofs/' + coach.id_proof_path) }}" target="_blank" class="btn btn-sm btn-outline-info">
-                                    <i class="fas fa-id-card me-1"></i> View ID
-                                </a>
-                            {% else %}
-                                <span class="text-muted small border border-secondary rounded px-2 py-1">Missing</span>
-                            {% endif %}
-                        </td>
+    <!-- Summary cards -->
+    <div class="row g-3 mb-4">
+      <div class="col-6 col-md-3">
+        <div class="card superadmin-kpi-card">
+          <div class="card-body">
+            <p class="superadmin-kpi-label mb-1">Total Users</p>
+            <div class="superadmin-kpi-value">{{ total_users }}</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card superadmin-kpi-card">
+          <div class="card-body">
+            <p class="superadmin-kpi-label mb-1">Coaches</p>
+            <div class="superadmin-kpi-value">{{ total_coaches }}</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card superadmin-kpi-card">
+          <div class="card-body">
+            <p class="superadmin-kpi-label mb-1">Employers</p>
+            <div class="superadmin-kpi-value">{{ total_employers }}</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card superadmin-kpi-card">
+          <div class="card-body">
+            <p class="superadmin-kpi-label mb-1">Admins</p>
+            <div class="superadmin-kpi-value">{{ total_admins }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
 
-                        <td>
-                            <div class="btn-group">
-                                <a href="{{ url_for('verify_coach', profile_id=coach.id) }}" class="btn btn-sm btn-success">
-                                    <i class="fas fa-check me-1"></i> Approve
-                                </a>
-                                <a href="{{ url_for('reject_coach', profile_id=coach.id) }}" class="btn btn-sm btn-danger">
-                                    <i class="fas fa-times"></i>
-                                </a>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
+    <div class="row g-3 mb-4">
+      <div class="col-6 col-md-3">
+        <div class="card superadmin-kpi-card">
+          <div class="card-body">
+            <p class="superadmin-kpi-label mb-1">Total Jobs</p>
+            <div class="superadmin-kpi-value">{{ total_jobs }}</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card superadmin-kpi-card">
+          <div class="card-body">
+            <p class="superadmin-kpi-label mb-1">Active Jobs</p>
+            <div class="superadmin-kpi-value">{{ active_jobs }}</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card superadmin-kpi-card">
+          <div class="card-body">
+            <p class="superadmin-kpi-label mb-1">Applications</p>
+            <div class="superadmin-kpi-value">{{ total_applications }}</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card superadmin-kpi-card">
+          <div class="card-body">
+            <p class="superadmin-kpi-label mb-1">Paying Users</p>
+            <div class="superadmin-kpi-value">{{ paying_users }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick navigation -->
+    <div class="card superadmin-quicknav mb-4">
+      <div class="card-body py-2">
+        <div class="d-flex flex-wrap gap-2">
+          <a href="{{ url_for('super_admin') }}" class="btn btn-sm btn-primary">Pending Coaches</a>
+          <a href="{{ url_for('admin_users') }}" class="btn btn-sm btn-outline-primary">Manage Users</a>
+          <a href="{{ url_for('admin_jobs') }}" class="btn btn-sm btn-outline-primary">Manage Jobs</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pending coach verification -->
+    <div class="card superadmin-table-card">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <div>
+          <h2 class="h5 mb-0">Coaches pending verification</h2>
+          <small>
+            Review documents and mark coaches as verified or reject them.
+          </small>
+        </div>
+        <span class="badge superadmin-badge-pending">
+          {{ pending_coaches|length }} pending
+        </span>
+      </div>
+      <div class="card-body p-0">
+        {% if pending_coaches %}
+          <div class="table-responsive">
+            <table class="table table-hover mb-0 align-middle superadmin-table">
+              <thead class="table-light">
+                <tr>
+                  <th>#</th>
+                  <th>Name</th>
+                  <th>Sport</th>
+                  <th>City</th>
+                  <th>Experience</th>
+                  <th>Cert Proof</th>
+                  <th>ID Proof</th>
+                  <th>Profile</th>
+                  <th class="text-end">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for p in pending_coaches %}
+                <tr>
+                  <td>{{ loop.index }}</td>
+                  <td>{{ p.full_name or p.user.username }}</td>
+                  <td>{{ p.sport or '-' }}</td>
+                  <td>{{ p.city or '-' }}</td>
+                  <td>
+                    {% if p.experience_years %}
+                      {{ p.experience_years }} yrs
+                    {% else %}
+                      -
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if p.cert_proof_path %}
+                      <a href="{{ url_for('static', filename='certs/' ~ p.cert_proof_path) }}"
+                         target="_blank"
+                         class="btn btn-sm btn-outline-secondary">
+                        View
+                      </a>
+                    {% else %}
+                      <span class="text-muted">None</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if p.id_proof_path %}
+                      <a href="{{ url_for('static', filename='id_proofs/' ~ p.id_proof_path) }}"
+                         target="_blank"
+                         class="btn btn-sm btn-outline-secondary">
+                        View
+                      </a>
+                    {% else %}
+                      <span class="text-muted">None</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <a href="{{ url_for('view_resume', user_id=p.user_id) }}"
+                       class="btn btn-sm btn-outline-info">
+                      Resume
+                    </a>
+                  </td>
+                  <td class="text-end">
+                    <a href="{{ url_for('verify_coach', profile_id=p.id) }}"
+                       class="btn btn-sm btn-success"
+                       onclick="return confirm('Verify this coach?');">
+                      Verify
+                    </a>
+                    <a href="{{ url_for('reject_coach', profile_id=p.id) }}"
+                       class="btn btn-sm btn-danger"
+                       onclick="return confirm('Reject and remove cert proof?');">
+                      Reject
+                    </a>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
             </table>
-        </div>
+          </div>
         {% else %}
-        <div class="text-center py-5">
-            <div class="mb-3 opacity-50"><i class="fas fa-check-double fa-4x text-success"></i></div>
-            <h5 class="text-white">All Caught Up!</h5>
-            <p class="text-muted">No pending verifications at the moment.</p>
-        </div>
+          <div class="p-4 text-center text-muted">
+            No coaches are pending verification right now.
+          </div>
         {% endif %}
+      </div>
     </div>
+
+  </div>
 </div>
 {% endblock %}

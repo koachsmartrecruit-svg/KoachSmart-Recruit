@@ -23,6 +23,47 @@ from local_resume_parser import parse_resume_text
 
 
 load_dotenv()
+from googleapiclient.discovery import build
+from google.oauth2.service_account import Credentials
+
+# --- GOOGLE SHEETS CONFIG ---
+SHEETS_SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
+GOOGLE_SHEETS_CREDENTIALS = os.getenv('GOOGLE_SHEETS_CREDENTIALS')
+GOOGLE_SHEETS_SPREADSHEET_ID = os.getenv('GOOGLE_SHEETS_SPREADSHEET_ID')
+
+
+def get_sheets_service():
+    """Build and return a Sheets API service client."""
+    if not GOOGLE_SHEETS_CREDENTIALS or not GOOGLE_SHEETS_SPREADSHEET_ID:
+        return None
+
+    creds = Credentials.from_service_account_file(
+        GOOGLE_SHEETS_CREDENTIALS,
+        scopes=SHEETS_SCOPES
+    )
+    service = build('sheets', 'v4', credentials=creds)
+    return service
+
+
+def append_row_to_sheet(values, sheet_range):
+    """
+    Append a single row to the Google Sheet.
+
+    `values` must be a list, e.g. ['1', 'name', 'email'].
+    `sheet_range` like 'Users!A2:E2', 'Jobs!A2:I2', etc.
+    """
+    service = get_sheets_service()
+    if service is None:
+        return
+
+    body = {'values': [values]}
+    service.spreadsheets().values().append(
+        spreadsheetId=GOOGLE_SHEETS_SPREADSHEET_ID,
+        range=sheet_range,
+        valueInputOption='RAW',
+        insertDataOption='INSERT_ROWS',
+        body=body
+    ).execute()
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'default-key')
@@ -142,15 +183,25 @@ class Review(db.Model):
     rating = db.Column(db.Integer, nullable=False)
     comment = db.Column(db.Text)
     date = db.Column(db.DateTime, default=datetime.utcnow)
-
 class Job(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     employer_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+
     title = db.Column(db.String(150), nullable=False)
     sport = db.Column(db.String(100), nullable=False)
+
+    # Existing location
     location = db.Column(db.String(150), nullable=False)
+
+    # NEW address components
+    venue = db.Column(db.String(150))       # e.g. "Mumbai Academy Ground"
+    city = db.Column(db.String(100))        # e.g. "Mumbai"
+    state = db.Column(db.String(100))       # e.g. "Maharashtra"
+    country = db.Column(db.String(100))     # e.g. "India"
+
     lat = db.Column(db.Float, nullable=True)
     lng = db.Column(db.Float, nullable=True)
+
     description = db.Column(db.Text, nullable=False)
     requirements = db.Column(db.Text)
     screening_questions = db.Column(db.Text)
@@ -158,8 +209,8 @@ class Job(db.Model):
     salary_range = db.Column(db.String(100))
     posted_date = db.Column(db.DateTime, default=datetime.utcnow)
     required_skills = db.Column(db.String(300))
-    job_type = db.Column(db.String(50), default='Full Time')  
-    working_hours = db.Column(db.String(100)) 
+    job_type = db.Column(db.String(50), default='Full Time')
+    working_hours = db.Column(db.String(100))
 
 class Application(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -451,72 +502,64 @@ def explore_coaches():
 @login_required
 def show_plans():
     return render_template('plans.html')
-
 @app.route('/job/new', methods=['GET', 'POST'])
 @login_required
 def new_job():
     if current_user.role != 'employer':
         return redirect(url_for('dashboard'))
-    
-    # STRIPE CHECK: Ensure paid plan for jobs (Optional logic)
-    # if current_user.subscription_status == 'free':
-    #     flash("Please upgrade to post jobs.")
-    #     return redirect(url_for('show_plans'))
-    
+
     predicted_salary = None
     ai_reason = None
     form_data = {}
 
     if request.method == 'POST':
-        if 'parse_doc' in request.form:
-            f = request.files.get('job_doc')
-            if f and f.filename != '':
-                filename = secure_filename(f"temp_{current_user.id}_{f.filename}")
-                filepath = os.path.join(app.config['TEMP_FOLDER'], filename)
-                f.save(filepath)
-                extracted = smart_parse_document(filepath)
-                form_data = extracted
-                flash("✨ Document Parsed! We filled the details for you.")
-                try:
-                    os.remove(filepath)
-                except:
-                    pass
-                return render_template('job_new.html', form_data=form_data)
-
+        # 1) AI SALARY FLOW -----------------------------------
         if 'predict' in request.form:
             sport = request.form.get('sport')
-            location = request.form.get('location')
+            location_for_ai = request.form.get('city') or request.form.get('state') or request.form.get('country')
             description = request.form.get('description')
             job_type = request.form.get('job_type')
 
-            predicted_salary, ai_reason = predict_salary_ai(sport, location, description, job_type)
+            predicted_salary, ai_reason = predict_salary_ai(
+                sport, location_for_ai, description, job_type
+            )
+
+            form_data = request.form.to_dict()
+
             flash(f"AI Suggested Salary: ₹{predicted_salary}/month")
+            return render_template(
+                'job_new.html',
+                predicted_salary=predicted_salary,
+                ai_reason=ai_reason,
+                form_data=form_data
+            )
 
-            form_data = {
-                'title': request.form.get('title'),
-                'sport': request.form.get('sport'),
-                'location': request.form.get('location'),
-                'description': request.form.get('description'),
-                'requirements': request.form.get('requirements'),
-                'screening_questions': request.form.get('screening_questions'),
-                'salary': request.form.get('salary'),
-                'lat': request.form.get('lat'),
-                'lng': request.form.get('lng'),
-                'job_type': request.form.get('job_type'),
-                'working_hours': request.form.get('working_hours')
-            }
-            return render_template('job_new.html', predicted_salary=predicted_salary, ai_reason=ai_reason, form_data=form_data)
+        # 2) FINAL CREATE FLOW --------------------------------
+        title = request.form.get('title')
+        sport = request.form.get('sport')
+        description = request.form.get('description')
+        country = request.form.get('country')
+        state = request.form.get('state')
+        city = request.form.get('city')
+        venue = request.form.get('venue')
 
-        lat = request.form.get('lat')
-        lng = request.form.get('lng')
+        if not title or not sport or not description or not city:
+            flash("Title, sport, city and description are required.")
+            form_data = request.form.to_dict()
+            return render_template('job_new.html', form_data=form_data)
+
+        location = city  # simple human readable location
+
         new_job = Job(
             employer_id=current_user.id,
-            title=request.form.get('title'),
-            sport=request.form.get('sport'),
-            location=request.form.get('location'),
-            lat=float(lat) if lat and lat.strip() != '' else None,
-            lng=float(lng) if lng and lng.strip() != '' else None,
-            description=request.form.get('description'),
+            title=title,
+            sport=sport,
+            location=location,
+            venue=venue,
+            city=city,
+            state=state,
+            country=country,
+            description=description,
             requirements=request.form.get('requirements'),
             screening_questions=request.form.get('screening_questions'),
             salary_range=request.form.get('salary'),
@@ -524,8 +567,11 @@ def new_job():
             working_hours=request.form.get('working_hours'),
             is_active=True
         )
+
         db.session.add(new_job)
         db.session.commit()
+
+        flash("Job posted successfully!")
         return redirect(url_for('dashboard'))
 
     return render_template('job_new.html')
@@ -623,26 +669,58 @@ def select_role():
 @app.route('/')
 def home():
     return render_template('home.html')
-
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
-        if User.query.filter_by(email=request.form.get('email')).first():
+        # Check if email already exists
+        existing = User.query.filter_by(email=request.form.get('email')).first()
+        if existing:
             flash('Email already exists')
             return redirect(url_for('register'))
-        new_user = User(username=request.form.get('username'), email=request.form.get('email'),
-                        role=request.form.get('role'), password=generate_password_hash(request.form.get('password')))
+
+        # Create user
+        new_user = User(
+            username=request.form.get('username'),
+            email=request.form.get('email'),
+            role=request.form.get('role'),
+            password=generate_password_hash(request.form.get('password'))
+        )
         db.session.add(new_user)
         db.session.commit()
+
+        # Auto-create coach profile
         if new_user.role == 'coach':
-            db.session.add(Profile(user_id=new_user.id))
+            db.session.add(Profile(user_id=new_user.id, full_name=new_user.username))
             db.session.commit()
+
+        # --- Mirror to Google Sheets (Users tab) ---
+        try:
+            append_row_to_sheet(
+                [
+                    str(new_user.id),
+                    new_user.username,
+                    new_user.email,
+                    new_user.password or '',
+                    new_user.role or '',
+                    new_user.google_id or '',
+                    new_user.profile_pic or '',
+                    new_user.subscription_status or '',
+                    new_user.stripe_customer_id or ''
+                ],
+                sheet_range='Users!A2:I2'
+            )
+        except Exception as e:
+            print(f"[Sheets] Failed to append user row: {e}")
+
+        # Login and redirect
         login_user(new_user)
+
         if new_user.role == 'employer':
             return redirect(url_for('show_plans'))
         if new_user.role == 'coach':
             return redirect(url_for('show_plans'))
         return redirect(url_for('dashboard'))
+
     return render_template('register.html')
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -704,6 +782,59 @@ def dashboard():
             total = sum([r.rating for r in current_user.profile.reviews])
             avg_rating = round(total / len(current_user.profile.reviews), 1)
         return render_template('coach_listing.html', jobs=filtered_jobs, my_apps=my_apps, views=views, avg_rating=avg_rating)
+@app.route('/jobs')
+@login_required
+def coach_jobs():
+    # Only coaches use this page
+    if current_user.role != 'coach':
+        return redirect(url_for('dashboard'))
+
+    sport = request.args.get('sport')
+    city = request.args.get('city')
+    min_salary = request.args.get('min_salary', type=int)
+    job_type = request.args.get('job_type')
+    page = request.args.get('page', 1, type=int)
+    per_page = 10
+
+    query = Job.query.filter_by(is_active=True)
+
+    if sport and sport != 'All':
+        query = query.filter(Job.sport.ilike(f"%{sport}%"))
+
+    if city:
+        query = query.filter(Job.location.ilike(f"%{city}%"))
+
+    if job_type and job_type != 'All':
+        query = query.filter_by(job_type=job_type)
+
+    if min_salary:
+        # crude filter using salary_range text
+        query = query.filter(Job.salary_range.ilike(f"%{min_salary}%"))
+
+    query = query.order_by(Job.posted_date.desc())
+    pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+    jobs = pagination.items
+
+    # for filter dropdowns
+    sports_rows = db.session.query(Job.sport).filter(Job.sport != None).distinct().all()
+    sports = [s[0] for s in sports_rows if s[0]]
+
+    job_types_rows = db.session.query(Job.job_type).filter(Job.job_type != None).distinct().all()
+    job_types = [jt[0] for jt in job_types_rows if jt[0]]
+
+    return render_template(
+        'coach_jobs.html',
+        jobs=jobs,
+        pagination=pagination,
+        sports=sports,
+        job_types=job_types,
+        filters=dict(
+            sport=sport,
+            city=city,
+            min_salary=min_salary,
+            job_type=job_type
+        )
+    )
 
 @app.route('/job/toggle-status/<int:job_id>')
 @login_required
@@ -726,48 +857,76 @@ def toggle_job_status(job_id):
 def apply_job(job_id):
     if current_user.role != 'coach':
         return redirect(url_for('dashboard'))
+
+    # Prevent duplicate applications
     if Application.query.filter_by(job_id=job_id, user_id=current_user.id).first():
         flash("Already applied.")
         return redirect(url_for('dashboard'))
-    
+
     job = Job.query.get_or_404(job_id)
     profile = Profile.query.filter_by(user_id=current_user.id).first()
-    
+
+    # Ensure profile completion
     if get_profile_completion(profile) < 50:
         flash("Your profile is incomplete!")
         return redirect(url_for('dashboard'))
-    
+
+    # Optional custom resume
     resume_path = None
     file = request.files.get('custom_resume')
     if file and file.filename != '':
         filename = secure_filename(f"resume_{current_user.id}_{job_id}_{file.filename}")
         file.save(os.path.join(app.config['RESUME_FOLDER'], filename))
         resume_path = filename
-    
+
+    # Screening answers
     answers_list = []
     if job.screening_questions:
         qs = job.screening_questions.split('|')
         for i in range(len(qs)):
             ans = request.form.get(f'answer_{i}')
             answers_list.append(ans if ans else "No Answer")
+
     final_answers_str = "|".join(answers_list) if answers_list else None
-    
-    # UNPACK SCORE AND REASONS
+
+    # AI score & reasons
     score, match_reasons = calculate_ai_score(job, profile)
-    
+
     new_app = Application(
         job_id=job_id,
         user_id=current_user.id,
+        status='Applied',
         match_score=score,
-        match_reasons=match_reasons, # SAVE REASONS TO DB
+        match_reasons=match_reasons,
         custom_resume_path=resume_path,
         screening_answers=final_answers_str
     )
+
     db.session.add(new_app)
     db.session.commit()
-    
+
+    # --- Mirror to Google Sheets (Applications tab) ---
+    try:
+        append_row_to_sheet(
+            [
+                str(new_app.id),
+                str(new_app.job_id),
+                str(new_app.user_id),
+                new_app.status or '',
+                str(new_app.match_score) if new_app.match_score is not None else '',
+                new_app.match_reasons or '',
+                new_app.applied_date.isoformat() if new_app.applied_date else '',
+                new_app.custom_resume_path or '',
+                new_app.screening_answers or ''
+            ],
+            sheet_range='Applications!A2:I2'
+        )
+    except Exception as e:
+        print(f"[Sheets] Failed to append application row: {e}")
+
     flash(f"Applied! Match: {score}%")
     return redirect(url_for('dashboard'))
+
 
 @app.route('/application/status/<int:app_id>/<string:new_status>', methods=['GET', 'POST'])
 @login_required
@@ -805,15 +964,6 @@ def submit_review(profile_id):
     db.session.commit()
     flash("Review submitted!")
     return redirect(url_for('dashboard'))
-
-@app.route('/super-admin')
-@login_required
-def super_admin():
-    if current_user.role != 'admin':
-        flash("Unauthorized")
-        return redirect(url_for('dashboard'))
-    coaches = Profile.query.filter(Profile.cert_proof_path != None, Profile.is_verified == False).all()
-    return render_template('super_admin.html', coaches=coaches)
 
 @app.route('/verify-coach/<int:profile_id>')
 @login_required
@@ -1164,6 +1314,72 @@ def create_checkout_session(plan):
 
     except Exception as e:
         return str(e), 400
+@app.route('/super-admin')
+@login_required
+def super_admin():
+    if current_user.role != 'admin':
+        flash("Unauthorized")
+        return redirect(url_for('dashboard'))
+
+    # Pending coach verification
+    pending_coaches = Profile.query.filter(
+        Profile.cert_proof_path != None,
+        Profile.is_verified == False
+    ).all()
+
+    # Simple stats
+    total_users = User.query.count()
+    total_coaches = User.query.filter_by(role='coach').count()
+    total_employers = User.query.filter_by(role='employer').count()
+    total_admins = User.query.filter_by(role='admin').count()
+
+    total_jobs = Job.query.count()
+    active_jobs = Job.query.filter_by(is_active=True).count()
+    total_applications = Application.query.count()
+
+    paying_users = User.query.filter(User.subscription_status != 'free').count()
+
+    return render_template(
+        'super_admin.html',
+        pending_coaches=pending_coaches,
+        total_users=total_users,
+        total_coaches=total_coaches,
+        total_employers=total_employers,
+        total_admins=total_admins,
+        total_jobs=total_jobs,
+        active_jobs=active_jobs,
+        total_applications=total_applications,
+        paying_users=paying_users,
+    )
+@app.route('/admin/users')
+@login_required
+def admin_users():
+    if current_user.role != 'admin':
+        return redirect(url_for('dashboard'))
+    users = User.query.order_by(User.id.desc()).all()
+    return render_template('admin_users.html', users=users)
+
+@app.route('/admin/user/<int:user_id>/role', methods=['POST'])
+@login_required
+def admin_change_role(user_id):
+    if current_user.role != 'admin':
+        return redirect(url_for('dashboard'))
+    user = User.query.get_or_404(user_id)
+    new_role = request.form.get('role')
+    if new_role in ['coach', 'employer', 'admin']:
+        user.role = new_role
+        db.session.commit()
+        flash('Role updated')
+    return redirect(url_for('admin_users'))
+
+@app.route('/admin/jobs')
+@login_required
+def admin_jobs():
+    if current_user.role != 'admin':
+        return redirect(url_for('dashboard'))
+    jobs = Job.query.order_by(Job.posted_date.desc()).all()
+    return render_template('admin_jobs.html', jobs=jobs)
+
 db.init_app(app)
 if __name__ == "__main__":
     app.run(debug=False)

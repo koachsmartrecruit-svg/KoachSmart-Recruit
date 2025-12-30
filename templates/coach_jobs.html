@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %}Find Jobs{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h1 class="h4 mb-1">Find Opportunities</h1>
+      <p class="text-muted mb-0">Filter jobs that match your sport, city and preferences.</p>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <form method="get" class="card mb-4 shadow-sm border-0">
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-3">
+          <label class="form-label small text-muted">Sport</label>
+          <select name="sport" class="form-select form-select-sm">
+            <option value="All">All</option>
+            {% for s in sports %}
+            <option value="{{ s }}" {% if filters.sport == s %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small text-muted">City</label>
+          <input type="text" name="city" class="form-control form-control-sm"
+                 placeholder="e.g. Mumbai"
+                 value="{{ filters.city or '' }}">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small text-muted">Job type</label>
+          <select name="job_type" class="form-select form-select-sm">
+            <option value="All">All</option>
+            {% for jt in job_types %}
+            <option value="{{ jt }}" {% if filters.job_type == jt %}selected{% endif %}>{{ jt }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small text-muted">Min salary (text match)</label>
+          <input type="number" name="min_salary" class="form-control form-control-sm"
+                 placeholder="15000"
+                 value="{{ filters.min_salary or '' }}">
+        </div>
+      </div>
+      <div class="d-flex justify-content-end mt-3 gap-2">
+        <a href="{{ url_for('coach_jobs') }}" class="btn btn-outline-secondary btn-sm">Clear</a>
+        <button type="submit" class="btn btn-primary btn-sm">Apply Filters</button>
+      </div>
+    </div>
+  </form>
+
+  <!-- Job cards -->
+  {% if jobs %}
+    {% for job in jobs %}
+      <div class="card mb-3 shadow-sm border-0">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <div>
+              <h5 class="mb-1">{{ job.title }}</h5>
+              <div class="text-muted small">
+                {{ job.location }} • {{ job.sport }} • {{ job.job_type or 'Full Time' }}
+              </div>
+            </div>
+            <div class="text-end">
+              <div class="fw-semibold">
+                {{ job.salary_range or 'Salary not specified' }}
+              </div>
+              <div class="text-muted small">
+                {{ job.posted_date.strftime('%d %b') if job.posted_date else '' }}
+              </div>
+            </div>
+          </div>
+          <p class="mt-2 mb-2 text-muted small">
+            {{ job.description[:140] }}{% if job.description|length > 140 %}...{% endif %}
+          </p>
+          <div class="d-flex justify-content-between align-items-center">
+            <span class="badge bg-light text-dark small">
+              Posted by {{ job.employer.username if job.employer else 'Employer' }}
+            </span>
+            <form method="post" action="{{ url_for('apply_job', job_id=job.id) }}">
+              <button type="submit" class="btn btn-primary btn-sm">Apply</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  {% else %}
+    <div class="text-center text-muted py-5">
+      No jobs found with current filters.
+    </div>
+  {% endif %}
+
+  <!-- Pagination -->
+  {% if pagination.pages > 1 %}
+  <nav aria-label="Jobs pagination" class="mt-3">
+    <ul class="pagination pagination-sm justify-content-center">
+      {% if pagination.has_prev %}
+      <li class="page-item">
+        <a class="page-link" href="{{ url_for('coach_jobs', page=pagination.prev_num, **filters) }}">Prev</a>
+      </li>
+      {% else %}
+      <li class="page-item disabled"><span class="page-link">Prev</span></li>
+      {% endif %}
+
+      <li class="page-item disabled">
+        <span class="page-link">
+          Page {{ pagination.page }} of {{ pagination.pages }}
+        </span>
+      </li>
+
+      {% if pagination.has_next %}
+      <li class="page-item">
+        <a class="page-link" href="{{ url_for('coach_jobs', page=pagination.next_num, **filters) }}">Next</a>
+      </li>
+      {% else %}
+      <li class="page-item disabled"><span class="page-link">Next</span></li>
+      {% endif %}
+    </ul>
+  </nav>
+  {% endif %}
+</div>
+{% endblock %}
