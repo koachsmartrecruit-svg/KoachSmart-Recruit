@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Users{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <h1 class="h3 mb-4">Manage Users</h1>
+
+  <p class="text-muted mb-3">
+    List of all users. You can change roles from here.
+  </p>
+
+  <div class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>ID</th>
+          <th>Username</th>
+          <th>Email</th>
+          <th>Role</th>
+          <th>Subscription</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td>{{ u.id }}</td>
+          <td>{{ u.username }}</td>
+          <td>{{ u.email }}</td>
+          <td>{{ u.role }}</td>
+          <td>{{ u.subscription_status or 'free' }}</td>
+          <td>
+            <form method="post"
+                  action="{{ url_for('admin_change_role', user_id=u.id) }}"
+                  class="d-flex gap-2">
+              <select name="role" class="form-select form-select-sm" style="width:auto;">
+                <option value="coach" {{ 'selected' if u.role == 'coach' else '' }}>coach</option>
+                <option value="employer" {{ 'selected' if u.role == 'employer' else '' }}>employer</option>
+                <option value="admin" {{ 'selected' if u.role == 'admin' else '' }}>admin</option>
+              </select>
+              <button type="submit" class="btn btn-sm btn-primary">
+                Update
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="6" class="text-center text-muted">No users found.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <a href="{{ url_for('super_admin') }}" class="btn btn-outline-secondary mt-3">
+    Back to Super Admin
+  </a>
+</div>
+{% endblock %}

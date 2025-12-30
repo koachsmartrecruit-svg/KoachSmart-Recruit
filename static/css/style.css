@@ -1121,3 +1121,491 @@ html { scroll-behavior: smooth; }
 .recording {
   animation: pulse 1.2s infinite;
 }
+/* ============================
+   AUTH PAGE LAYOUT
+   ============================ */
+
+.auth-page {
+  min-height: calc(100vh - 80px);
+}
+
+.auth-wrapper {
+  display: flex;
+  min-height: calc(100vh - 80px);
+}
+
+/* ============================
+   LEFT : VISUAL PANEL
+   ============================ */
+
+.auth-visual {
+  flex: 1;
+  position: relative;
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  overflow: hidden;
+}
+
+/* 🔥 PERFECT IMAGE FIT */
+.auth-illustration-bg {
+  position: absolute;
+  inset: 0;
+
+  background-image: url("/static/images/register-illustration.jpg");
+  background-repeat: no-repeat;
+  background-size: cover;
+
+  /* 👇 THIS IS THE KEY CHANGE */
+  background-position: 30% center;
+
+  transform: scale(1.05);
+  opacity: 0.96;
+  filter: saturate(0.95);
+}
+
+/* ============================
+   RIGHT : FORM PANEL
+   ============================ */
+
+.auth-form {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+}
+
+.auth-form-inner {
+  width: 100%;
+  max-width: 420px;
+}
+
+/* ============================
+   TYPOGRAPHY
+   ============================ */
+
+.auth-title {
+  font-size: 1.65rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: 6px;
+}
+
+.auth-subtitle {
+  font-size: 0.95rem;
+  color: #64748b;
+  margin-bottom: 1.6rem;
+}
+
+/* ============================
+   FORM ELEMENTS
+   ============================ */
+
+.form-group {
+  margin-bottom: 1.25rem;
+}
+
+.form-group label {
+  display: block;
+  font-weight: 600;
+  font-size: 0.85rem;
+  margin-bottom: 6px;
+  color: #0f172a;
+}
+
+.form-control {
+  width: 100%;
+  padding: 12px 14px;
+  font-size: 0.95rem;
+  border-radius: 10px;
+  border: 1.5px solid #e5e7eb;
+  background: #ffffff;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.08);
+}
+
+/* ============================
+   ROLE SWITCH (SEGMENTED)
+   ============================ */
+
+.role-switch {
+  display: flex;
+  background: #f8fafc;
+  padding: 4px;
+  border-radius: 12px;
+  gap: 4px;
+}
+
+.role-switch input {
+  display: none;
+}
+
+.role-switch label {
+  flex: 1;
+  text-align: center;
+  padding: 10px 0;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #475569;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.role-switch input:checked + label {
+  background: #ffffff;
+  color: #0f172a;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
+}
+
+/* ============================
+   PRIMARY BUTTON
+   ============================ */
+
+.btn-primary {
+  margin-top: 10px;
+  padding: 13px;
+  font-weight: 600;
+  border-radius: 10px;
+  background: #2563eb;
+  border: none;
+  color: white;
+  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.25);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 32px rgba(37, 99, 235, 0.35);
+}
+
+/* ============================
+   FOOTER TEXT
+   ============================ */
+
+.auth-footer {
+  margin-top: 1.2rem;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.auth-footer a {
+  color: #2563eb;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.auth-security {
+  margin-top: 10px;
+  text-align: center;
+  font-size: 0.78rem;
+  color: #94a3b8;
+}
+
+/* ============================
+   RESPONSIVE
+   ============================ */
+
+@media (max-width: 992px) {
+  .auth-visual {
+    display: none;
+  }
+
+  .auth-form {
+    flex: 1;
+  }
+}
+/* ============================
+   LOGIN ILLUSTRATION
+   ============================ */
+
+.login-illustration {
+  background-image: url("/static/images/login-illustration.jpg");
+  background-position: 35% center;
+  transform: scale(1.05);
+}
+
+/* ============================
+   AUTH DIVIDER
+   ============================ */
+
+.auth-divider {
+  position: relative;
+  text-align: center;
+  margin: 16px 0;
+}
+
+.auth-divider span {
+  background: #ffffff;
+  padding: 0 12px;
+  font-size: 0.8rem;
+  color: #94a3b8;
+  position: relative;
+  z-index: 1;
+}
+
+.auth-divider::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: #e5e7eb;
+  z-index: 0;
+}
+
+/* ============================
+   FORGOT PASSWORD
+   ============================ */
+
+.auth-forgot {
+  text-align: right;
+  margin-bottom: 12px;
+}
+
+.auth-forgot a {
+  font-size: 0.8rem;
+  color: #2563eb;
+  text-decoration: none;
+  font-weight: 500;
+}
+.login-illustration {
+  transform: scaleX(-1) scale(1.05);
+  background-position: 70% center;
+}
+@media (max-width: 992px) {
+
+  /* Hide illustration completely */
+  .auth-visual {
+    display: none;
+  }
+
+  /* Make form full-width */
+  .auth-wrapper {
+    flex-direction: column;
+  }
+
+  .auth-form {
+    min-height: calc(100vh - 64px);
+    padding: 24px 18px;
+    align-items: flex-start;
+  }
+
+  .auth-form-inner {
+    max-width: 100%;
+    width: 100%;
+  }
+}
+@media (max-width: 576px) {
+
+  .auth-title {
+    font-size: 1.45rem;
+    line-height: 1.25;
+  }
+
+  .auth-subtitle {
+    font-size: 0.9rem;
+    margin-bottom: 1.4rem;
+  }
+}
+@media (max-width: 576px) {
+
+  .form-control {
+    padding: 14px 14px;
+    font-size: 1rem;
+  }
+
+  .btn-primary {
+    padding: 14px;
+    font-size: 1rem;
+  }
+}
+@media (max-width: 576px) {
+
+  body.auth-page-active .navbar {
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+
+  body.auth-page-active .navbar .btn {
+    padding: 6px 12px;
+    font-size: 0.85rem;
+  }
+}
+@media (max-width: 576px) {
+
+  .auth-footer {
+    margin-top: 1rem;
+    font-size: 0.85rem;
+  }
+
+  .auth-security {
+    font-size: 0.75rem;
+    margin-top: 8px;
+  }
+}
+/* ============================
+   PASSWORD SHOW / HIDE
+   ============================ */
+
+.password-field {
+  position: relative;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  padding: 0;
+
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+
+  transition: color 0.2s ease;
+}
+
+.password-toggle:hover {
+  color: #2563eb;
+}
+
+/* Prevent input text overlap */
+.password-input {
+  padding-right: 64px;
+}
+/* ===========================
+   Super Admin Dashboard
+   =========================== */
+
+.superadmin-page {
+  background-color: #f5f7fb;
+  min-height: 100vh;
+}
+
+/* Header */
+.superadmin-header {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.3);
+  padding-bottom: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.superadmin-header h1 {
+  font-weight: 700;
+  color: #111827;
+}
+
+.superadmin-header small {
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+/* KPI cards */
+.superadmin-kpi-card {
+  border: none;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
+}
+
+.superadmin-kpi-card .card-body {
+  padding: 1rem 1.1rem;
+}
+
+.superadmin-kpi-label {
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #6b7280;
+  margin-bottom: 0.25rem;
+}
+
+.superadmin-kpi-value {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+/* Quick navigation bar */
+.superadmin-quicknav {
+  border-radius: 0.75rem;
+  border: none;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
+}
+
+.superadmin-quicknav .btn {
+  font-size: 0.8rem;
+}
+
+.superadmin-quicknav .btn-primary {
+  background: linear-gradient(135deg, #2563eb, #4f46e5);
+  border: none;
+}
+
+.superadmin-quicknav .btn-primary:hover {
+  background: linear-gradient(135deg, #1d4ed8, #4338ca);
+}
+
+/* Pending table card */
+.superadmin-table-card {
+  border-radius: 0.75rem;
+  border: none;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
+}
+
+.superadmin-table-card .card-header {
+  border-bottom: 1px solid rgba(229, 231, 235, 0.9);
+}
+
+.superadmin-table-card .card-header h2 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.superadmin-table-card .card-header small {
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+/* Table styling */
+.superadmin-table {
+  margin-bottom: 0;
+  font-size: 0.85rem;
+}
+
+.superadmin-table thead th {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #6b7280;
+  white-space: nowrap;
+}
+
+.superadmin-table tbody td {
+  vertical-align: middle;
+}
+
+.superadmin-table .btn-sm {
+  font-size: 0.75rem;
+}
+
+/* Status badge */
+.superadmin-badge-pending {
+  background-color: #e5e7eb;
+  color: #374151;
+}
+
+/* Responsive tweaks */
+@media (max-width: 768px) {
+  .superadmin-kpi-value {
+    font-size: 1.3rem;
+  }
+}

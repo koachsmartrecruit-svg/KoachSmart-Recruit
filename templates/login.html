@@ -1,50 +1,84 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container-fluid p-0">
-    <div class="row g-0" style="min-height: calc(100vh - 80px);">
-        <!-- Image Side -->
-        <div class="col-lg-6 d-none d-lg-block position-relative">
-            <img src="{{ url_for('static', filename='images/login_side.jpg') }}" 
-                 class="w-100 h-100 object-fit-cover" alt="Sports">
-            <div class="position-absolute top-0 start-0 w-100 h-100" 
-                 style="background: linear-gradient(to right, rgba(15,23,42,0.4), var(--dark-bg));"></div>
-        </div>
+<div class="auth-page">
 
-        <!-- Form Side -->
-        <div class="col-lg-6 d-flex align-items-center justify-content-center p-4">
-            <div class="w-100" style="max-width: 400px;">
-                <div class="glass-card p-4 p-md-5">
-                    <h3 class="fw-bold mb-4 text-center">Login</h3>
-                    
-                    <!-- GOOGLE BUTTON -->
-                    <a href="{{ url_for('login_google') }}" class="btn btn-outline-light w-100 mb-3 d-flex align-items-center justify-content-center">
-                        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="20" class="me-2">
-                        Sign in with Google
-                    </a>
-                    
-                    <div class="text-center text-muted mb-3 opacity-50">- OR -</div>
+  <div class="auth-wrapper">
 
-                    <form method="POST">
-                        <div class="mb-3">
-                            <label class="form-label text-muted small">Email Address</label>
-                            <input type="email" class="form-control" name="email" required>
-                        </div>
-                        <div class="mb-4">
-                            <label class="form-label text-muted small">Password</label>
-                            <input type="password" class="form-control" name="password" required>
-                        </div>
-                        <button type="submit" class="btn btn-primary w-100 py-2">Sign In</button>
-                    </form>
-                    <div class="text-end mb-3">
-    <a href="{{ url_for('forgot_password') }}" class="text-primary small text-decoration-none">Forgot Password?</a>
-</div>
-                    <p class="mt-4 text-center text-muted small">
-                        Don't have an account? <a href="{{ url_for('register') }}" class="text-primary text-decoration-none">Register</a>
-                    </p>
-                </div>
-            </div>
-        </div>
+    <!-- LEFT : VISUAL -->
+    <div class="auth-visual">
+      <div class="auth-illustration-bg login-illustration"></div>
     </div>
+
+    <!-- RIGHT : FORM -->
+    <div class="auth-form">
+      <div class="auth-form-inner">
+
+        <h2 class="auth-title">Welcome back</h2>
+        <p class="auth-subtitle">
+          Login to your KoachSmart Recruit account
+        </p>
+
+        <!-- OPTIONAL : GOOGLE LOGIN -->
+        <a href="{{ url_for('login_google') }}"
+           class="btn btn-outline-primary w-100 mb-3">
+          Continue with Google
+        </a>
+
+        <div class="auth-divider">
+          <span>or</span>
+        </div>
+
+        <form method="POST">
+
+          <div class="form-group">
+            <label>Email address</label>
+            <input
+              type="email"
+              name="email"
+              class="form-control"
+              required
+            />
+          </div>
+
+          <div class="password-field">
+            <input
+              type="password"
+              name="password"
+              class="form-control password-input"
+              required
+            >
+            <button type="button" class="password-toggle">
+              Show
+            </button>
+          </div>
+
+
+          <div class="auth-forgot">
+            <a href="{{ url_for('forgot_password') }}">
+              Forgot password?
+            </a>
+          </div>
+
+          <button type="submit" class="btn btn-primary w-100">
+            Login →
+          </button>
+
+        </form>
+
+        <p class="auth-footer">
+          Don’t have an account?
+          <a href="{{ url_for('register') }}">Create one</a>
+        </p>
+
+        <p class="auth-security">
+          Secure login · Privacy protected
+        </p>
+
+      </div>
+    </div>
+
+  </div>
+
 </div>
 {% endblock %}

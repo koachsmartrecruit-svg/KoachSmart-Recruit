@@ -1,155 +1,268 @@
 {% extends "base.html" %}
+{% block title %}Post a Job{% endblock %}
 
 {% block content %}
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<div class="container py-4">
+  <div class="row g-4">
+    <div class="col-lg-8">
 
-<div class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-md-9">
-            <div class="glass-card p-4 mb-4 position-relative overflow-hidden">
-                <div style="position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(59,130,246,0.15) 0%, transparent 70%); z-index: -1;"></div>
-                
-                <form method="POST" enctype="multipart/form-data" class="d-flex align-items-center justify-content-between flex-wrap gap-3">
-                    <div>
-                        <h5 class="fw-bold mb-1 text-black"><i class="fas fa-robot me-2 text-primary"></i>AI Auto-Fill</h5>
-                        <p class="mb-0 text-muted small">Upload a PDF/Word Job Description, and we'll fill the form for you.</p>
-                    </div>
-                    <div class="d-flex gap-2">
-                        <input type="file" name="job_doc" class="form-control form-control-sm" accept=".pdf,.docx,.txt" style="width: auto;" required>
-                        <button type="submit" name="parse_doc" value="true" class="btn btn-light btn-sm fw-bold">
-                            <i class="fas fa-magic me-1"></i> Auto-Fill
-                        </button>
-                    </div>
-                </form>
+      <h1 class="h4 mb-1">Post a New Coaching Opportunity</h1>
+      <p class="text-muted mb-4">
+        Fill the details below. Coaches will see this in their job feed.
+      </p>
+
+      <div class="card shadow-sm border-0">
+        <div class="card-body">
+          <form method="post">
+            <!-- Job title -->
+            <div class="mb-3">
+              <label class="form-label">Job Title</label>
+              <input type="text"
+                     name="title"
+                     class="form-control"
+                     placeholder="e.g. Cricket Head Coach"
+                     value="{{ form_data.title if form_data and form_data.title else '' }}"
+                     required>
             </div>
-            <div class="glass-card p-4 p-md-5">
-                <div class="mb-4">
-                    <h3 class="fw-bold mb-1">Post a New Job</h3>
-                    <p class="text-muted">Find the perfect coach for your academy.</p>
-                </div>
-                
-                <form method="POST">
-                    <div class="mb-4">
-                        <label class="form-label text-muted small text-uppercase fw-bold">Job Title</label>
-                        <input type="text" class="form-control" name="title" value="{{ form_data.title if form_data else '' }}" placeholder="e.g. Head Cricket Coach" required>
-                    </div>
 
-                    <div class="row g-3 mb-4">
-                        <div class="col-md-6">
-                            <label class="form-label text-muted small text-uppercase fw-bold">Sport</label>
-                            <select class="form-select" name="sport">
-                                <option value="Cricket" {% if form_data and form_data.sport == 'Cricket' %}selected{% endif %}>Cricket</option>
-                                <option value="Football" {% if form_data and form_data.sport == 'Football' %}selected{% endif %}>Football</option>
-                                <option value="Tennis" {% if form_data and form_data.sport == 'Tennis' %}selected{% endif %}>Tennis</option>
-                                <option value="Basketball" {% if form_data and form_data.sport == 'Basketball' %}selected{% endif %}>Basketball</option>
-                                <option value="Badminton" {% if form_data and form_data.sport == 'Badminton' %}selected{% endif %}>Badminton</option>
-                                <option value="Athletics" {% if form_data and form_data.sport == 'Athletics' %}selected{% endif %}>Athletics</option>
-                                <option value="Swimming" {% if form_data and form_data.sport == 'Swimming' %}selected{% endif %}>Swimming</option>
-                                <option value="Kabaddi" {% if form_data and form_data.sport == 'Kabaddi' %}selected{% endif %}>Kabaddi</option>
-                                <option value="Other" {% if form_data and form_data.sport == 'Other' %}selected{% endif %}>Other</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label text-muted small text-uppercase fw-bold">Venue Name</label>
-                            <input type="text" class="form-control" name="location" value="{{ form_data.location if form_data else '' }}" placeholder="e.g. Shivaji Park Gymkhana" required>
-                        </div>
-                    </div>
-
-                    <div class="row g-3 mb-4 p-3 rounded-3 border border-secondary bg-black bg-opacity-25">
-                        <div class="col-md-6">
-                            <label class="form-label text-primary small text-uppercase fw-bold"><i class="fas fa-briefcase me-2"></i>Job Category</label>
-                            <select class="form-select" name="job_type">
-                                <option value="Full Time" {% if form_data and form_data.job_type == 'Full Time' %}selected{% endif %}>Full Time</option>
-                                <option value="Part Time" {% if form_data and form_data.job_type == 'Part Time' %}selected{% endif %}>Part Time</option>
-                                <option value="Internship" {% if form_data and form_data.job_type == 'Internship' %}selected{% endif %}>Internship</option>
-                                <option value="Contract" {% if form_data and form_data.job_type == 'Contract' %}selected{% endif %}>Contract / Freelance</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label text-primary small text-uppercase fw-bold"><i class="fas fa-clock me-2"></i>Working Hours</label>
-                            <input type="text" class="form-control" name="working_hours" placeholder="e.g. 4 PM - 8 PM (Evening)" value="{{ form_data.working_hours if form_data else '' }}">
-                        </div>
-                    </div>
-
-                    <div class="mb-4">
-                        <label class="form-label text-muted small text-uppercase fw-bold">Pin Exact Location</label>
-                        <div class="input-group mb-2">
-                            <input type="text" id="addressInput" class="form-control" placeholder="Search Area (e.g. Bandra West)">
-                            <button class="btn btn-outline-light" type="button" onclick="searchAddress()" id="searchBtn">
-                                <i class="fas fa-search"></i>
-                            </button>
-                        </div>
-                        <div id="pickerMap" style="height: 250px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);"></div>
-                        <input type="hidden" name="lat" id="lat" value="{{ form_data.lat if form_data else '' }}">
-                        <input type="hidden" name="lng" id="lng" value="{{ form_data.lng if form_data else '' }}">
-                    </div>
-
-                    <div class="row g-3 mb-4">
-                        <div class="col-md-6">
-                            <label class="form-label text-muted small text-uppercase fw-bold">Description</label>
-                            <textarea class="form-control" name="description" rows="5" placeholder="Describe the role...">{{ form_data.description if form_data else '' }}</textarea>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label text-muted small text-uppercase fw-bold">Key Requirements</label>
-                            <textarea class="form-control" name="requirements" rows="5" placeholder="e.g. Must have Own Transport, BCCI Level 1...">{{ form_data.requirements if form_data else '' }}</textarea>
-                        </div>
-                    </div>
-
-                    <div class="mb-4">
-                        <label class="form-label text-muted small text-uppercase fw-bold">Screening Questions (Optional)</label>
-                        <textarea class="form-control" name="screening_questions" rows="2" 
-                                  placeholder="Separate questions with | symbol. E.g. Do you have a bike? | Years of experience?">{{ form_data.screening_questions if form_data else '' }}</textarea>
-                    </div>
-
-                    <div class="mb-4">
-                        <label class="form-label text-muted small text-uppercase fw-bold">Monthly Salary (INR)</label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-dark border-secondary text-white">₹</span>
-                            <input type="text" class="form-control" name="salary" 
-                                   placeholder="e.g. 40000" 
-                                   value="{{ predicted_salary if predicted_salary else (form_data.salary if form_data else '') }}">
-                            <button class="btn btn-outline-light" type="submit" name="predict" value="true">
-                                <i class="fas fa-magic me-1"></i> AI Suggest
-                            </button>
-                        </div>
-                        {% if ai_reason %}
-                            <div class="mt-2 p-2 rounded bg-primary bg-opacity-10 border border-primary border-opacity-25">
-                                <small class="text-primary"><i class="fas fa-robot me-1"></i> {{ ai_reason }}</small>
-                            </div>
-                        {% endif %}
-                    </div>
-
-                    <button type="submit" class="btn btn-primary w-100 py-3 fw-bold text-uppercase" style="letter-spacing: 1px;">Publish Job</button>
-                </form>
+            <!-- Sport -->
+            <div class="mb-3">
+              <label class="form-label">Sport</label>
+              <input type="text"
+                     name="sport"
+                     class="form-control"
+                     placeholder="e.g. Cricket, Football"
+                     value="{{ form_data.sport if form_data and form_data.sport else '' }}"
+                     required>
             </div>
+
+            <!-- Country / State / City -->
+            <div class="row g-3 mb-3">
+              <div class="col-md-4">
+                <label class="form-label">Country</label>
+                <select id="countrySelect"
+                        name="country"
+                        class="form-select"
+                        required>
+                  <option value="">Select Country</option>
+                </select>
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label">State</label>
+                <select id="stateSelect"
+                        name="state"
+                        class="form-select"
+                        required disabled>
+                  <option value="">Select State</option>
+                </select>
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label">City</label>
+                <select id="citySelect"
+                        name="city"
+                        class="form-select"
+                        required disabled>
+                  <option value="">Select City</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Venue / academy name -->
+            <div class="mb-3">
+              <label class="form-label">Venue / Academy Name</label>
+              <input type="text"
+                     name="venue"
+                     class="form-control"
+                     placeholder="e.g. Andheri Sports Complex"
+                     value="{{ form_data.venue if form_data and form_data.venue else '' }}">
+            </div>
+
+            <!-- Description -->
+            <div class="mb-3">
+              <label class="form-label">Job Description</label>
+              <textarea name="description"
+                        rows="4"
+                        class="form-control"
+                        placeholder="Describe the role, responsibilities, and expectations."
+                        required>{{ form_data.description if form_data and form_data.description else '' }}</textarea>
+            </div>
+
+            <!-- Requirements -->
+            <div class="mb-3">
+              <label class="form-label">Requirements</label>
+              <textarea name="requirements"
+                        rows="3"
+                        class="form-control"
+                        placeholder="Certifications, experience, skills, etc.">{{ form_data.requirements if form_data and form_data.requirements else '' }}</textarea>
+            </div>
+
+            <!-- Screening questions -->
+            <div class="mb-3">
+              <label class="form-label">Screening Questions</label>
+              <textarea name="screening_questions"
+                        rows="2"
+                        class="form-control"
+                        placeholder="Separate questions with | (pipe).">{{ form_data.screening_questions if form_data and form_data.screening_questions else '' }}</textarea>
+            </div>
+
+            <!-- Job type and working hours -->
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">Job Type</label>
+                {% set jt = form_data.job_type if form_data and form_data.job_type else 'Full Time' %}
+                <select name="job_type" class="form-select">
+                  <option value="Full Time" {{ 'selected' if jt == 'Full Time' else '' }}>Full Time</option>
+                  <option value="Part Time" {{ 'selected' if jt == 'Part Time' else '' }}>Part Time</option>
+                  <option value="Internship" {{ 'selected' if jt == 'Internship' else '' }}>Internship</option>
+                  <option value="Contract" {{ 'selected' if jt == 'Contract' else '' }}>Contract</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Working Hours</label>
+                <input type="text"
+                       name="working_hours"
+                       class="form-control"
+                       placeholder="e.g. Mon–Fri, 4pm–8pm"
+                       value="{{ form_data.working_hours if form_data and form_data.working_hours else '' }}">
+              </div>
+            </div>
+
+            <!-- Salary & AI prediction -->
+            <div class="row g-3 mt-3">
+              <div class="col-md-6">
+                <label class="form-label">Salary Range (per month)</label>
+                <input type="text"
+                       name="salary"
+                       class="form-control"
+                       placeholder="e.g. 30000 - 50000"
+                       value="{% if predicted_salary %}{{ predicted_salary }}{% elif form_data and form_data.salary %}{{ form_data.salary }}{% endif %}">
+              </div>
+              <div class="col-md-6 d-flex align-items-end">
+                <button type="submit" name="predict" class="btn btn-outline-primary w-100">
+                  Get AI Salary Suggestion
+                </button>
+              </div>
+            </div>
+
+            {% if predicted_salary %}
+            <div class="alert alert-info mt-3">
+              <strong>AI Suggested:</strong> ₹{{ predicted_salary }}/month<br>
+              <small class="text-muted">{{ ai_reason }}</small>
+            </div>
+            {% endif %}
+
+            <div class="d-flex justify-content-end mt-4 gap-2">
+              <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">Cancel</a>
+              <button type="submit" class="btn btn-primary">Post Job</button>
+            </div>
+          </form>
         </div>
+      </div>
+
     </div>
+
+    <div class="col-lg-4">
+      <div class="card shadow-sm border-0 mb-3">
+        <div class="card-body">
+          <h5 class="card-title">Tips for better matches</h5>
+          <ul class="small text-muted mb-0">
+            <li>Use a clear, specific job title.</li>
+            <li>Add detailed requirements and responsibilities.</li>
+            <li>Pick the exact city so local coaches can find you.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<!-- Static India-only location data -->
 <script>
-    var startLat = {{ form_data.lat if form_data and form_data.lat else 20.5937 }};
-    var startLng = {{ form_data.lng if form_data and form_data.lng else 78.9629 }};
-    var map = L.map('pickerMap').setView([startLat, startLng], 5);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-    var marker;
-    function updateLocation(lat, lng) {
-        document.getElementById('lat').value = lat;
-        document.getElementById('lng').value = lng;
-        if (marker) marker.setLatLng([lat, lng]);
-        else marker = L.marker([lat, lng]).addTo(map);
-        map.panTo([lat, lng]);
-    }
-    map.on('click', function(e) { updateLocation(e.latlng.lat, e.latlng.lng); });
-    async function searchAddress() {
-        var query = document.getElementById('addressInput').value;
-        if (!query) return;
-        var url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`;
-        try {
-            const response = await fetch(url);
-            const data = await response.json();
-            if (data && data.length > 0) updateLocation(parseFloat(data[0].lat), parseFloat(data[0].lon));
-        } catch (e) { console.log(e); }
-    }
+const locationData = {
+  "India": {
+    "Maharashtra": ["Mumbai", "Pune", "Nagpur"],
+    "Delhi": ["New Delhi"],
+    "Karnataka": ["Bengaluru", "Mysuru"],
+    "Gujarat": ["Ahmedabad", "Surat", "Vadodara"],
+    "Uttar Pradesh": ["Lucknow", "Noida", "Kanpur"]
+  }
+};
+
+const countrySelect = document.getElementById('countrySelect');
+const stateSelect   = document.getElementById('stateSelect');
+const citySelect    = document.getElementById('citySelect');
+
+const preCountry = "{{ form_data.country if form_data and form_data.country else '' }}";
+const preState   = "{{ form_data.state if form_data and form_data.state else '' }}";
+const preCity    = "{{ form_data.city if form_data and form_data.city else '' }}";
+
+function loadCountries() {
+  Object.keys(locationData).forEach(country => {
+    const opt = document.createElement('option');
+    opt.value = country;
+    opt.textContent = country;
+    if (country === preCountry) opt.selected = true;
+    countrySelect.appendChild(opt);
+  });
+
+  if (preCountry) {
+    populateStates(preCountry);
+  }
+  if (preCountry && preState) {
+    populateCities(preCountry, preState);
+  }
+}
+
+function populateStates(country) {
+  stateSelect.innerHTML = '<option value="">Select State</option>';
+  citySelect.innerHTML  = '<option value="">Select City</option>';
+  stateSelect.disabled  = true;
+  citySelect.disabled   = true;
+
+  if (!country || !locationData[country]) return;
+
+  Object.keys(locationData[country]).forEach(state => {
+    const opt = document.createElement('option');
+    opt.value = state;
+    opt.textContent = state;
+    if (state === preState) opt.selected = true;
+    stateSelect.appendChild(opt);
+  });
+
+  if (stateSelect.options.length > 1) {
+    stateSelect.disabled = false;
+  }
+}
+
+function populateCities(country, state) {
+  citySelect.innerHTML = '<option value="">Select City</option>';
+  citySelect.disabled  = true;
+
+  if (!country || !state || !locationData[country][state]) return;
+
+  locationData[country][state].forEach(city => {
+    const opt = document.createElement('option');
+    opt.value = city;
+    opt.textContent = city;
+    if (city === preCity) opt.selected = true;
+    citySelect.appendChild(opt);
+  });
+
+  if (citySelect.options.length > 1) {
+    citySelect.disabled = false;
+  }
+}
+
+countrySelect.addEventListener('change', () => {
+  populateStates(countrySelect.value);
+});
+
+stateSelect.addEventListener('change', () => {
+  populateCities(countrySelect.value, stateSelect.value);
+});
+
+document.addEventListener('DOMContentLoaded', loadCountries);
 </script>
 {% endblock %}
