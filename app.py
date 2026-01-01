@@ -3,7 +3,9 @@ import math
 import requests
 import re
 import stripe 
-from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
+import time
+
+from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify, current_app
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -20,6 +22,7 @@ import json
 import requests
 from flask import Flask, request, jsonify
 from local_resume_parser import parse_resume_text
+from pathlib import Path
 
 
 load_dotenv()
@@ -69,6 +72,10 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'default-key')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+    "pool_pre_ping": True,
+    "pool_recycle": 300
+}
 
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
@@ -228,14 +235,22 @@ class Application(db.Model):
 # --- CHAT MODEL ---
 class Message(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+
     sender_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     receiver_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+
     content = db.Column(db.Text, nullable=False)
+
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # read / delivery
     is_read = db.Column(db.Boolean, default=False)
 
-    sender = db.relationship('User', foreign_keys=[sender_id], backref='sent_messages')
-    receiver = db.relationship('User', foreign_keys=[receiver_id], backref='received_messages')
+    # soft delete
+    is_deleted = db.Column(db.Boolean, default=False)
+
+    sender = db.relationship('User', foreign_keys=[sender_id])
+    receiver = db.relationship('User', foreign_keys=[receiver_id])
 
 # --- HELPERS ---
 @login_manager.user_loader
@@ -1074,60 +1089,50 @@ def reset_password_mock():
 #      CHAT ROUTES (UPDATED)
 # ==============================
 @app.route('/chat')
+@login_required
+def chathome():
+    contacts = User.query.filter(User.id != current_user.id).all()
+    return render_template(
+        'chat.html',
+        contacts=contacts,
+        active_contact=None,
+        messages=[],
+        room=None
+    )
+
 @app.route('/chat/<int:receiver_id>')
 @login_required
-def chat(receiver_id=None):
-    # Build contacts list based on role
-    if current_user.role == 'employer':
-        my_jobs = Job.query.filter_by(employer_id=current_user.id).all()
-        job_ids = [j.id for j in my_jobs]
-        apps = Application.query.filter(Application.job_id.in_(job_ids)).all()
-        contacts = list({app.applicant for app in apps})  # distinct applicants
-    else:
-        my_apps = Application.query.filter_by(user_id=current_user.id).all()
-        contacts = list({app.job.employer for app in my_apps})  # distinct employers
+def chat(receiver_id):
+    contacts = User.query.filter(User.id != current_user.id).all()
 
-    # Enrich contacts with sidebar info
-    for u in contacts:
-        # last message in this conversation
-        last_msg = Message.query.filter(
-            ((Message.sender_id == current_user.id) & (Message.receiver_id == u.id)) |
-            ((Message.sender_id == u.id) & (Message.receiver_id == current_user.id))
-        ).order_by(Message.timestamp.desc()).first()
-        u.last_message = last_msg.content if last_msg else None
-        u.last_message_time = last_msg.timestamp.isoformat() if last_msg else None
-        # unread count: messages from them -> me, not read
-        u.unread_count = Message.query.filter_by(sender_id=u.id, receiver_id=current_user.id, is_read=False).count()
+    messages = Message.query.filter(
+        (
+            (Message.sender_id == current_user.id) &
+            (Message.receiver_id == receiver_id)
+        ) | (
+            (Message.sender_id == receiver_id) &
+            (Message.receiver_id == current_user.id)
+        )
+    ).order_by(Message.timestamp).all()
 
-    active_contact = None
-    messages = []
-    room = None
+    ids = sorted([current_user.id, receiver_id])
+    room = f"chat_{ids[0]}_{ids[1]}"
 
-    if receiver_id:
-        active_contact = User.query.get_or_404(receiver_id)
-        user_ids = sorted([current_user.id, receiver_id])
-        room = f"chat_{user_ids[0]}_{user_ids[1]}"
+    # mark received messages as read
+    Message.query.filter(
+        Message.sender_id == receiver_id,
+        Message.receiver_id == current_user.id,
+        Message.is_read == False
+    ).update({Message.is_read: True}, synchronize_session=False)
+    db.session.commit()
 
-        # conversation messages
-        messages = Message.query.filter(
-            ((Message.sender_id == current_user.id) & (Message.receiver_id == receiver_id)) |
-            ((Message.sender_id == receiver_id) & (Message.receiver_id == current_user.id))
-        ).order_by(Message.timestamp.asc()).all()
-
-        # mark their messages to me as read
-        changed = False
-        for m in messages:
-            if m.receiver_id == current_user.id and not m.is_read:
-                m.is_read = True
-                changed = True
-        if changed:
-            db.session.commit()
-
-    return render_template('chat.html',
-                           contacts=contacts,
-                           active_contact=active_contact,
-                           messages=messages,
-                           room=room)
+    return render_template(
+        'chat.html',
+        contacts=contacts,
+        active_contact=User.query.get_or_404(receiver_id),
+        messages=messages,
+        room=room
+    )
 
 
 @app.route("/text-to-resume", methods=["POST"])
@@ -1183,58 +1188,134 @@ def on_join(data):
         join_room(room)
 
 @socketio.on('send_message')
-def handle_send_message_event(data):
-    content = data.get('message', '')
-    receiver_id = data.get('receiver_id')
+def handle_send_message(data):
     room = data.get('room')
-    client_id = data.get('client_id')  # optional from frontend
+    receiver_id = data.get('receiver_id')
+    text = data.get('message', '')
 
-    if not current_user.is_authenticated or not room or not content.strip():
+    if not room or not receiver_id or not text.strip():
         return
 
-    new_msg = Message(sender_id=current_user.id, receiver_id=receiver_id, content=content.strip())
-    db.session.add(new_msg)
+    msg = Message(
+        sender_id=current_user.id,
+        receiver_id=int(receiver_id),
+        content=text.strip()
+    )
+    db.session.add(msg)
     db.session.commit()
 
-    emit('receive_message', {
-        'id': new_msg.id,
-        'client_id': client_id,
-        'content': new_msg.content,
-        'sender_id': current_user.id,
-        # ISO string so JS can show Today/Yesterday 10:30 AM
-        'timestamp': new_msg.timestamp.isoformat(),
-        'status': 'sent',
-        'sender_name': current_user.username
-    }, room=room)
+    emit(
+        'receive_message',
+        {
+            'content': msg.content,
+            'sender_id': msg.sender_id,
+            'timestamp': msg.timestamp.strftime('%I:%M %p')
+        },
+        room=room
+    )
 
 @socketio.on('typing')
-def handle_typing(data):
-    room = data.get('room')
-    if not room:
-        return
-    if not current_user.is_authenticated:
-        return
-    emit('typing', {'sender_id': current_user.id}, room=room, include_self=False)
+def typing(data):
+    emit('typing', {'user_id': current_user.id}, room=data['room'], include_self=False)
 
 @socketio.on('stop_typing')
-def handle_stop_typing(data):
-    room = data.get('room')
-    if not room:
-        return
+def stop_typing(data):
+    emit('stop_typing', {'user_id': current_user.id}, room=data['room'], include_self=False)
+
+online_users = set()
+
+@socketio.on('connect')
+def handle_connect():
+    if current_user.is_authenticated:
+        online_users.add(current_user.id)
+        emit(
+            'presence_update',
+            {'user_id': current_user.id, 'online': True},
+            broadcast=True
+        )
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    if current_user.is_authenticated:
+        online_users.discard(current_user.id)
+        emit(
+            'presence_update',
+            {'user_id': current_user.id, 'online': False},
+            broadcast=True
+        )
+@socketio.on('mark_seen')
+def handle_mark_seen(data):
     if not current_user.is_authenticated:
         return
-    emit('stop_typing', {'sender_id': current_user.id}, room=room, include_self=False)
-@app.route("/payment/success")
+
+    message_ids = data.get('message_ids', [])
+    room = data.get('room')
+
+    if not message_ids:
+        return
+
+    Message.query.filter(
+        Message.id.in_(message_ids),
+        Message.receiver_id == current_user.id
+    ).update(
+        {'is_read': True},
+        synchronize_session=False
+    )
+
+    db.session.commit()
+
+    emit(
+        'messages_seen',
+        {
+            'message_ids': message_ids,
+            'seen_by': current_user.id
+        },
+        room=room,
+        include_self=False
+    )
+@app.route('/chat/upload', methods=['POST'])
 @login_required
-def payment_success():
-    mode = request.args.get("mode", "unknown")
+def chatupload():
+    file = request.files.get('file')
+    receiver_id = request.form.get('receiver_id')
 
-    # IMPORTANT: do NOT auto-upgrade here
-    # Just log or flash message
+    if not file or not receiver_id:
+        return jsonify({'error': 'Invalid request'}), 400
 
-    flash("Payment submitted. Awaiting verification.")
-    return render_template("payment_success.html")
+    uploaddir = Path(current_app.root_path, 'static', 'chatuploads')
+    uploaddir.mkdir(parents=True, exist_ok=True)
 
+    original = secure_filename(file.filename)
+    name, ext = os.path.splitext(original)
+    safename = name[:60] + ext
+    filename = f"f{current_user.id}{int(time.time())}{safename}"
+    filepath = uploaddir / filename
+    file.save(filepath)
+
+    fileurl = url_for('static', filename=f'chatuploads/{filename}')
+
+    msg = Message(
+        sender_id=current_user.id,
+        receiver_id=int(receiver_id),
+        content=f'[file]{fileurl}'
+    )
+    db.session.add(msg)
+    db.session.commit()
+
+    ids = sorted([current_user.id, int(receiver_id)])
+    room = f"chat_{ids[0]}_{ids[1]}"
+
+    socketio.emit(
+        'receive_message',
+        {
+            'content': msg.content,
+            'sender_id': msg.sender_id,
+            'timestamp': msg.timestamp.strftime('%I:%M %p')
+        },
+        room=room
+    )
+
+    return jsonify({'success': True, 'url': fileurl})
 
 @app.route("/payment/pending")
 @login_required
