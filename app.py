@@ -1463,4 +1463,4 @@ def admin_jobs():
 
 db.init_app(app)
 if __name__ == "__main__":
-    app.run(debug=False)
+    socketio.run(app, debug=False)
