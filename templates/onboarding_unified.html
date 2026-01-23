@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complete Your Profile - KoachSmart Recruit</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <!-- Your Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% include 'components/notifications.html' %}
+
+</head>
+<body class="onboarding-active">
+    <div class="onboarding-container">
+        <div class="onboarding-card">
+            
+            <!-- =========================================
+                 LEFT SIDEBAR - STEP NAVIGATION
+                 ========================================= -->
+            <div class="onboarding-sidebar">
+                <!-- Brand -->
+                <div class="onboarding-brand">
+                    <div class="onboarding-brand-icon">
+                        <i class="bi bi-person-badge"></i>
+                    </div>
+                    <div class="onboarding-brand-text">KoachSmart</div>
+                </div>
+
+                <!-- Step Navigation -->
+                <div class="sidebar-steps">
+                    <!-- Step 1 -->
+                    <div class="sidebar-step {% if current_step == 1 %}active{% elif current_step > 1 %}completed{% endif %}">
+                        <div class="sidebar-step-icon">
+                            {% if current_step > 1 %}
+                                <i class="bi bi-check-lg"></i>
+                            {% else %}
+                                1
+                            {% endif %}
+                        </div>
+                        <div class="sidebar-step-content">
+                            <div class="sidebar-step-title">Personal Details</div>
+                            <div class="sidebar-step-subtitle">Basic information & phone verification</div>
+                        </div>
+                    </div>
+
+                    <!-- Step 2 -->
+                    <div class="sidebar-step {% if current_step == 2 %}active{% elif current_step > 2 %}completed{% endif %}">
+                        <div class="sidebar-step-icon">
+                            {% if current_step > 2 %}
+                                <i class="bi bi-check-lg"></i>
+                            {% else %}
+                                2
+                            {% endif %}
+                        </div>
+                        <div class="sidebar-step-content">
+                            <div class="sidebar-step-title">Location Details</div>
+                            <div class="sidebar-step-subtitle">Where you're based & your range</div>
+                        </div>
+                    </div>
+
+                    <!-- Step 3 -->
+                    <div class="sidebar-step {% if current_step == 3 %}active{% elif current_step > 3 %}completed{% endif %}">
+                        <div class="sidebar-step-icon">
+                            {% if current_step > 3 %}
+                                <i class="bi bi-check-lg"></i>
+                            {% else %}
+                                3
+                            {% endif %}
+                        </div>
+                        <div class="sidebar-step-content">
+                            <div class="sidebar-step-title">Education</div>
+                            <div class="sidebar-step-subtitle">Qualifications & certificates</div>
+                        </div>
+                    </div>
+
+                    <!-- Step 4 -->
+                    <div class="sidebar-step {% if current_step == 4 %}active{% elif current_step > 4 %}completed{% endif %}">
+                        <div class="sidebar-step-icon">
+                            {% if current_step > 4 %}
+                                <i class="bi bi-check-lg"></i>
+                            {% else %}
+                                4
+                            {% endif %}
+                        </div>
+                        <div class="sidebar-step-content">
+                            <div class="sidebar-step-title">Sports Certification</div>
+                            <div class="sidebar-step-subtitle">Optional professional credentials</div>
+                        </div>
+                    </div>
+
+                    <!-- Step 5 -->
+                    <div class="sidebar-step {% if current_step == 5 %}active{% endif %}">
+                        <div class="sidebar-step-icon">5</div>
+                        <div class="sidebar-step-content">
+                            <div class="sidebar-step-title">Availability</div>
+                            <div class="sidebar-step-subtitle">Working preferences & language</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Help text -->
+                <div style="margin-top: auto; padding-top: 2rem;">
+                    <small class="text-muted">
+                        <i class="bi bi-shield-check"></i> Your information is secure and encrypted
+                    </small>
+                </div>
+            </div>
+
+            <!-- =========================================
+                 RIGHT SIDE - MAIN CONTENT
+                 ========================================= -->
+            <div class="onboarding-main">
+                
+                <!-- Flash Messages -->
+                {% with messages = get_flashed_messages() %}
+                  {% if messages %}
+                    {% for msg in messages %}
+                      <div class="alert alert-info alert-dismissible fade show" role="alert">
+                        <i class="bi bi-info-circle-fill"></i>
+                        <div>{{ msg }}</div>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                      </div>
+                    {% endfor %}
+                  {% endif %}
+                {% endwith %}
+
+                <!-- Progress Bar -->
+                <div class="progress-container">
+                    <div class="progress">
+                        <div class="progress-bar" role="progressbar" style="width: {{ (current_step / 5 * 100) }}%" aria-valuenow="{{ current_step }}" aria-valuemin="0" aria-valuemax="5"></div>
+                    </div>
+                </div>
+
+                <!-- Form -->
+                <form method="POST" enctype="multipart/form-data" id="onboardingForm">
+                    
+                    <!-- ================================
+                         STEP 1: PERSONAL DETAILS
+                         ================================ -->
+                    <div class="step-content {% if current_step == 1 %}active{% endif %}" id="step-1">
+                        <div class="onboarding-header">
+                            <span class="step-badge">Step 1 of 5</span>
+                            <h2>Tell us about yourself</h2>
+                            <p>We need some basic information to create your coaching profile</p>
+                        </div>
+
+                        <div class="form-content">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">First Name <span class="required-asterisk">*</span></label>
+                                    <input type="text" class="form-control" name="first_name" 
+                                           value="{{ profile.full_name.split()[0] if profile and profile.full_name else '' }}" 
+                                           required placeholder="e.g., Rahul">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Middle Name</label>
+                                    <input type="text" class="form-control" name="middle_name" placeholder="Optional">
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Last Name <span class="required-asterisk">*</span></label>
+                                <input type="text" class="form-control" name="last_name" 
+                                       value="{{ profile.full_name.split()[-1] if profile and profile.full_name and profile.full_name.split()|length > 1 else '' }}" 
+                                       required placeholder="e.g., Sharma">
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Phone Number <span class="required-asterisk">*</span></label>
+                                <input type="tel" class="form-control" name="phone" 
+                                       value="{{ profile.phone if profile and profile.phone else '' }}" 
+                                       required placeholder="+91 9876543210" pattern="[0-9+\s\-()]+">
+                                <small class="text-muted">We'll send you a verification code</small>
+                            </div>
+
+                            <div class="otp-note">
+                                <i class="bi bi-shield-lock-fill"></i>
+                                <div>
+                                    <strong>OTP Verification Required</strong><br>
+                                    <small>For demo purposes, use OTP: <code style="background: rgba(0,0,0,0.1); padding: 2px 6px; border-radius: 4px;">1234</code></small>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Enter OTP <span class="required-asterisk">*</span></label>
+                                <input type="text" class="form-control" name="otp" required placeholder="Enter 1234" maxlength="4">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ================================
+                         STEP 2: LOCATION DETAILS
+                         ================================ -->
+                    <div class="step-content {% if current_step == 2 %}active{% endif %}" id="step-2">
+                        <div class="onboarding-header">
+                            <span class="step-badge">Step 2 of 5</span>
+                            <h2>Where are you located?</h2>
+                            <p>Help us connect you with nearby opportunities</p>
+                        </div>
+
+                        <div class="form-content">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">State <span class="required-asterisk">*</span></label>
+                                    <input type="text" class="form-control" name="state" required placeholder="e.g., Maharashtra">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">City <span class="required-asterisk">*</span></label>
+                                    <input type="text" class="form-control" name="city" required placeholder="e.g., Mumbai">
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Address / Area</label>
+                                <textarea class="form-control" name="address" rows="2" placeholder="Enter your locality or landmark (optional)"></textarea>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">How far are you willing to travel? <span class="required-asterisk">*</span></label>
+                                <select name="travel_range" class="form-select" required>
+                                    <option value="">Select your preferred working range</option>
+                                    <option value="5km">Up to 5 KM</option>
+                                    <option value="10km">Up to 10 KM</option>
+                                    <option value="20km">Up to 20 KM</option>
+                                    <option value="Anywhere">Flexible / Anywhere</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ================================
+                         STEP 3: EDUCATION
+                         ================================ -->
+                    <div class="step-content {% if current_step == 3 %}active{% endif %}" id="step-3">
+                        <div class="onboarding-header">
+                            <span class="step-badge">Step 3 of 5</span>
+                            <h2>Your qualifications</h2>
+                            <p>Tell us about your educational background</p>
+                        </div>
+
+                        <div class="form-content">
+                            {% if profile and profile.cert_proof_path %}
+                                <div class="verification-badge">
+                                    <i class="bi bi-clock-history"></i>
+                                    <div>
+                                        <strong>Certificate Submitted!</strong><br>
+                                        <small>Your certificate is pending admin verification. You can continue to the next step.</small>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <div class="mb-3">
+                                    <label class="form-label">Highest Qualification <span class="required-asterisk">*</span></label>
+                                    <input type="text" class="form-control" name="qualification" required placeholder="e.g., Bachelor's in Physical Education">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Specialization</label>
+                                    <input type="text" class="form-control" name="specialization" placeholder="e.g., Sports Science, Yoga, etc.">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Upload Certificate <span class="required-asterisk">*</span></label>
+                                    <div class="file-upload-wrapper">
+                                        <input type="file" class="file-upload-input" name="certificate" id="cert-file" accept=".pdf,.jpg,.jpeg,.png" required onchange="handleFileSelect(this, 'cert-preview')">
+                                        <label for="cert-file" class="file-upload-label">
+                                            <i class="bi bi-cloud-upload"></i>
+                                            <div>
+                                                <strong>Click to upload</strong> or drag and drop<br>
+                                                <small class="text-muted">PDF, JPG, PNG (Max 10MB)</small>
+                                            </div>
+                                        </label>
+                                        <div class="file-preview" id="cert-preview">
+                                            <i class="bi bi-file-earmark-check"></i>
+                                            <div class="flex-grow-1">
+                                                <span class="file-name"></span><br>
+                                                <small class="file-size text-muted"></small>
+                                            </div>
+                                            <button type="button" class="btn btn-sm btn-secondary" onclick="clearFile('cert-file', 'cert-preview')">
+                                                <i class="bi bi-x-lg"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="alert alert-info">
+                                    <i class="bi bi-info-circle"></i>
+                                    <div>Your certificate will be reviewed by our admin team for verification.</div>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- ================================
+                         STEP 4: SPORTS CERTIFICATION
+                         ================================ -->
+                    <div class="step-content {% if current_step == 4 %}active{% endif %}" id="step-4">
+                        <div class="onboarding-header">
+                            <span class="step-badge">Step 4 of 5</span>
+                            <h2>Sports certifications</h2>
+                            <p>Add your sports certifications to boost your credibility (Optional)</p>
+                        </div>
+
+                        <div class="form-content">
+                            <div class="alert alert-warning">
+                                <i class="bi bi-star-fill"></i>
+                                <div>
+                                    <strong>Optional but Recommended</strong><br>
+                                    <small>This step is optional but adds credibility to your profile!</small>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Sport</label>
+                                <input type="text" class="form-control" name="sport" placeholder="e.g., Cricket, Football">
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Certifying Organization</label>
+                                <input type="text" class="form-control" name="organization" placeholder="e.g., BCCI, IOA, SAI">
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Certification Level</label>
+                                <input type="text" class="form-control" name="level" placeholder="e.g., Level 2 Coach, Advanced">
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Upload Certificate</label>
+                                <div class="file-upload-wrapper">
+                                    <input type="file" class="file-upload-input" name="certificate" id="sports-cert-file" accept=".pdf,.jpg,.jpeg,.png" onchange="handleFileSelect(this, 'sports-cert-preview')">
+                                    <label for="sports-cert-file" class="file-upload-label">
+                                        <i class="bi bi-cloud-upload"></i>
+                                        <div>
+                                            <strong>Click to upload</strong> or drag and drop<br>
+                                            <small class="text-muted">PDF, JPG, PNG (Max 10MB)</small>
+                                        </div>
+                                    </label>
+                                    <div class="file-preview" id="sports-cert-preview">
+                                        <i class="bi bi-file-earmark-check"></i>
+                                        <div class="flex-grow-1">
+                                            <span class="file-name"></span><br>
+                                            <small class="file-size text-muted"></small>
+                                        </div>
+                                        <button type="button" class="btn btn-sm btn-secondary" onclick="clearFile('sports-cert-file', 'sports-cert-preview')">
+                                            <i class="bi bi-x-lg"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ================================
+                         STEP 5: AVAILABILITY
+                         ================================ -->
+                    <div class="step-content {% if current_step == 5 %}active{% endif %}" id="step-5">
+                        <div class="onboarding-header">
+                            <span class="step-badge">Final Step</span>
+                            <h2>Almost done! 🎉</h2>
+                            <p>Set your working preferences and language skills</p>
+                        </div>
+
+                        <div class="form-content">
+                            <div class="mb-3">
+                                <label class="form-label">Primary Sport <span class="required-asterisk">*</span></label>
+                                <select name="sport" class="form-select" required>
+                                    <option value="">Select your primary sport</option>
+                                    <option value="Cricket">Cricket</option>
+                                    <option value="Football">Football</option>
+                                    <option value="Badminton">Badminton</option>
+                                    <option value="Tennis">Tennis</option>
+                                    <option value="Basketball">Basketball</option>
+                                    <option value="Swimming">Swimming</option>
+                                    <option value="Hockey">Hockey</option>
+                                    <option value="Athletics">Athletics</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Working Type <span class="required-asterisk">*</span></label>
+                                <select name="working_type" class="form-select" required>
+                                    <option value="">Select your working preference</option>
+                                    <option value="Full Time">Full Time</option>
+                                    <option value="Part Time">Part Time</option>
+                                    <option value="Contract">Contract</option>
+                                    <option value="Flexible">Flexible</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Working Range (KM) <span class="required-asterisk">*</span></label>
+                                <input type="number" name="range_km" class="form-control" required placeholder="e.g., 10" min="1" max="100">
+                                <div class="form-check mt-2">
+                                    <input type="checkbox" name="notify" class="form-check-input" id="notify-check">
+                                    <label class="form-check-label" for="notify-check">
+                                        Notify me if opportunities are outside my range
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Language</label>
+                                <input type="text" name="language" class="form-control" placeholder="e.g., English, Hindi, Marathi">
+                                
+                                <div class="d-flex gap-3 mt-2">
+                                    <div class="form-check">
+                                        <input type="checkbox" name="read" class="form-check-input" id="read-check">
+                                        <label class="form-check-label" for="read-check">Read</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input type="checkbox" name="write" class="form-check-input" id="write-check">
+                                        <label class="form-check-label" for="write-check">Write</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input type="checkbox" name="speak" class="form-check-input" id="speak-check">
+                                        <label class="form-check-label" for="speak-check">Speak</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ================================
+                         NAVIGATION BUTTONS
+                         ================================ -->
+                    <div class="btn-container">
+                        <div>
+                            <!-- Back button removed since we can't go back server-side -->
+                        </div>
+                        
+                        <div style="display: flex; gap: 0.75rem; margin-left: auto;">
+                            {% if current_step == 4 %}
+                                <button type="submit" class="btn btn-secondary" name="skip_step_4">
+                                    Skip This Step <i class="bi bi-skip-forward"></i>
+                                </button>
+                            {% endif %}
+                            
+                            <button type="submit" class="btn btn-primary">
+                                {% if current_step == 5 %}
+                                    Finish & Continue <i class="bi bi-check-circle"></i>
+                                {% else %}
+                                    Save & Continue <i class="bi bi-arrow-right"></i>
+                                {% endif %}
+                            </button>
+                        </div>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // File upload handlers
+    function handleFileSelect(input, previewId) {
+        const file = input.files[0];
+        const preview = document.getElementById(previewId);
+        
+        if (file) {
+            const fileName = file.name;
+            const fileSize = (file.size / 1024).toFixed(2) + ' KB';
+            
+            preview.querySelector('.file-name').textContent = fileName;
+            preview.querySelector('.file-size').textContent = fileSize;
+            preview.classList.add('active');
+            input.nextElementSibling.style.display = 'none';
+        }
+    }
+
+    function clearFile(inputId, previewId) {
+        const input = document.getElementById(inputId);
+        const preview = document.getElementById(previewId);
+        
+        input.value = '';
+        preview.classList.remove('active');
+        input.nextElementSibling.style.display = 'flex';
+    }
+
+    const loadingOverlay = document.createElement('div');
+    loadingOverlay.className = 'page-loading';
+    loadingOverlay.innerHTML = `
+        <div class="spinner-large"></div>
+        <p style="color: #64748b; font-weight: 600;">Saving your progress...</p>
+    `;
+    document.body.appendChild(loadingOverlay);
+
+    const form = document.getElementById('onboardingForm');
+    form.addEventListener('submit', function(e) {
+        if (!form.checkValidity()) {
+            e.preventDefault();
+            e.stopPropagation();
+            form.classList.add('was-validated');
+        } else {
+            loadingOverlay.classList.add('active');
+            const submitBtns = form.querySelectorAll('button[type="submit"]');
+            submitBtns.forEach(btn => {
+                btn.disabled = true;
+                if (!btn.name) {
+                    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing...';
+                }
+            });
+        }
+    });
+
+    setTimeout(function() {
+        const alerts = document.querySelectorAll('.alert-dismissible');
+        alerts.forEach(alert => {
+            const bsAlert = new bootstrap.Alert(alert);
+            bsAlert.close();
+        });
+    }, 5000);
+
+    window.addEventListener('load', function() {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    function toggleRequiredFields() {
+        document.querySelectorAll('.step-content').forEach(step => {
+            const isActive = step.classList.contains('active');
+            step.querySelectorAll('input, select, textarea').forEach(el => {
+                if (isActive) {
+                    el.removeAttribute('disabled');
+                } else {
+                    el.setAttribute('disabled', true);
+                }
+            });
+        });
+    }
+
+    toggleRequiredFields();
+    window.addEventListener("load", toggleRequiredFields);
+
+    // ✅ ✅ ✅ MODAL TRIGGERS ✅ ✅ ✅
+    document.addEventListener('DOMContentLoaded', function() {
+        {% if session.get('show_phone_verified_modal') %}
+            new bootstrap.Modal(document.getElementById('phoneVerifiedModal')).show();
+            {{ session.pop('show_phone_verified_modal', None) or '' }}
+        {% endif %}
+        
+        {% if session.get('show_location_verified_modal') %}
+            new bootstrap.Modal(document.getElementById('locationVerifiedModal')).show();
+            {{ session.pop('show_location_verified_modal', None) or '' }}
+        {% endif %}
+        
+        {% if session.get('show_verification_pending_modal') %}
+            new bootstrap.Modal(document.getElementById('verificationPendingModal')).show();
+            {{ session.pop('show_verification_pending_modal', None) or '' }}
+        {% endif %}
+        
+        {% if session.get('show_language_added_modal') %}
+            new bootstrap.Modal(document.getElementById('languageAddedModal')).show();
+            {{ session.pop('show_language_added_modal', None) or '' }}
+        {% endif %}
+    });
+</script>
+</body>
+</html>

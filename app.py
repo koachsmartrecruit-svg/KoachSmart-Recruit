@@ -370,21 +370,9 @@ def enforce_onboarding():
     if any(request.path.startswith(p) for p in allowed_paths):
         return
 
-    # If onboarding not completed → redirect
+    # If onboarding not completed → redirect to unified onboarding
     if not current_user.onboarding_completed:
-        step = get_next_onboarding_step(current_user)
-
-        if step == 1:
-            return redirect(url_for('onboarding_step_1'))
-        elif step == 2:
-            return redirect(url_for('onboarding_step_2'))
-        elif step == 3:
-            return redirect(url_for('onboarding_step_3'))
-        elif step == 4:
-            return redirect(url_for('onboarding_step_4'))
-        elif step == 5:
-            return redirect(url_for('onboarding_step_5'))
-
+        return redirect(url_for('onboarding_unified'))
 def assign_badge(user_id, badge_field):
     """
     Assign badge safely once.
@@ -1678,133 +1666,91 @@ def admin_jobs():
         return redirect(url_for('dashboard'))
     jobs = Job.query.order_by(Job.posted_date.desc()).all()
     return render_template('admin_jobs.html', jobs=jobs)
-
-@app.route('/onboarding/1', methods=['GET', 'POST'])
+@app.route('/onboarding', methods=['GET', 'POST'])
 @login_required
-def onboarding_step_1():
+def onboarding_unified():
+    """Unified onboarding flow - all 5 steps in one page"""
+    
     if current_user.role != 'coach':
         return redirect(url_for('dashboard'))
 
     profile = Profile.query.filter_by(user_id=current_user.id).first()
+    current_step = current_user.onboarding_step or 1
 
-    if request.method == 'POST':
+    # ============================================
+    # STEP 1: Personal Details
+    # ============================================
+    if current_step == 1 and request.method == 'POST':
         first = request.form.get('first_name', '').strip()
         middle = request.form.get('middle_name', '').strip()
         last = request.form.get('last_name', '').strip()
         phone = request.form.get('phone', '').strip()
         otp = request.form.get('otp', '').strip()
 
-        # Validation
         if not first or not last or not phone:
             flash("All mandatory fields are required.")
-            return redirect(request.url)
+            return redirect(url_for('onboarding_unified'))
 
-        # Fake OTP validation (replace later)
         if otp != "1234":
-            flash("Invalid OTP.")
-            return redirect(request.url)
+            flash("Invalid OTP. Please use 1234 for demo.")
+            return redirect(url_for('onboarding_unified'))
 
-        # Save profile
         profile.full_name = f"{first} {middle} {last}".strip()
         profile.phone = phone
         db.session.commit()
 
-        # -------------------------
-        # Rewards
-        # -------------------------
-        award_reward(
-            user_id=current_user.id,
-            action="phone_verified",
-            points=5
-        )
+        award_reward(user_id=current_user.id, action="phone_verified", points=5)
+        assign_badge(user_id=current_user.id, badge_field="phone_verified")
 
-        assign_badge(
-            user_id=current_user.id,
-            badge_field="phone_verified"
-        )
-
-        # Advance onboarding
         current_user.onboarding_step = 2
         db.session.commit()
 
-        flash("Step 1 completed successfully!")
-        return redirect(url_for('onboarding_step'))
+        # ✅ TRIGGER MODAL
+        session['show_phone_verified_modal'] = True
+        flash("✅ Personal details saved! Moving to Step 2...")
+        return redirect(url_for('onboarding_unified'))
 
-    return render_template('onboarding_step1.html', profile=profile)
-@app.route('/onboarding/2', methods=['GET', 'POST'])
-@login_required
-def onboarding_step_2():
-    if current_user.role != 'coach':
-        return redirect(url_for('dashboard'))
-
-    profile = Profile.query.filter_by(user_id=current_user.id).first()
-
-    # Prevent skipping
-    if current_user.onboarding_step < 2:
-        return redirect(url_for('onboarding_step_1'))
-
-    if request.method == 'POST':
+    # ============================================
+    # STEP 2: Location Details
+    # ============================================
+    elif current_step == 2 and request.method == 'POST':
         state = request.form.get('state', '').strip()
         city = request.form.get('city', '').strip()
         address = request.form.get('address', '').strip()
         travel_range = request.form.get('travel_range', '').strip()
 
         if not state or not city or not travel_range:
-            flash("All mandatory fields are required.")
-            return redirect(request.url)
+            flash("State, city, and travel range are required.")
+            return redirect(url_for('onboarding_unified'))
 
-        # Save data
         profile.city = f"{city}, {state}"
         profile.travel_range = travel_range
-
-        # (Temporary storage for address)
         if address:
             profile.bio = f"Location: {address}"
-
         db.session.commit()
 
-        # -------------------------
-        # Rewards
-        # -------------------------
-        award_reward(
-            user_id=current_user.id,
-            action="location_verified",
-            points=20
-        )
+        award_reward(user_id=current_user.id, action="location_verified", points=20)
+        assign_badge(user_id=current_user.id, badge_field="location_verified")
 
-        assign_badge(
-            user_id=current_user.id,
-            badge_field="location_verified"
-        )
-
-        # Advance onboarding
         current_user.onboarding_step = 3
         db.session.commit()
 
-        flash("Location saved successfully!")
-        return redirect(url_for('onboarding_step_3'))
+        # ✅ TRIGGER MODAL
+        session['show_location_verified_modal'] = True
+        flash("✅ Location saved! Moving to Step 3...")
+        return redirect(url_for('onboarding_unified'))
 
-    return render_template('onboarding_step2.html', profile=profile)
-@app.route('/onboarding/3', methods=['GET', 'POST'])
-@login_required
-def onboarding_step_3():
-    if current_user.role != 'coach':
-        return redirect(url_for('dashboard'))
-
-    # Prevent skipping
-    if current_user.onboarding_step < 3:
-        return redirect(url_for('onboarding_step'))
-
-    profile = Profile.query.filter_by(user_id=current_user.id).first()
-
-    if request.method == 'POST':
+    # ============================================
+    # STEP 3: Education & Qualifications
+    # ============================================
+    elif current_step == 3 and request.method == 'POST':
         qualification = request.form.get('qualification', '').strip()
         specialization = request.form.get('specialization', '').strip()
         cert_file = request.files.get('certificate')
 
         if not qualification or not cert_file:
             flash("Qualification and certificate file are mandatory.")
-            return redirect(request.url)
+            return redirect(url_for('onboarding_unified'))
 
         filename = secure_filename(f"edu_{current_user.id}_{cert_file.filename}")
         filepath = os.path.join(app.config['CERT_FOLDER'], filename)
@@ -1814,107 +1760,62 @@ def onboarding_step_3():
         profile.cert_proof_path = filename
         db.session.commit()
 
-        flash("Education submitted. Awaiting admin verification.")
-        return redirect(url_for('onboarding_step_3'))
+        current_user.onboarding_step = 4
+        db.session.commit()
 
-    return render_template('onboarding_step3.html', profile=profile)
-@app.route('/onboarding/4', methods=['GET', 'POST'], strict_slashes=False)
+        # ✅ TRIGGER VERIFICATION PENDING MODAL
+        session['show_verification_pending_modal'] = True
+        flash("✅ Education certificate submitted! Awaiting admin verification. Moving to Step 4...")
+        return redirect(url_for('onboarding_unified'))
 
-@login_required
-def onboarding_step_4():
-    if current_user.role != 'coach':
-        return redirect(url_for('dashboard'))
+    # ============================================
+    # STEP 4: Sports Certification (Optional)
+    # ============================================
+    elif current_step == 4 and request.method == 'POST':
+        
+        if 'skip_step_4' in request.form:
+            current_user.onboarding_step = 5
+            db.session.commit()
+            flash("⏭️ Skipped sports certification. Moving to final step...")
+            return redirect(url_for('onboarding_unified'))
 
-    # Prevent skipping
-    if current_user.onboarding_step < 4:
-        return redirect(url_for('onboarding_step_3'))
-
-    profile = Profile.query.filter_by(user_id=current_user.id).first()
-
-    if request.method == 'POST':
         sport = request.form.get('sport', '').strip()
         organization = request.form.get('organization', '').strip()
         level = request.form.get('level', '').strip()
         cert_file = request.files.get('certificate')
 
-        # Optional submission
-        if cert_file:
+        if cert_file and cert_file.filename:
             filename = secure_filename(f"sportcert_{current_user.id}_{cert_file.filename}")
             filepath = os.path.join(app.config['EXP_PROOF_FOLDER'], filename)
             cert_file.save(filepath)
-
             profile.experience_proof_path = filename
             db.session.commit()
-
-            flash("Sports certificate submitted for admin verification.")
+            flash("✅ Sports certificate submitted for verification!")
         else:
-            flash("Skipped sports certification.")
+            flash("⚠️ No certificate uploaded. Continuing to next step...")
 
-        # Allow user to continue regardless
         current_user.onboarding_step = 5
         db.session.commit()
+        return redirect(url_for('onboarding_unified'))
 
-        return redirect(url_for('onboarding_step'))
-
-    return render_template('onboarding_step4.html', profile=profile)
-@app.route('/verify-sports-cert/<int:profile_id>')
-@login_required
-def verify_sports_cert(profile_id):
-    if current_user.role != 'admin':
-        return redirect(url_for('dashboard'))
-
-    profile = Profile.query.get_or_404(profile_id)
-    user = User.query.get(profile.user_id)
-
-    # Mark professional verified
-    user.professional_verified = True
-    db.session.commit()
-
-    # -------------------------
-    # Rewards
-    # -------------------------
-    award_reward(
-        user_id=user.id,
-        action="sports_cert_verified",
-        points=10
-    )
-
-    assign_badge(
-        user_id=user.id,
-        badge_field="professional_verified"
-    )
-
-    flash("Sports certification verified successfully.")
-    return redirect(url_for('super_admin'))
-@app.route('/onboarding/5', methods=['GET', 'POST'])
-@login_required
-def onboarding_step_5():
-    if current_user.role != 'coach':
-        return redirect(url_for('dashboard'))
-
-    # Prevent skipping
-    if current_user.onboarding_step < 5:
-        return redirect(url_for('onboarding_step'))
-
-    profile = Profile.query.filter_by(user_id=current_user.id).first()
-
-    if request.method == 'POST':
-        sport = request.form.get('sport')
-        working_type = request.form.get('working_type')
-        range_km = request.form.get('range_km')
+    # ============================================
+    # STEP 5: Sports & Availability (Final)
+    # ============================================
+    elif current_step == 5 and request.method == 'POST':
+        sport = request.form.get('sport', '').strip()
+        working_type = request.form.get('working_type', '').strip()
+        range_km = request.form.get('range_km', '').strip()
         notify = bool(request.form.get('notify'))
 
-        language = request.form.get('language')
+        language = request.form.get('language', '').strip()
         read = bool(request.form.get('read'))
         write = bool(request.form.get('write'))
         speak = bool(request.form.get('speak'))
 
-        # Validation
         if not sport or not working_type or not range_km:
-            flash("Sport, working type and range are mandatory.")
-            return redirect(request.url)
+            flash("Sport, working type, and range are mandatory.")
+            return redirect(url_for('onboarding_unified'))
 
-        # Save data
         profile.sport_primary = sport
         profile.working_type = working_type
         profile.range_km = int(range_km)
@@ -1924,40 +1825,29 @@ def onboarding_step_5():
         profile.language_read = read
         profile.language_write = write
         profile.language_speak = speak
-
         db.session.commit()
 
-        # -----------------
-        # Rewards
-        # -----------------
-        award_reward(
-            user_id=current_user.id,
-            action="sport_added",
-            points=5
-        )
-
+        award_reward(user_id=current_user.id, action="sport_added", points=5)
         if language:
-            award_reward(
-                user_id=current_user.id,
-                action="language_completed",
-                points=2
-            )
+            award_reward(user_id=current_user.id, action="language_completed", points=2)
+            # ✅ TRIGGER LANGUAGE MODAL
+            session['show_language_added_modal'] = True
+        
+        award_reward(user_id=current_user.id, action="stage5_completed", coins=100)
 
-        award_reward(
-            user_id=current_user.id,
-            action="stage5_completed",
-            coins=100
-        )
-
-        # Mark onboarding complete
         current_user.onboarding_completed = True
         db.session.commit()
 
-        flash("Onboarding completed successfully 🎉")
+        # ✅ TRIGGER COMPLETION MODAL
+        session['show_onboarding_complete_modal'] = True
+        flash("🎉 Congratulations! Your profile is now complete. Welcome to KoachSmart!")
         return redirect(url_for('dashboard'))
 
-    return render_template('onboarding_step5.html', profile=profile)
-
+    return render_template(
+        'onboarding_unified.html',
+        profile=profile,
+        current_step=current_step
+    )
 db.init_app(app)
 if __name__ == "__main__":
     socketio.run(app, debug=False)
