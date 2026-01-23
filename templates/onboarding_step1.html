@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Onboarding - Step 1</title>
+</head>
+<body>
+    <h2>Step 1 — Personal Details</h2>
+
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        {% for msg in messages %}
+          <p style="color:red;">{{ msg }}</p>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST">
+        <input name="first_name" placeholder="First Name" required><br><br>
+        <input name="middle_name" placeholder="Middle Name"><br><br>
+        <input name="last_name" placeholder="Last Name" required><br><br>
+        <input name="phone" placeholder="Phone Number" required><br><br>
+
+        <p>Enter OTP (use: 1234)</p>
+        <input name="otp" placeholder="OTP" required><br><br>
+
+        <button type="submit">Verify & Continue</button>
+    </form>
+</body>
+</html>

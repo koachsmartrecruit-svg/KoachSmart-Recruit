@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container py-5">
+  <h3 class="mb-4">Step 5 — Sports & Availability</h3>
+
+  <form method="POST">
+
+    <!-- Sport -->
+    <div class="mb-3">
+      <label class="form-label">Primary Sport *</label>
+      <select name="sport" class="form-control" required>
+        <option value="">Select sport</option>
+        <option>Cricket</option>
+        <option>Football</option>
+        <option>Badminton</option>
+        <option>Tennis</option>
+      </select>
+    </div>
+
+    <!-- Working Type -->
+    <div class="mb-3">
+      <label class="form-label">Working Type *</label>
+      <select name="working_type" class="form-control" required>
+        <option value="">Select</option>
+        <option>Full Time</option>
+        <option>Part Time</option>
+        <option>Contract</option>
+        <option>Flexible</option>
+      </select>
+    </div>
+
+    <!-- Range -->
+    <div class="mb-3">
+      <label class="form-label">Working Range (KM) *</label>
+      <input type="number" name="range_km" class="form-control" required>
+      <div class="form-check mt-2">
+        <input type="checkbox" name="notify" class="form-check-input">
+        <label class="form-check-label">
+          Notify me if outside range
+        </label>
+      </div>
+    </div>
+
+    <!-- Language -->
+    <div class="mb-3">
+      <label class="form-label">Language</label>
+      <input type="text" name="language" class="form-control">
+
+      <div class="d-flex gap-3 mt-2">
+        <div class="form-check">
+          <input type="checkbox" name="read" class="form-check-input">
+          <label class="form-check-label">Read</label>
+        </div>
+        <div class="form-check">
+          <input type="checkbox" name="write" class="form-check-input">
+          <label class="form-check-label">Write</label>
+        </div>
+        <div class="form-check">
+          <input type="checkbox" name="speak" class="form-check-input">
+          <label class="form-check-label">Speak</label>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn btn-primary">Finish Onboarding</button>
+
+  </form>
+</div>
+
+{% endblock %}

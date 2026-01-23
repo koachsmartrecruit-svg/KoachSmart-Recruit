@@ -23,6 +23,7 @@ import requests
 from flask import Flask, request, jsonify
 from local_resume_parser import parse_resume_text
 from pathlib import Path
+from sqlalchemy.exc import IntegrityError
 
 
 load_dotenv()
@@ -162,6 +163,19 @@ class User(UserMixin, db.Model):
     jobs = db.relationship('Job', backref='employer', lazy=True)
     applications = db.relationship('Application', backref='applicant', lazy=True)
     reviews_given = db.relationship('Review', backref='reviewer', lazy=True)
+    # --- GAMIFICATION FIELDS ---
+    points = db.Column(db.Integer, default=0)
+    coins = db.Column(db.Integer, default=0)
+
+    phone_verified = db.Column(db.Boolean, default=False)
+    location_verified = db.Column(db.Boolean, default=False)
+    education_verified = db.Column(db.Boolean, default=False)
+    professional_verified = db.Column(db.Boolean, default=False)
+    # --- ONBOARDING STATE ---
+    onboarding_step = db.Column(db.Integer, default=1)
+    onboarding_completed = db.Column(db.Boolean, default=False)
+
+
 
 class Profile(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -182,6 +196,17 @@ class Profile(db.Model):
     experience_proof_path = db.Column(db.String(300))
     id_proof_path = db.Column(db.String(300))
     reviews = db.relationship('Review', backref='profile', lazy=True)
+        # --- STEP 5 FIELDS ---
+    sport_primary = db.Column(db.String(100))
+    working_type = db.Column(db.String(50))
+    range_km = db.Column(db.Integer)
+    notify_outside_range = db.Column(db.Boolean, default=False)
+
+    language = db.Column(db.String(50))
+    language_read = db.Column(db.Boolean, default=False)
+    language_write = db.Column(db.Boolean, default=False)
+    language_speak = db.Column(db.Boolean, default=False)
+
 
 class Review(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -251,8 +276,169 @@ class Message(db.Model):
 
     sender = db.relationship('User', foreign_keys=[sender_id])
     receiver = db.relationship('User', foreign_keys=[receiver_id])
+class RewardLedger(db.Model):
+    __tablename__ = "reward_ledger"
 
+    id = db.Column(db.Integer, primary_key=True)
+
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+
+    action = db.Column(db.String(100), nullable=False)
+    points_awarded = db.Column(db.Integer, default=0)
+    coins_awarded = db.Column(db.Integer, default=0)
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    user = db.relationship('User', backref='reward_logs')
+
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'action', name='unique_user_action_reward'),
+    )
+def has_reward_been_given(user_id, action):
+    """
+    Check reward ledger to prevent duplicate rewards.
+    """
+    return RewardLedger.query.filter_by(
+        user_id=user_id,
+        action=action
+    ).first() is not None
+
+
+def award_reward(user_id, action, points=0, coins=0):
+    """
+    Atomic reward function.
+    Safely awards points/coins exactly once per action.
+    """
+
+    if points == 0 and coins == 0:
+        return False, "No reward configured."
+
+    try:
+        # Prevent duplicates (fast check)
+        if has_reward_been_given(user_id, action):
+            return False, "Reward already granted."
+
+        user = User.query.get(user_id)
+        if not user:
+            return False, "User not found."
+
+        # Apply reward
+        if points:
+            user.points += int(points)
+
+        if coins:
+            user.coins += int(coins)
+
+        # Ledger entry
+        ledger = RewardLedger(
+            user_id=user_id,
+            action=action,
+            points_awarded=points,
+            coins_awarded=coins
+        )
+
+        db.session.add(ledger)
+        db.session.commit()
+
+        return True, "Reward granted successfully."
+
+    except IntegrityError:
+        # Safety net if duplicate slips through race condition
+        db.session.rollback()
+        return False, "Duplicate reward prevented."
+
+    except Exception as e:
+        db.session.rollback()
+        print("Reward error:", e)
+        return False, "Reward failed due to system error."
+@app.before_request
+def enforce_onboarding():
+    if not current_user.is_authenticated:
+        return
+
+    # Only coaches must complete onboarding
+    if current_user.role != 'coach':
+        return
+
+    # Allow onboarding routes always
+    allowed_paths = [
+        '/onboarding',
+        '/logout',
+        '/static'
+    ]
+
+    if any(request.path.startswith(p) for p in allowed_paths):
+        return
+
+    # If onboarding not completed → redirect
+    if not current_user.onboarding_completed:
+        step = get_next_onboarding_step(current_user)
+
+        if step == 1:
+            return redirect(url_for('onboarding_step_1'))
+        elif step == 2:
+            return redirect(url_for('onboarding_step_2'))
+        elif step == 3:
+            return redirect(url_for('onboarding_step_3'))
+        elif step == 4:
+            return redirect(url_for('onboarding_step_4'))
+        elif step == 5:
+            return redirect(url_for('onboarding_step_5'))
+
+def assign_badge(user_id, badge_field):
+    """
+    Assign badge safely once.
+    badge_field example:
+        'phone_verified'
+        'location_verified'
+        'education_verified'
+        'professional_verified'
+    """
+
+    allowed_badges = {
+        "phone_verified",
+        "location_verified",
+        "education_verified",
+        "professional_verified"
+    }
+
+    if badge_field not in allowed_badges:
+        return False, "Invalid badge."
+
+    try:
+        user = User.query.get(user_id)
+        if not user:
+            return False, "User not found."
+
+        # Already assigned?
+        if getattr(user, badge_field):
+            return False, "Badge already assigned."
+
+        setattr(user, badge_field, True)
+        db.session.commit()
+
+        return True, "Badge assigned."
+
+    except Exception as e:
+        db.session.rollback()
+        print("Badge error:", e)
+        return False, "Badge assignment failed."
 # --- HELPERS ---
+# ==============================
+#    ONBOARDING HELPERS
+# ==============================
+
+def is_onboarding_complete(user):
+    if not user:
+        return False
+    return user.onboarding_completed is True
+
+
+def get_next_onboarding_step(user):
+    if not user:
+        return 1
+    return user.onboarding_step or 1
+
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
@@ -744,6 +930,11 @@ def login():
         user = User.query.filter_by(email=request.form.get('email')).first()
         if user and user.password and check_password_hash(user.password, request.form.get('password')):
             login_user(user)
+
+            next_url = request.args.get('next')
+            if next_url:
+                return redirect(next_url)
+
             if user.role == 'admin':
                 return redirect(url_for('super_admin'))
             if user.role == 'employer':
@@ -751,6 +942,7 @@ def login():
             if user.role == 'coach':
                 return redirect(url_for('show_plans'))
             return redirect(url_for('dashboard'))
+
         elif user and not user.password:
             flash('This account was created with Google. Please use "Login with Google".')
         else:
@@ -985,9 +1177,35 @@ def submit_review(profile_id):
 def verify_coach(profile_id):
     if current_user.role != 'admin':
         return redirect(url_for('dashboard'))
+
     profile = Profile.query.get_or_404(profile_id)
+    user = User.query.get(profile.user_id)
+
+    # Mark education verified
     profile.is_verified = True
+    user.education_verified = True
     db.session.commit()
+
+    # -------------------------
+    # Rewards
+    # -------------------------
+    award_reward(
+        user_id=user.id,
+        action="education_verified",
+        points=10
+    )
+
+    assign_badge(
+        user_id=user.id,
+        badge_field="education_verified"
+    )
+
+    # Advance onboarding if applicable
+    if user.onboarding_step == 3:
+        user.onboarding_step = 4
+        db.session.commit()
+
+    flash("Coach education verified successfully.")
     return redirect(url_for('super_admin'))
 
 @app.route('/reject-coach/<int:profile_id>')
@@ -1460,6 +1678,285 @@ def admin_jobs():
         return redirect(url_for('dashboard'))
     jobs = Job.query.order_by(Job.posted_date.desc()).all()
     return render_template('admin_jobs.html', jobs=jobs)
+
+@app.route('/onboarding/1', methods=['GET', 'POST'])
+@login_required
+def onboarding_step_1():
+    if current_user.role != 'coach':
+        return redirect(url_for('dashboard'))
+
+    profile = Profile.query.filter_by(user_id=current_user.id).first()
+
+    if request.method == 'POST':
+        first = request.form.get('first_name', '').strip()
+        middle = request.form.get('middle_name', '').strip()
+        last = request.form.get('last_name', '').strip()
+        phone = request.form.get('phone', '').strip()
+        otp = request.form.get('otp', '').strip()
+
+        # Validation
+        if not first or not last or not phone:
+            flash("All mandatory fields are required.")
+            return redirect(request.url)
+
+        # Fake OTP validation (replace later)
+        if otp != "1234":
+            flash("Invalid OTP.")
+            return redirect(request.url)
+
+        # Save profile
+        profile.full_name = f"{first} {middle} {last}".strip()
+        profile.phone = phone
+        db.session.commit()
+
+        # -------------------------
+        # Rewards
+        # -------------------------
+        award_reward(
+            user_id=current_user.id,
+            action="phone_verified",
+            points=5
+        )
+
+        assign_badge(
+            user_id=current_user.id,
+            badge_field="phone_verified"
+        )
+
+        # Advance onboarding
+        current_user.onboarding_step = 2
+        db.session.commit()
+
+        flash("Step 1 completed successfully!")
+        return redirect(url_for('onboarding_step'))
+
+    return render_template('onboarding_step1.html', profile=profile)
+@app.route('/onboarding/2', methods=['GET', 'POST'])
+@login_required
+def onboarding_step_2():
+    if current_user.role != 'coach':
+        return redirect(url_for('dashboard'))
+
+    profile = Profile.query.filter_by(user_id=current_user.id).first()
+
+    # Prevent skipping
+    if current_user.onboarding_step < 2:
+        return redirect(url_for('onboarding_step_1'))
+
+    if request.method == 'POST':
+        state = request.form.get('state', '').strip()
+        city = request.form.get('city', '').strip()
+        address = request.form.get('address', '').strip()
+        travel_range = request.form.get('travel_range', '').strip()
+
+        if not state or not city or not travel_range:
+            flash("All mandatory fields are required.")
+            return redirect(request.url)
+
+        # Save data
+        profile.city = f"{city}, {state}"
+        profile.travel_range = travel_range
+
+        # (Temporary storage for address)
+        if address:
+            profile.bio = f"Location: {address}"
+
+        db.session.commit()
+
+        # -------------------------
+        # Rewards
+        # -------------------------
+        award_reward(
+            user_id=current_user.id,
+            action="location_verified",
+            points=20
+        )
+
+        assign_badge(
+            user_id=current_user.id,
+            badge_field="location_verified"
+        )
+
+        # Advance onboarding
+        current_user.onboarding_step = 3
+        db.session.commit()
+
+        flash("Location saved successfully!")
+        return redirect(url_for('onboarding_step_3'))
+
+    return render_template('onboarding_step2.html', profile=profile)
+@app.route('/onboarding/3', methods=['GET', 'POST'])
+@login_required
+def onboarding_step_3():
+    if current_user.role != 'coach':
+        return redirect(url_for('dashboard'))
+
+    # Prevent skipping
+    if current_user.onboarding_step < 3:
+        return redirect(url_for('onboarding_step'))
+
+    profile = Profile.query.filter_by(user_id=current_user.id).first()
+
+    if request.method == 'POST':
+        qualification = request.form.get('qualification', '').strip()
+        specialization = request.form.get('specialization', '').strip()
+        cert_file = request.files.get('certificate')
+
+        if not qualification or not cert_file:
+            flash("Qualification and certificate file are mandatory.")
+            return redirect(request.url)
+
+        filename = secure_filename(f"edu_{current_user.id}_{cert_file.filename}")
+        filepath = os.path.join(app.config['CERT_FOLDER'], filename)
+        cert_file.save(filepath)
+
+        profile.certifications = f"{qualification} - {specialization}"
+        profile.cert_proof_path = filename
+        db.session.commit()
+
+        flash("Education submitted. Awaiting admin verification.")
+        return redirect(url_for('onboarding_step_3'))
+
+    return render_template('onboarding_step3.html', profile=profile)
+@app.route('/onboarding/4', methods=['GET', 'POST'], strict_slashes=False)
+
+@login_required
+def onboarding_step_4():
+    if current_user.role != 'coach':
+        return redirect(url_for('dashboard'))
+
+    # Prevent skipping
+    if current_user.onboarding_step < 4:
+        return redirect(url_for('onboarding_step_3'))
+
+    profile = Profile.query.filter_by(user_id=current_user.id).first()
+
+    if request.method == 'POST':
+        sport = request.form.get('sport', '').strip()
+        organization = request.form.get('organization', '').strip()
+        level = request.form.get('level', '').strip()
+        cert_file = request.files.get('certificate')
+
+        # Optional submission
+        if cert_file:
+            filename = secure_filename(f"sportcert_{current_user.id}_{cert_file.filename}")
+            filepath = os.path.join(app.config['EXP_PROOF_FOLDER'], filename)
+            cert_file.save(filepath)
+
+            profile.experience_proof_path = filename
+            db.session.commit()
+
+            flash("Sports certificate submitted for admin verification.")
+        else:
+            flash("Skipped sports certification.")
+
+        # Allow user to continue regardless
+        current_user.onboarding_step = 5
+        db.session.commit()
+
+        return redirect(url_for('onboarding_step'))
+
+    return render_template('onboarding_step4.html', profile=profile)
+@app.route('/verify-sports-cert/<int:profile_id>')
+@login_required
+def verify_sports_cert(profile_id):
+    if current_user.role != 'admin':
+        return redirect(url_for('dashboard'))
+
+    profile = Profile.query.get_or_404(profile_id)
+    user = User.query.get(profile.user_id)
+
+    # Mark professional verified
+    user.professional_verified = True
+    db.session.commit()
+
+    # -------------------------
+    # Rewards
+    # -------------------------
+    award_reward(
+        user_id=user.id,
+        action="sports_cert_verified",
+        points=10
+    )
+
+    assign_badge(
+        user_id=user.id,
+        badge_field="professional_verified"
+    )
+
+    flash("Sports certification verified successfully.")
+    return redirect(url_for('super_admin'))
+@app.route('/onboarding/5', methods=['GET', 'POST'])
+@login_required
+def onboarding_step_5():
+    if current_user.role != 'coach':
+        return redirect(url_for('dashboard'))
+
+    # Prevent skipping
+    if current_user.onboarding_step < 5:
+        return redirect(url_for('onboarding_step'))
+
+    profile = Profile.query.filter_by(user_id=current_user.id).first()
+
+    if request.method == 'POST':
+        sport = request.form.get('sport')
+        working_type = request.form.get('working_type')
+        range_km = request.form.get('range_km')
+        notify = bool(request.form.get('notify'))
+
+        language = request.form.get('language')
+        read = bool(request.form.get('read'))
+        write = bool(request.form.get('write'))
+        speak = bool(request.form.get('speak'))
+
+        # Validation
+        if not sport or not working_type or not range_km:
+            flash("Sport, working type and range are mandatory.")
+            return redirect(request.url)
+
+        # Save data
+        profile.sport_primary = sport
+        profile.working_type = working_type
+        profile.range_km = int(range_km)
+        profile.notify_outside_range = notify
+
+        profile.language = language
+        profile.language_read = read
+        profile.language_write = write
+        profile.language_speak = speak
+
+        db.session.commit()
+
+        # -----------------
+        # Rewards
+        # -----------------
+        award_reward(
+            user_id=current_user.id,
+            action="sport_added",
+            points=5
+        )
+
+        if language:
+            award_reward(
+                user_id=current_user.id,
+                action="language_completed",
+                points=2
+            )
+
+        award_reward(
+            user_id=current_user.id,
+            action="stage5_completed",
+            coins=100
+        )
+
+        # Mark onboarding complete
+        current_user.onboarding_completed = True
+        db.session.commit()
+
+        flash("Onboarding completed successfully 🎉")
+        return redirect(url_for('dashboard'))
+
+    return render_template('onboarding_step5.html', profile=profile)
 
 db.init_app(app)
 if __name__ == "__main__":

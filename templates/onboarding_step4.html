@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Onboarding - Step 4</title>
+</head>
+<body>
+    <h2>Step 4 — Sports Certification (Optional)</h2>
+
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        {% for msg in messages %}
+          <p style="color:green;">{{ msg }}</p>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST" enctype="multipart/form-data">
+        <input name="sport" placeholder="Sport"><br><br>
+        <input name="organization" placeholder="Organization"><br><br>
+        <input name="level" placeholder="Certification Level"><br><br>
+        <input type="file" name="certificate"><br><br>
+
+        <button type="submit">Submit & Continue</button>
+        <p>You can skip this step if you don't have certification.</p>
+    </form>
+</body>
+</html>
