@@ -1,5 +1,6 @@
 import os
 import math
+import profile
 import requests
 import re
 import stripe 
@@ -140,42 +141,37 @@ class User(UserMixin, db.Model):
     __tablename__ = "user"
 
     id = db.Column(db.Integer, primary_key=True)
-
     username = db.Column(db.String(150), nullable=False)
     email = db.Column(db.String(150), unique=True, nullable=False)
-
-    # 🔴 IMPORTANT: password hashes are LONG
-    # Werkzeug hashes can exceed 300 chars
     password = db.Column(db.Text, nullable=True)
-
     role = db.Column(db.String(50), default='coach')
-
-    # Google IDs & profile pics can also be long
     google_id = db.Column(db.String(255), unique=True)
     profile_pic = db.Column(db.Text)
-
-    # STRIPE FIELDS
-    subscription_status = db.Column(db.String(50), default='free')  # free, basic, pro
+    subscription_status = db.Column(db.String(50), default='free')
     stripe_customer_id = db.Column(db.String(255))
-
+    
     # Relationships
     profile = db.relationship('Profile', backref='user', uselist=False, cascade="all, delete-orphan")
     jobs = db.relationship('Job', backref='employer', lazy=True)
     applications = db.relationship('Application', backref='applicant', lazy=True)
     reviews_given = db.relationship('Review', backref='reviewer', lazy=True)
-    # --- GAMIFICATION FIELDS ---
+    
+    # Gamification
     points = db.Column(db.Integer, default=0)
     coins = db.Column(db.Integer, default=0)
-
     phone_verified = db.Column(db.Boolean, default=False)
     location_verified = db.Column(db.Boolean, default=False)
     education_verified = db.Column(db.Boolean, default=False)
     professional_verified = db.Column(db.Boolean, default=False)
-    # --- ONBOARDING STATE ---
+    
+    # Onboarding
     onboarding_step = db.Column(db.Integer, default=1)
     onboarding_completed = db.Column(db.Boolean, default=False)
-
-
+    
+    # 🆕 REFERRAL SYSTEM
+    referral_code = db.Column(db.String(20), unique=True)  # User's unique code
+    referred_by = db.Column(db.String(20))  # Who referred this user
+    referral_bonus_claimed = db.Column(db.Boolean, default=False)
 
 class Profile(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -196,18 +192,20 @@ class Profile(db.Model):
     experience_proof_path = db.Column(db.String(300))
     id_proof_path = db.Column(db.String(300))
     reviews = db.relationship('Review', backref='profile', lazy=True)
-        # --- STEP 5 FIELDS ---
+    
+    # Step 5 fields
     sport_primary = db.Column(db.String(100))
     working_type = db.Column(db.String(50))
     range_km = db.Column(db.Integer)
     notify_outside_range = db.Column(db.Boolean, default=False)
-
-    language = db.Column(db.String(50))
-    language_read = db.Column(db.Boolean, default=False)
-    language_write = db.Column(db.Boolean, default=False)
-    language_speak = db.Column(db.Boolean, default=False)
-
-
+    # Store as JSON: [{"name": "English", "read": true, "write": true, "speak": true}]
+    languages = db.Column(db.Text)  # JSON string
+    
+    # 🆕 LOCATION DATA
+    latitude = db.Column(db.Float)
+    longitude = db.Column(db.Float)
+    state = db.Column(db.String(100))
+    country = db.Column(db.String(100))
 class Review(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     profile_id = db.Column(db.Integer, db.ForeignKey('profile.id'), nullable=False)
@@ -411,11 +409,64 @@ def assign_badge(user_id, badge_field):
         db.session.rollback()
         print("Badge error:", e)
         return False, "Badge assignment failed."
+import secrets
+
+def generate_referral_code():
+    """Generate a unique 8-character referral code"""
+    return secrets.token_urlsafe(6).upper()[:8]
+
+def process_referral_signup(new_user, referral_code):
+    """Process referral rewards when user signs up"""
+    if not referral_code:
+        return
+    
+    # Find referrer
+    referrer = User.query.filter_by(referral_code=referral_code).first()
+    if not referrer:
+        return
+    
+    # Set referred_by
+    new_user.referred_by = referral_code
+    
+    # Award referrer when new user completes onboarding
+    # This happens in onboarding completion step
+    
 # --- HELPERS ---
 # ==============================
 #    ONBOARDING HELPERS
 # ==============================
-
+def award_referral_bonus(user_id):
+    """Award bonus to referrer when referred user completes onboarding"""
+    user = User.query.get(user_id)
+    
+    if not user or not user.referred_by or user.referral_bonus_claimed:
+        return
+    
+    # Find referrer
+    referrer = User.query.filter_by(referral_code=user.referred_by).first()
+    if not referrer:
+        return
+    
+    # Award referrer
+    award_reward(
+        user_id=referrer.id,
+        action=f"referral_{user.id}",
+        coins=200,
+        points=50
+    )
+    
+    # Award new user
+    award_reward(
+        user_id=user.id,
+        action="referred_signup_bonus",
+        coins=50,
+        points=10
+    )
+    
+    user.referral_bonus_claimed = True
+    db.session.commit()
+    
+    flash(f"🎉 Bonus: You and your referrer earned rewards!")
 def is_onboarding_complete(user):
     if not user:
         return False
@@ -861,7 +912,6 @@ def home():
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
-        # Check if email already exists
         existing = User.query.filter_by(email=request.form.get('email')).first()
         if existing:
             flash('Email already exists')
@@ -872,8 +922,15 @@ def register():
             username=request.form.get('username'),
             email=request.form.get('email'),
             role=request.form.get('role'),
-            password=generate_password_hash(request.form.get('password'))
+            password=generate_password_hash(request.form.get('password')),
+            referral_code=generate_referral_code()  # 🆕 AUTO-GENERATE CODE
         )
+        
+        # 🆕 HANDLE REFERRAL
+        referral_code = request.form.get('referral_code', '').strip().upper()
+        if referral_code:
+            process_referral_signup(new_user, referral_code)
+        
         db.session.add(new_user)
         db.session.commit()
 
@@ -882,26 +939,17 @@ def register():
             db.session.add(Profile(user_id=new_user.id, full_name=new_user.username))
             db.session.commit()
 
-        # --- Mirror to Google Sheets (Users tab) ---
+        # Google Sheets sync
         try:
-            append_row_to_sheet(
-                [
-                    str(new_user.id),
-                    new_user.username,
-                    new_user.email,
-                    new_user.password or '',
-                    new_user.role or '',
-                    new_user.google_id or '',
-                    new_user.profile_pic or '',
-                    new_user.subscription_status or '',
-                    new_user.stripe_customer_id or ''
-                ],
-                sheet_range='Users!A2:I2'
-            )
+            append_row_to_sheet([
+                str(new_user.id), new_user.username, new_user.email,
+                new_user.password or '', new_user.role or '',
+                new_user.google_id or '', new_user.profile_pic or '',
+                new_user.subscription_status or '', new_user.stripe_customer_id or ''
+            ], sheet_range='Users!A2:I2')
         except Exception as e:
             print(f"[Sheets] Failed to append user row: {e}")
 
-        # Login and redirect
         login_user(new_user)
 
         if new_user.role == 'employer':
@@ -910,8 +958,9 @@ def register():
             return redirect(url_for('show_plans'))
         return redirect(url_for('dashboard'))
 
-    return render_template('register.html')
-
+    # 🆕 GET REFERRAL CODE FROM URL
+    referral_code = request.args.get('ref', '')
+    return render_template('register.html', referral_code=referral_code)
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -1713,20 +1762,41 @@ def onboarding_unified():
     # ============================================
     # STEP 2: Location Details
     # ============================================
+    # ============================================
+# STEP 2: Location Details
+# ============================================
     elif current_step == 2 and request.method == 'POST':
         state = request.form.get('state', '').strip()
         city = request.form.get('city', '').strip()
         address = request.form.get('address', '').strip()
         travel_range = request.form.get('travel_range', '').strip()
+        
+        # 🆕 GET COORDINATES
+        latitude = request.form.get('latitude', '').strip()
+        longitude = request.form.get('longitude', '').strip()
+        country = request.form.get('country', '').strip()
 
         if not state or not city or not travel_range:
             flash("State, city, and travel range are required.")
             return redirect(url_for('onboarding_unified'))
 
+        # Save data
         profile.city = f"{city}, {state}"
         profile.travel_range = travel_range
+        profile.state = state
+        profile.country = country
+        
+        # 🆕 SAVE COORDINATES
+        if latitude and longitude:
+            try:
+                profile.latitude = float(latitude)
+                profile.longitude = float(longitude)
+            except:
+                pass
+        
         if address:
             profile.bio = f"Location: {address}"
+        
         db.session.commit()
 
         award_reward(user_id=current_user.id, action="location_verified", points=20)
@@ -1735,11 +1805,9 @@ def onboarding_unified():
         current_user.onboarding_step = 3
         db.session.commit()
 
-        # ✅ TRIGGER MODAL
         session['show_location_verified_modal'] = True
         flash("✅ Location saved! Moving to Step 3...")
         return redirect(url_for('onboarding_unified'))
-
     # ============================================
     # STEP 3: Education & Qualifications
     # ============================================
@@ -1837,6 +1905,8 @@ def onboarding_unified():
 
         current_user.onboarding_completed = True
         db.session.commit()
+        # 🆕 AWARD REFERRAL BONUS
+        award_referral_bonus(current_user.id)
 
         # ✅ TRIGGER COMPLETION MODAL
         session['show_onboarding_complete_modal'] = True

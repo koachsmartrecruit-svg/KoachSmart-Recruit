@@ -9,10 +9,10 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <!-- Leaflet CSS for Map -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <!-- Your Custom CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    {% include 'components/notifications.html' %}
-
 </head>
 <body class="onboarding-active">
     <div class="onboarding-container">
@@ -203,31 +203,73 @@
                         </div>
 
                         <div class="form-content">
+                            <!-- AUTO-DETECT BUTTON -->
+                            <div class="alert alert-info mb-4">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div>
+                                        <i class="bi bi-geo-alt-fill me-2"></i>
+                                        <strong>Auto-detect your location</strong>
+                                        <p class="mb-0 small">Click to automatically fill location details</p>
+                                    </div>
+                                    <button type="button" class="btn btn-primary btn-sm" onclick="detectLocation()">
+                                        <i class="bi bi-crosshair me-1"></i> Detect
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- HIDDEN FIELDS -->
+                            <input type="hidden" name="latitude" id="latitude">
+                            <input type="hidden" name="longitude" id="longitude">
+                            <input type="hidden" name="country" id="country">
+
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label">State <span class="required-asterisk">*</span></label>
-                                    <input type="text" class="form-control" name="state" required placeholder="e.g., Maharashtra">
+                                    <label class="form-label">Country <span class="required-asterisk">*</span></label>
+                                    <select class="form-select" name="country_display" id="country_select" required onchange="loadStates()">
+                                        <option value="">Select Country</option>
+                                    </select>
                                 </div>
                                 <div class="col-md-6 mb-3">
+                                    <label class="form-label">State <span class="required-asterisk">*</span></label>
+                                    <select class="form-select" name="state" id="state_select" required onchange="loadCities()">
+                                        <option value="">Select State</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
                                     <label class="form-label">City <span class="required-asterisk">*</span></label>
-                                    <input type="text" class="form-control" name="city" required placeholder="e.g., Mumbai">
+                                    <select class="form-select" name="city" id="city_select" required>
+                                        <option value="">Select City</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Working Range <span class="required-asterisk">*</span></label>
+                                    <select name="travel_range" class="form-select" id="travel_range" required onchange="updateMap()">
+                                        <option value="">Select range</option>
+                                        <option value="5">Up to 5 KM</option>
+                                        <option value="10">Up to 10 KM</option>
+                                        <option value="20">Up to 20 KM</option>
+                                        <option value="50">Up to 50 KM</option>
+                                        <option value="100">Anywhere</option>
+                                    </select>
                                 </div>
                             </div>
 
                             <div class="mb-3">
                                 <label class="form-label">Address / Area</label>
-                                <textarea class="form-control" name="address" rows="2" placeholder="Enter your locality or landmark (optional)"></textarea>
+                                <textarea class="form-control" name="address" id="address" rows="2" placeholder="Enter your locality (optional)"></textarea>
                             </div>
 
+                            <!-- MAP PREVIEW -->
                             <div class="mb-3">
-                                <label class="form-label">How far are you willing to travel? <span class="required-asterisk">*</span></label>
-                                <select name="travel_range" class="form-select" required>
-                                    <option value="">Select your preferred working range</option>
-                                    <option value="5km">Up to 5 KM</option>
-                                    <option value="10km">Up to 10 KM</option>
-                                    <option value="20km">Up to 20 KM</option>
-                                    <option value="Anywhere">Flexible / Anywhere</option>
-                                </select>
+                                <label class="form-label">Your Working Area Preview</label>
+                                <div id="map" style="height: 300px; border-radius: 12px; display: none;"></div>
+                                <div id="mapPlaceholder" class="text-center p-5" style="background: #f8f9fa; border-radius: 12px; border: 2px dashed #dee2e6;">
+                                    <i class="bi bi-map text-muted" style="font-size: 3rem;"></i>
+                                    <p class="text-muted mt-2 mb-0">Map will appear after location detection</p>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -402,25 +444,19 @@
                                 </div>
                             </div>
 
+                            <!-- MULTIPLE LANGUAGES WITH SKILLS -->
                             <div class="mb-3">
-                                <label class="form-label">Language</label>
-                                <input type="text" name="language" class="form-control" placeholder="e.g., English, Hindi, Marathi">
-                                
-                                <div class="d-flex gap-3 mt-2">
-                                    <div class="form-check">
-                                        <input type="checkbox" name="read" class="form-check-input" id="read-check">
-                                        <label class="form-check-label" for="read-check">Read</label>
-                                    </div>
-                                    <div class="form-check">
-                                        <input type="checkbox" name="write" class="form-check-input" id="write-check">
-                                        <label class="form-check-label" for="write-check">Write</label>
-                                    </div>
-                                    <div class="form-check">
-                                        <input type="checkbox" name="speak" class="form-check-input" id="speak-check">
-                                        <label class="form-check-label" for="speak-check">Speak</label>
-                                    </div>
+                                <label class="form-label">Languages</label>
+                                <div id="languagesContainer">
+                                    <!-- Language entries will be added here -->
                                 </div>
+                                <button type="button" class="btn btn-outline-primary btn-sm mt-2" onclick="addLanguage()">
+                                    <i class="bi bi-plus-circle me-1"></i> Add Language
+                                </button>
                             </div>
+
+                            <!-- Hidden field to store JSON -->
+                            <input type="hidden" name="languages_json" id="languages_json">
                         </div>
                     </div>
 
@@ -454,10 +490,288 @@
         </div>
     </div>
 
+    <!-- Include Gamification Modals -->
+    {% include 'components/notifications.html' %}
+
     <!-- Bootstrap 5 JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-    // File upload handlers
+    
+    <!-- Leaflet JS for Map -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script>
+    // ===============================
+    // LOCATION & MAP LOGIC
+    // ===============================
+    let map, marker, circle;
+    let countriesData = [];
+    let statesData = [];
+    let citiesData = [];
+
+    // Load countries on page load
+    window.addEventListener('load', async function() {
+        try {
+            const response = await fetch('https://api.countrystatecity.in/v1/countries', {
+                headers: {
+                    'X-CAPI-KEY': 'NHhvOEcyWk50N2Vna3VFTE00bFp3MjFKR0ZEOUhkZlg4RTk1MlJlaA=='
+                }
+            });
+            countriesData = await response.json();
+            
+            const select = document.getElementById('country_select');
+            countriesData.forEach(country => {
+                const option = document.createElement('option');
+                option.value = country.iso2;
+                option.textContent = country.name;
+                option.dataset.name = country.name;
+                select.appendChild(option);
+            });
+
+            // Add first language field
+            addLanguage();
+        } catch (error) {
+            console.error('Error loading countries:', error);
+        }
+    });
+
+    async function loadStates() {
+        const countryCode = document.getElementById('country_select').value;
+        const countryName = document.getElementById('country_select').selectedOptions[0].dataset.name;
+        document.getElementById('country').value = countryName;
+        
+        const stateSelect = document.getElementById('state_select');
+        const citySelect = document.getElementById('city_select');
+        
+        stateSelect.innerHTML = '<option value="">Loading...</option>';
+        citySelect.innerHTML = '<option value="">Select City</option>';
+        
+        try {
+            const response = await fetch(`https://api.countrystatecity.in/v1/countries/${countryCode}/states`, {
+                headers: {
+                    'X-CAPI-KEY': 'NHhvOEcyWk50N2Vna3VFTE00bFp3MjFKR0ZEOUhkZlg4RTk1MlJlaA=='
+                }
+            });
+            statesData = await response.json();
+            
+            stateSelect.innerHTML = '<option value="">Select State</option>';
+            statesData.forEach(state => {
+                const option = document.createElement('option');
+                option.value = state.iso2;
+                option.textContent = state.name;
+                option.dataset.name = state.name;
+                stateSelect.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Error loading states:', error);
+            stateSelect.innerHTML = '<option value="">Error loading states</option>';
+        }
+    }
+
+    async function loadCities() {
+        const countryCode = document.getElementById('country_select').value;
+        const stateCode = document.getElementById('state_select').value;
+        
+        const citySelect = document.getElementById('city_select');
+        citySelect.innerHTML = '<option value="">Loading...</option>';
+        
+        try {
+            const response = await fetch(`https://api.countrystatecity.in/v1/countries/${countryCode}/states/${stateCode}/cities`, {
+                headers: {
+                    'X-CAPI-KEY': 'NHhvOEcyWk50N2Vna3VFTE00bFp3MjFKR0ZEOUhkZlg4RTk1MlJlaA=='
+                }
+            });
+            citiesData = await response.json();
+            
+            citySelect.innerHTML = '<option value="">Select City</option>';
+            citiesData.forEach(city => {
+                const option = document.createElement('option');
+                option.value = city.name;
+                option.textContent = city.name;
+                citySelect.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Error loading cities:', error);
+            citySelect.innerHTML = '<option value="">Error loading cities</option>';
+        }
+    }
+
+    function detectLocation() {
+        if (!navigator.geolocation) {
+            alert('Geolocation not supported');
+            return;
+        }
+
+        const btn = event.target.closest('button');
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Detecting...';
+        btn.disabled = true;
+
+        navigator.geolocation.getCurrentPosition(
+            async function(position) {
+                const lat = position.coords.latitude;
+                const lon = position.coords.longitude;
+
+                document.getElementById('latitude').value = lat;
+                document.getElementById('longitude').value = lon;
+
+                try {
+                    const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
+                    const data = await response.json();
+
+                    // Set country
+                    const countryName = data.address.country;
+                    const countrySelect = document.getElementById('country_select');
+                    for (let option of countrySelect.options) {
+                        if (option.dataset.name === countryName) {
+                            countrySelect.value = option.value;
+                            await loadStates();
+                            break;
+                        }
+                    }
+
+                    // Set state
+                    setTimeout(async () => {
+                        const stateName = data.address.state;
+                        const stateSelect = document.getElementById('state_select');
+                        for (let option of stateSelect.options) {
+                            if (option.dataset.name === stateName) {
+                                stateSelect.value = option.value;
+                                await loadCities();
+                                break;
+                            }
+                        }
+
+                        // Set city
+                        setTimeout(() => {
+                            const cityName = data.address.city || data.address.town || data.address.village;
+                            const citySelect = document.getElementById('city_select');
+                            for (let option of citySelect.options) {
+                                if (option.value === cityName) {
+                                    citySelect.value = option.value;
+                                    break;
+                                }
+                            }
+
+                            document.getElementById('address').value = data.display_name || '';
+                            initMap(lat, lon);
+                        }, 1000);
+                    }, 1000);
+
+                    btn.innerHTML = '<i class="bi bi-check-circle"></i> Detected!';
+                    btn.classList.add('btn-success');
+                    btn.classList.remove('btn-primary');
+                    
+                    setTimeout(() => {
+                        btn.innerHTML = '<i class="bi bi-crosshair"></i> Detect';
+                        btn.classList.remove('btn-success');
+                        btn.classList.add('btn-primary');
+                        btn.disabled = false;
+                    }, 2000);
+                } catch (error) {
+                    alert('Could not fetch location. Please select manually.');
+                    btn.innerHTML = '<i class="bi bi-crosshair"></i> Detect';
+                    btn.disabled = false;
+                }
+            },
+            function() {
+                alert('Location access denied');
+                btn.innerHTML = '<i class="bi bi-crosshair"></i> Detect';
+                btn.disabled = false;
+            }
+        );
+    }
+
+    function initMap(lat, lon) {
+        document.getElementById('map').style.display = 'block';
+        document.getElementById('mapPlaceholder').style.display = 'none';
+
+        if (map) map.remove();
+
+        map = L.map('map').setView([lat, lon], 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
+        
+        marker = L.marker([lat, lon]).addTo(map);
+        updateMap();
+    }
+
+    function updateMap() {
+        if (!map) return;
+
+        const range = parseInt(document.getElementById('travel_range').value) || 5;
+        const lat = parseFloat(document.getElementById('latitude').value);
+        const lon = parseFloat(document.getElementById('longitude').value);
+
+        if (circle) map.removeLayer(circle);
+
+        circle = L.circle([lat, lon], {
+            color: '#2563eb',
+            fillColor: '#3b82f6',
+            fillOpacity: 0.2,
+            radius: range * 1000
+        }).addTo(map);
+
+        map.fitBounds(circle.getBounds());
+    }
+
+    // ===============================
+    // LANGUAGE LOGIC
+    // ===============================
+    let languageCount = 0;
+    const availableLanguages = [
+        'English', 'Hindi', 'Marathi', 'Tamil', 'Telugu', 'Gujarati', 
+        'Kannada', 'Bengali', 'Malayalam', 'Punjabi', 'Urdu', 'Spanish', 
+        'French', 'German', 'Mandarin', 'Arabic'
+    ];
+
+    function addLanguage() {
+        languageCount++;
+        const container = document.getElementById('languagesContainer');
+        
+        const languageDiv = document.createElement('div');
+        languageDiv.className = 'language-entry mb-3 p-3 border rounded';
+        languageDiv.id = `language-${languageCount}`;
+        languageDiv.innerHTML = `
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <strong>Language ${languageCount}</strong>
+                ${languageCount > 1 ? `<button type="button" class="btn btn-sm btn-outline-danger" onclick="removeLanguage(${languageCount})"><i class="bi bi-trash"></i></button>` : ''}
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-2">
+                    <select class="form-select form-select-sm language-select" data-id="${languageCount}" required>
+                        <option value="">Select Language</option>
+                        ${availableLanguages.map(lang => `<option value="${lang}">${lang}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="col-md-6 mb-2">
+                    <div class="d-flex gap-2">
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="read-${languageCount}">
+                            <label class="form-check-label small" for="read-${languageCount}">Read</label>
+                        </div>
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="write-${languageCount}">
+                            <label class="form-check-label small" for="write-${languageCount}">Write</label>
+                        </div>
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="speak-${languageCount}">
+                            <label class="form-check-label small" for="speak-${languageCount}">Speak</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        container.appendChild(languageDiv);
+    }
+
+    function removeLanguage(id) {
+        document.getElementById(`language-${id}`).remove();
+    }
+
+    // ===============================
+    // FILE UPLOAD & FORM LOGIC
+    // ===============================
     function handleFileSelect(input, previewId) {
         const file = input.files[0];
         const preview = document.getElementById(previewId);
@@ -491,7 +805,29 @@
     document.body.appendChild(loadingOverlay);
 
     const form = document.getElementById('onboardingForm');
+    
+    // Collect languages before form submission
     form.addEventListener('submit', function(e) {
+        if (document.getElementById('step-5').classList.contains('active')) {
+            const languages = [];
+            document.querySelectorAll('.language-entry').forEach(entry => {
+                const id = entry.id.split('-')[1];
+                const select = entry.querySelector('.language-select');
+                const name = select.value;
+                
+                if (name) {
+                    languages.push({
+                        name: name,
+                        read: document.getElementById(`read-${id}`).checked,
+                        write: document.getElementById(`write-${id}`).checked,
+                        speak: document.getElementById(`speak-${id}`).checked
+                    });
+                }
+            });
+            
+            document.getElementById('languages_json').value = JSON.stringify(languages);
+        }
+
         if (!form.checkValidity()) {
             e.preventDefault();
             e.stopPropagation();
@@ -536,7 +872,7 @@
     toggleRequiredFields();
     window.addEventListener("load", toggleRequiredFields);
 
-    // ✅ ✅ ✅ MODAL TRIGGERS ✅ ✅ ✅
+    // MODAL TRIGGERS
     document.addEventListener('DOMContentLoaded', function() {
         {% if session.get('show_phone_verified_modal') %}
             new bootstrap.Modal(document.getElementById('phoneVerifiedModal')).show();
@@ -558,6 +894,6 @@
             {{ session.pop('show_language_added_modal', None) or '' }}
         {% endif %}
     });
-</script>
+    </script>
 </body>
 </html>

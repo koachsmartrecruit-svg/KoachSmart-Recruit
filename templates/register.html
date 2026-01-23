@@ -59,7 +59,24 @@
               </button>
             </div>
           </div>
-
+          <!-- 🆕 REFERRAL CODE FIELD -->
+          <div class="form-group">
+              <label for="referral_code">
+                  <i class="bi bi-gift"></i> Referral Code (Optional)
+              </label>
+              <input 
+                  type="text" 
+                  class="form-control" 
+                  id="referral_code" 
+                  name="referral_code" 
+                  placeholder="Enter referral code (if you have one)"
+                  value="{{ referral_code }}"
+                  maxlength="8"
+                  style="text-transform: uppercase;">
+              <small class="form-text text-muted">
+                  Earn 50 bonus coins by using a referral code!
+              </small>
+          </div>
           <!-- Role -->
           <div class="form-group">
             <label>I am signing up as</label>

@@ -221,6 +221,41 @@
                     <button class="btn btn-outline-light text-start" onclick="getLocation()"><i class="fas fa-map-marker-alt me-2 text-danger"></i> Find Jobs Near Me</button>
                 </div>
             </div>
+            <!-- 🆕 REFERRAL CARD -->
+            <div class="glass-card p-4 mt-4">
+                <h5 class="fw-bold mb-3">🎁 Refer & Earn</h5>
+                <p class="small text-muted">Invite coaches and earn 200 coins per referral!</p>
+                
+                <div class="alert alert-primary mb-3">
+                    <strong>Your Code:</strong>
+                    <div class="d-flex align-items-center mt-2">
+                        <code class="flex-grow-1 bg-white p-2 rounded" id="refCode">{{ current_user.referral_code }}</code>
+                        <button class="btn btn-sm btn-primary ms-2" onclick="copyCode()">
+                            <i class="bi bi-clipboard"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="input-group input-group-sm">
+                    <input type="text" class="form-control" id="refLink" value="{{ request.url_root }}register?ref={{ current_user.referral_code }}" readonly>
+                    <button class="btn btn-primary" onclick="copyLink()">
+                        <i class="bi bi-share"></i>
+                    </button>
+                </div>
+            </div>
+
+            <script>
+            function copyCode() {
+                navigator.clipboard.writeText(document.getElementById('refCode').textContent);
+                showToast('Code copied!', 'success');
+            }
+
+            function copyLink() {
+                const link = document.getElementById('refLink');
+                navigator.clipboard.writeText(link.value);
+                showToast('Link copied!', 'success');
+            }
+            </script>
         </div>
     </div>
 </div>
