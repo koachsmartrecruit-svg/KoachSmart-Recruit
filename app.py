@@ -1,75 +1,61 @@
 import os
 import math
-import profile
-import requests
-import re
-import stripe 
 import time
+import json
+import random
+import re
+import stripe
+import smtplib
+import secrets
+from pathlib import Path
+from datetime import datetime
+from enum import Enum
 
-from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify, current_app
+from flask import (
+    Flask, render_template, request, redirect, url_for, flash,
+    session, jsonify, current_app, abort
+)
 from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
+from flask_login import (
+    LoginManager, UserMixin, login_user, login_required,
+    logout_user, current_user
+)
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
-from datetime import datetime
 from authlib.integrations.flask_client import OAuth
 from flask_mail import Mail, Message
 from dotenv import load_dotenv
+from sqlalchemy.exc import IntegrityError
+from flask_socketio import SocketIO, emit, join_room, leave_room
+
 import PyPDF2
 import docx
-from flask_socketio import SocketIO, emit, join_room, leave_room
-import os
-import json
-import requests
-from flask import Flask, request, jsonify
+
 from local_resume_parser import parse_resume_text
-from pathlib import Path
-from sqlalchemy.exc import IntegrityError
 
+# Email helpers
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
-load_dotenv()
+# Google Sheets
 from googleapiclient.discovery import build
 from google.oauth2.service_account import Credentials
 
-# --- GOOGLE SHEETS CONFIG ---
+# -----------------------------------------------------------------------------
+# Load environment
+# -----------------------------------------------------------------------------
+load_dotenv()
+
+# -----------------------------------------------------------------------------
+# Google Sheets config
+# -----------------------------------------------------------------------------
 SHEETS_SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 GOOGLE_SHEETS_CREDENTIALS = os.getenv('GOOGLE_SHEETS_CREDENTIALS')
 GOOGLE_SHEETS_SPREADSHEET_ID = os.getenv('GOOGLE_SHEETS_SPREADSHEET_ID')
 
-
-def get_sheets_service():
-    """Build and return a Sheets API service client."""
-    if not GOOGLE_SHEETS_CREDENTIALS or not GOOGLE_SHEETS_SPREADSHEET_ID:
-        return None
-
-    creds = Credentials.from_service_account_file(
-        GOOGLE_SHEETS_CREDENTIALS,
-        scopes=SHEETS_SCOPES
-    )
-    service = build('sheets', 'v4', credentials=creds)
-    return service
-
-
-def append_row_to_sheet(values, sheet_range):
-    """
-    Append a single row to the Google Sheet.
-
-    `values` must be a list, e.g. ['1', 'name', 'email'].
-    `sheet_range` like 'Users!A2:E2', 'Jobs!A2:I2', etc.
-    """
-    service = get_sheets_service()
-    if service is None:
-        return
-
-    body = {'values': [values]}
-    service.spreadsheets().values().append(
-        spreadsheetId=GOOGLE_SHEETS_SPREADSHEET_ID,
-        range=sheet_range,
-        valueInputOption='RAW',
-        insertDataOption='INSERT_ROWS',
-        body=body
-    ).execute()
-
+# -----------------------------------------------------------------------------
+# Flask app + core extensions must be created BEFORE models
+# -----------------------------------------------------------------------------
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'default-key')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL")
@@ -79,19 +65,14 @@ app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
     "pool_recycle": 300
 }
 
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-
-# Initialize SocketIO
-socketio = SocketIO(app, cors_allowed_origins="*")
-
-# --- STRIPE CONFIGURATION ---
+# Stripe
 stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
 app.config['STRIPE_PUBLISHABLE_KEY'] = os.getenv('STRIPE_PUBLISHABLE_KEY')
 app.config['STRIPE_PRICE_BASIC'] = os.getenv('STRIPE_PRICE_BASIC')
 app.config['STRIPE_PRICE_PRO'] = os.getenv('STRIPE_PRICE_PRO')
 app.config['STRIPE_WEBHOOK_SECRET'] = os.getenv('STRIPE_WEBHOOK_SECRET')
 
-# --- FOLDERS ---
+# Upload folders
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 app.config['CERT_FOLDER'] = 'static/certs'
 app.config['RESUME_FOLDER'] = 'static/resumes'
@@ -101,16 +82,15 @@ app.config['ID_PROOF_FOLDER'] = 'static/id_proofs'
 app.config['TEMP_FOLDER'] = 'static/temp_docs'
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
 
-folders = [
+for folder in [
     app.config['UPLOAD_FOLDER'],
     app.config['CERT_FOLDER'], app.config['RESUME_FOLDER'],
     app.config['PROFILE_PIC_FOLDER'], app.config['EXP_PROOF_FOLDER'],
     app.config['ID_PROOF_FOLDER'], app.config['TEMP_FOLDER']
-]
-for folder in folders:
+]:
     os.makedirs(folder, exist_ok=True)
 
-# --- CONFIG ---
+# Mail
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
@@ -118,6 +98,7 @@ app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
 app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
 mail = Mail(app)
 
+# Google OAuth
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 app.config['GOOGLE_CLIENT_ID'] = os.getenv('GOOGLE_CLIENT_ID')
 app.config['GOOGLE_CLIENT_SECRET'] = os.getenv('GOOGLE_CLIENT_SECRET')
@@ -131,15 +112,111 @@ google = oauth.register(
     server_metadata_url=app.config['GOOGLE_DISCOVERY_URL'],
     client_kwargs={'scope': 'openid email profile'},
 )
-db = SQLAlchemy()
+# 2) Add a before_request guard that only enforces onboarding for employers on protected pages
+@app.before_request
+def enforce_employer_onboarding():
+    # Only enforce for logged-in employers
+    if not current_user.is_authenticated or current_user.role != 'employer':
+        return
+
+    # Allow static assets
+    if request.path.startswith('/static'):
+        return
+
+    # Public/auth/onboarding pages that should always be accessible
+    always_allow_endpoints = {
+        'home', 'login', 'register', 'logout',
+        'forgot_password', 'reset_password_mock',
+        'login_google', 'authorize_google', 'select_role',
+        'about', 'careers', 'success_stories', 'pricing',
+        'coach_guide', 'academy_guide', 'safety', 'help_center',
+        'payment_pending', 'error_demo',
+        'hirer_onboarding',  # onboarding page itself
+    }
+
+    if request.endpoint in always_allow_endpoints:
+        return
+
+    # Protected employer app pages
+    protected_employer_endpoints = {
+        'dashboard', 'new_job', 'edit_job', 'toggle_job_status',
+        'admin_jobs', 'admin_users', 'super_admin',
+    }
+
+    if (request.endpoint in protected_employer_endpoints) and (not current_user.employer_onboarding_completed):
+        return redirect(url_for('hirer_onboarding'))
+# DB and login manager BEFORE models
+db = SQLAlchemy(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
-# --- MODELS ---
+# SocketIO
+socketio = SocketIO(app, cors_allowed_origins="*")
+
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+# -----------------------------------------------------------------------------
+# Onboarding enforcement (only for protected app pages)
+# -----------------------------------------------------------------------------
+@app.before_request
+def enforce_onboarding():
+    # Only enforce for logged-in coaches
+    if not current_user.is_authenticated or current_user.role != 'coach':
+        return
+
+    # Pages that should ALWAYS be accessible (public/auth flows)
+    always_allow_endpoints = {
+        # Auth + account
+        'login', 'register', 'logout', 'forgot_password', 'reset_password_mock',
+        'login_google', 'authorize_google', 'select_role',
+
+        # Public pages
+        'home', 'about', 'careers', 'success_stories', 'pricing',
+        'coach_guide', 'academy_guide', 'safety', 'help_center',
+        'about_page', 'error_demo', 'payment_pending',
+
+        # Onboarding page itself
+        'onboarding_unified',
+    }
+
+    # Allow static assets by path
+    if request.path.startswith('/static'):
+        return
+
+    # If the requested endpoint is public, allow it
+    if request.endpoint in always_allow_endpoints:
+        return
+
+    # Protected app pages (connected to dashboard/using app features)
+    protected_coach_endpoints = {
+        'dashboard', 'coach_jobs', 'explore_coaches',
+        'apply_job', 'update_status',
+        'resume_builder', 'edit_profile', 'delete_profile',
+        'new_job', 'job_new', 'job_edit', 'toggle_job_status',
+        'submit_review', 'chathome', 'chat',
+    }
+
+    # If onboarding is NOT completed and user hits a protected page → redirect
+    if (request.endpoint in protected_coach_endpoints) and (not current_user.onboarding_completed):
+        return redirect(url_for('onboarding_unified'))
+# -----------------------------------------------------------------------------
+# Enums
+# -----------------------------------------------------------------------------
+class ReviewStatus(str, Enum):
+    pending = "Pending"
+    approved = "Approved"
+    rejected = "Rejected"
+    not_required = "Not Required"
+
+class HiringMode(str, Enum):
+    single = "Single"
+    multiple = "Multiple"
+
+# -----------------------------------------------------------------------------
+# MODELS (now safely defined because db exists)
+# -----------------------------------------------------------------------------
 class User(UserMixin, db.Model):
     __tablename__ = "user"
-
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(150), nullable=False)
     email = db.Column(db.String(150), unique=True, nullable=False)
@@ -149,28 +226,27 @@ class User(UserMixin, db.Model):
     profile_pic = db.Column(db.Text)
     subscription_status = db.Column(db.String(50), default='free')
     stripe_customer_id = db.Column(db.String(255))
-    
-    # Relationships
+
     profile = db.relationship('Profile', backref='user', uselist=False, cascade="all, delete-orphan")
     jobs = db.relationship('Job', backref='employer', lazy=True)
     applications = db.relationship('Application', backref='applicant', lazy=True)
     reviews_given = db.relationship('Review', backref='reviewer', lazy=True)
-    
-    # Gamification
+
     points = db.Column(db.Integer, default=0)
     coins = db.Column(db.Integer, default=0)
     phone_verified = db.Column(db.Boolean, default=False)
     location_verified = db.Column(db.Boolean, default=False)
     education_verified = db.Column(db.Boolean, default=False)
     professional_verified = db.Column(db.Boolean, default=False)
-    
-    # Onboarding
+
     onboarding_step = db.Column(db.Integer, default=1)
     onboarding_completed = db.Column(db.Boolean, default=False)
-    
-    # 🆕 REFERRAL SYSTEM
-    referral_code = db.Column(db.String(20), unique=True)  # User's unique code
-    referred_by = db.Column(db.String(20))  # Who referred this user
+        # Hirer (employer) onboarding
+    employer_onboarding_step = db.Column(db.Integer, default=1)
+    employer_onboarding_completed = db.Column(db.Boolean, default=False)
+    # Referral
+    referral_code = db.Column(db.String(20), unique=True)
+    referred_by = db.Column(db.String(20))
     referral_bonus_claimed = db.Column(db.Boolean, default=False)
 
 class Profile(db.Model):
@@ -186,26 +262,24 @@ class Profile(db.Model):
     travel_range = db.Column(db.String(100))
     is_verified = db.Column(db.Boolean, default=False)
     views = db.Column(db.Integer, default=0)
-    
+
     cert_proof_path = db.Column(db.String(300))
     resume_path = db.Column(db.String(300))
     experience_proof_path = db.Column(db.String(300))
     id_proof_path = db.Column(db.String(300))
     reviews = db.relationship('Review', backref='profile', lazy=True)
-    
-    # Step 5 fields
+
     sport_primary = db.Column(db.String(100))
     working_type = db.Column(db.String(50))
     range_km = db.Column(db.Integer)
     notify_outside_range = db.Column(db.Boolean, default=False)
-    # Store as JSON: [{"name": "English", "read": true, "write": true, "speak": true}]
     languages = db.Column(db.Text)  # JSON string
-    
-    # 🆕 LOCATION DATA
+
     latitude = db.Column(db.Float)
     longitude = db.Column(db.Float)
     state = db.Column(db.String(100))
     country = db.Column(db.String(100))
+
 class Review(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     profile_id = db.Column(db.Integer, db.ForeignKey('profile.id'), nullable=False)
@@ -213,21 +287,19 @@ class Review(db.Model):
     rating = db.Column(db.Integer, nullable=False)
     comment = db.Column(db.Text)
     date = db.Column(db.DateTime, default=datetime.utcnow)
+
 class Job(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     employer_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
     title = db.Column(db.String(150), nullable=False)
     sport = db.Column(db.String(100), nullable=False)
-
-    # Existing location
     location = db.Column(db.String(150), nullable=False)
 
-    # NEW address components
-    venue = db.Column(db.String(150))       # e.g. "Mumbai Academy Ground"
-    city = db.Column(db.String(100))        # e.g. "Mumbai"
-    state = db.Column(db.String(100))       # e.g. "Maharashtra"
-    country = db.Column(db.String(100))     # e.g. "India"
+    venue = db.Column(db.String(150))
+    city = db.Column(db.String(100))
+    state = db.Column(db.String(100))
+    country = db.Column(db.String(100))
 
     lat = db.Column(db.Float, nullable=True)
     lng = db.Column(db.Float, nullable=True)
@@ -248,71 +320,99 @@ class Application(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     status = db.Column(db.String(50), default='Applied')
     match_score = db.Column(db.Integer)
-    # NEW: Store the 'Why' behind the score
-    match_reasons = db.Column(db.Text) 
+    match_reasons = db.Column(db.Text)
     applied_date = db.Column(db.DateTime, default=datetime.utcnow)
     custom_resume_path = db.Column(db.String(300))
     screening_answers = db.Column(db.Text)
     job = db.relationship('Job', backref='applications')
 
-# --- CHAT MODEL ---
 class Message(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-
     sender_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     receiver_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-
     content = db.Column(db.Text, nullable=False)
-
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
-
-    # read / delivery
     is_read = db.Column(db.Boolean, default=False)
-
-    # soft delete
     is_deleted = db.Column(db.Boolean, default=False)
 
     sender = db.relationship('User', foreign_keys=[sender_id])
     receiver = db.relationship('User', foreign_keys=[receiver_id])
+
 class RewardLedger(db.Model):
     __tablename__ = "reward_ledger"
-
     id = db.Column(db.Integer, primary_key=True)
-
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-
     action = db.Column(db.String(100), nullable=False)
     points_awarded = db.Column(db.Integer, default=0)
     coins_awarded = db.Column(db.Integer, default=0)
-
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
     user = db.relationship('User', backref='reward_logs')
-
     __table_args__ = (
         db.UniqueConstraint('user_id', 'action', name='unique_user_action_reward'),
     )
-def has_reward_been_given(user_id, action):
-    """
-    Check reward ledger to prevent duplicate rewards.
-    """
-    return RewardLedger.query.filter_by(
-        user_id=user_id,
-        action=action
-    ).first() is not None
 
+# Hirer + Review (ADMIN multi-level approvals)
+class Hirer(db.Model):
+    __tablename__ = 'hirer'
+    id = db.Column(db.Integer, primary_key=True)
+    institute_name = db.Column(db.String(150), nullable=False)
+    address_full = db.Column(db.Text, nullable=False)
+    city = db.Column(db.String(100), nullable=False)
+    state = db.Column(db.String(100), nullable=False)
+    country = db.Column(db.String(100), default="India", nullable=False)
+    contact_number = db.Column(db.String(15), nullable=False)
+    alternate_number = db.Column(db.String(15))
+    email = db.Column(db.String(150), nullable=False)
+    email_otp_status = db.Column(db.String(20), default="Pending")
+    phone_otp_status = db.Column(db.String(20), default="Pending")
+    google_maps_link = db.Column(db.Text)
+    latitude = db.Column(db.Float)
+    longitude = db.Column(db.Float)
+    hiring_mode = db.Column(db.String(20), nullable=False)
+    hiring_count = db.Column(db.Integer)
+    notes = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class HirerReview(db.Model):
+    __tablename__ = 'hirer_review'
+    id = db.Column(db.Integer, primary_key=True)
+    hirer_id = db.Column(db.Integer, db.ForeignKey('hirer.id'), nullable=False)
+    hirer = db.relationship('Hirer', backref=db.backref('review', uselist=False))
+
+    l1_status = db.Column(db.String(20), default=ReviewStatus.pending.value)
+    l1_reviewer_id = db.Column(db.Integer)
+    l1_note = db.Column(db.Text)
+    l1_at = db.Column(db.DateTime)
+
+    l2_status = db.Column(db.String(20), default=ReviewStatus.pending.value)
+    l2_reviewer_id = db.Column(db.Integer)
+    l2_note = db.Column(db.Text)
+    l2_at = db.Column(db.DateTime)
+
+    compliance_status = db.Column(db.String(20), default=ReviewStatus.not_required.value)
+    compliance_reviewer_id = db.Column(db.Integer)
+    compliance_note = db.Column(db.Text)
+    compliance_at = db.Column(db.DateTime)
+
+    docs_address_proof = db.Column(db.Boolean, default=False)
+    docs_registration = db.Column(db.Boolean, default=False)
+    docs_website = db.Column(db.Boolean, default=False)
+    docs_maps_link = db.Column(db.Boolean, default=False)
+
+    final_status = db.Column(db.String(20), default=ReviewStatus.pending.value)
+    ready_to_post = db.Column(db.Boolean, default=False)
+    final_at = db.Column(db.DateTime)
+
+# -----------------------------------------------------------------------------
+# Helpers: rewards, onboarding, OTP, sheets
+# -----------------------------------------------------------------------------
+def has_reward_been_given(user_id, action):
+    return RewardLedger.query.filter_by(user_id=user_id, action=action).first() is not None
 
 def award_reward(user_id, action, points=0, coins=0):
-    """
-    Atomic reward function.
-    Safely awards points/coins exactly once per action.
-    """
-
     if points == 0 and coins == 0:
         return False, "No reward configured."
-
     try:
-        # Prevent duplicates (fast check)
         if has_reward_been_given(user_id, action):
             return False, "Reward already granted."
 
@@ -320,158 +420,74 @@ def award_reward(user_id, action, points=0, coins=0):
         if not user:
             return False, "User not found."
 
-        # Apply reward
         if points:
             user.points += int(points)
-
         if coins:
             user.coins += int(coins)
 
-        # Ledger entry
         ledger = RewardLedger(
             user_id=user_id,
             action=action,
             points_awarded=points,
             coins_awarded=coins
         )
-
         db.session.add(ledger)
         db.session.commit()
-
         return True, "Reward granted successfully."
-
     except IntegrityError:
-        # Safety net if duplicate slips through race condition
         db.session.rollback()
         return False, "Duplicate reward prevented."
-
     except Exception as e:
         db.session.rollback()
         print("Reward error:", e)
         return False, "Reward failed due to system error."
-@app.before_request
-def enforce_onboarding():
-    if not current_user.is_authenticated:
-        return
 
-    # Only coaches must complete onboarding
-    if current_user.role != 'coach':
-        return
-
-    # Allow onboarding routes always
-    allowed_paths = [
-        '/onboarding',
-        '/logout',
-        '/static'
-    ]
-
-    if any(request.path.startswith(p) for p in allowed_paths):
-        return
-
-    # If onboarding not completed → redirect to unified onboarding
-    if not current_user.onboarding_completed:
-        return redirect(url_for('onboarding_unified'))
 def assign_badge(user_id, badge_field):
-    """
-    Assign badge safely once.
-    badge_field example:
-        'phone_verified'
-        'location_verified'
-        'education_verified'
-        'professional_verified'
-    """
-
-    allowed_badges = {
-        "phone_verified",
-        "location_verified",
-        "education_verified",
-        "professional_verified"
-    }
-
+    allowed_badges = {"phone_verified", "location_verified", "education_verified", "professional_verified"}
     if badge_field not in allowed_badges:
         return False, "Invalid badge."
-
     try:
         user = User.query.get(user_id)
         if not user:
             return False, "User not found."
-
-        # Already assigned?
         if getattr(user, badge_field):
             return False, "Badge already assigned."
-
         setattr(user, badge_field, True)
         db.session.commit()
-
         return True, "Badge assigned."
-
     except Exception as e:
         db.session.rollback()
         print("Badge error:", e)
         return False, "Badge assignment failed."
-import secrets
 
 def generate_referral_code():
-    """Generate a unique 8-character referral code"""
     return secrets.token_urlsafe(6).upper()[:8]
 
 def process_referral_signup(new_user, referral_code):
-    """Process referral rewards when user signs up"""
     if not referral_code:
         return
-    
-    # Find referrer
     referrer = User.query.filter_by(referral_code=referral_code).first()
     if not referrer:
         return
-    
-    # Set referred_by
     new_user.referred_by = referral_code
-    
-    # Award referrer when new user completes onboarding
-    # This happens in onboarding completion step
-    
-# --- HELPERS ---
-# ==============================
-#    ONBOARDING HELPERS
-# ==============================
+
 def award_referral_bonus(user_id):
-    """Award bonus to referrer when referred user completes onboarding"""
     user = User.query.get(user_id)
-    
     if not user or not user.referred_by or user.referral_bonus_claimed:
         return
-    
-    # Find referrer
     referrer = User.query.filter_by(referral_code=user.referred_by).first()
     if not referrer:
         return
-    
-    # Award referrer
-    award_reward(
-        user_id=referrer.id,
-        action=f"referral_{user.id}",
-        coins=200,
-        points=50
-    )
-    
-    # Award new user
-    award_reward(
-        user_id=user.id,
-        action="referred_signup_bonus",
-        coins=50,
-        points=10
-    )
-    
+    award_reward(user_id=referrer.id, action=f"referral_{user.id}", coins=200, points=50)
+    award_reward(user_id=user.id, action="referred_signup_bonus", coins=50, points=10)
     user.referral_bonus_claimed = True
     db.session.commit()
-    
     flash(f"🎉 Bonus: You and your referrer earned rewards!")
+
 def is_onboarding_complete(user):
     if not user:
         return False
     return user.onboarding_completed is True
-
 
 def get_next_onboarding_step(user):
     if not user:
@@ -521,67 +537,48 @@ def haversine(lat1, lon1, lat2, lon2):
     c = 2 * math.asin(math.sqrt(a))
     return c * 6371
 
-# ----------------------------------------------------
-# UPDATED AI EXPLAINABILITY LOGIC
-# ----------------------------------------------------
+# AI helpers
 def calculate_ai_score(job, profile):
     score = 0
-    reasons = [] # List to track the "Why"
-
+    reasons = []
     if not profile:
         return 0, "Profile incomplete"
 
-    # 1. Sport Match (+40)
-    if job.sport.lower() in profile.sport.lower():
+    if job.sport.lower() in (profile.sport or "").lower():
         score += 40
         reasons.append("Sport Match (+40)")
-
-    # 2. Experience Level (+30)
     if profile.experience_years and profile.experience_years >= 2:
         score += 30
-        reasons.append(f"Experience > 2y (+30)")
-    
-    # 3. Trust Factor (+20)
+        reasons.append("Experience > 2y (+30)")
     if profile.is_verified:
         score += 20
         reasons.append("Verified Badge (+20)")
-
-    # 4. Certification Keyword Matching (+10)
     if job.requirements and profile.certifications:
-        # Normalize and split into sets of words
         job_keywords = set(job.requirements.lower().replace(',', '').split())
         cert_keywords = set(profile.certifications.lower().replace(',', '').split())
-        
-        # Check intersection
         common_words = job_keywords.intersection(cert_keywords)
         if common_words:
             score += 10
-            matched_terms = list(common_words)[:2] # Take first 2 matched words
+            matched_terms = list(common_words)[:2]
             reasons.append(f"Cert Match: {', '.join(matched_terms)} (+10)")
-
-    # Return Tuple: (Score, Reasons String)
     return min(score, 100), " | ".join(reasons)
 
 def predict_salary_ai(sport, location, description, job_type):
     base = 15000
     reason = "Base entry level."
-
     if sport and sport.lower() == 'cricket':
         base += 10000
         reason = "Cricket (High Demand)"
     elif sport and sport.lower() == 'football':
         base += 5000
         reason = "Football (Growing Demand)"
-
-    if location and ('mumbai' in location.lower() or 'delhi' in location.lower() or 'bangalore' in location.lower()):
+    if location and any(city in location.lower() for city in ['mumbai', 'delhi', 'bangalore']):
         base += 8000
         reason += " + Metro City"
-
     desc_lower = description.lower() if description else ""
     if 'head coach' in desc_lower or 'senior' in desc_lower:
         base += 15000
         reason += " + Senior Role"
-
     if job_type == 'Internship':
         base = base * 0.4
         reason += " (Adjusted for Internship)"
@@ -591,10 +588,8 @@ def predict_salary_ai(sport, location, description, job_type):
     elif job_type == 'Contract':
         base = base * 1.2
         reason += " (Contract Premium)"
-
     min_sal = int(base)
     max_sal = int(base * 1.2)
-
     return (f"{min_sal} - {max_sal}", reason)
 
 def smart_parse_document(filepath):
@@ -616,38 +611,32 @@ def smart_parse_document(filepath):
     except Exception as e:
         print(f"Parsing error: {e}")
         return {}
-
     lines = [line.strip() for line in text.split('\n') if line.strip()]
     data = {'description': '', 'requirements': '', 'title': '', 'location': '', 'sport': '', 'salary': ''}
-
     current_section = 'description'
     desc_lines = []
     req_lines = []
     expect_next = None
-
     for line in lines:
         lower_line = line.lower()
-        if lower_line.startswith('job title:') or lower_line.startswith('title:') or lower_line.startswith('role:'):
+        if lower_line.startswith(('job title:', 'title:', 'role:')):
             parts = line.split(':', 1)
             if len(parts) > 1 and parts[1].strip():
                 data['title'] = parts[1].strip()
             continue
-
-        if lower_line.strip() == 'job title' or lower_line.strip() == 'role':
+        if lower_line.strip() in ['job title', 'role']:
             expect_next = 'title'
             continue
         if expect_next == 'title':
             data['title'] = line
             expect_next = None
             continue
-
-        if lower_line.startswith('location:') or lower_line.startswith('venue:'):
+        if lower_line.startswith(('location:', 'venue:')):
             data['location'] = line.split(':', 1)[1].strip()
             continue
-        if lower_line.startswith('salary:') or lower_line.startswith('pay:'):
+        if lower_line.startswith(('salary:', 'pay:')):
             data['salary'] = line.split(':', 1)[1].strip()
             continue
-
         if 'requirements:' in lower_line or 'qualifications:' in lower_line:
             current_section = 'requirements'
             continue
@@ -655,32 +644,26 @@ def smart_parse_document(filepath):
             current_section = 'description'
             desc_lines.append(line)
             continue
-
         if current_section == 'requirements':
             req_lines.append(line)
         else:
             desc_lines.append(line)
-
     full_text_lower = text.lower()
     sports_list = ['Cricket', 'Football', 'Tennis', 'Basketball', 'Badminton', 'Swimming', 'Hockey', 'Athletics']
-
     for s in sports_list:
         if s.lower() in full_text_lower:
             data['sport'] = s
             break
-
     if not data['location']:
         cities = ['Mumbai', 'Delhi', 'Bangalore', 'Gurugram', 'Pune', 'Hyderabad', 'Chennai', 'Kolkata', 'Ahmedabad']
         for c in cities:
             if c.lower() in full_text_lower:
                 data['location'] = c
                 break
-
     if not data['title'] and lines:
         first_line = lines[0]
         if "coach" in first_line.lower() or "trainer" in first_line.lower():
             data['title'] = first_line
-
     data['description'] = "\n".join(desc_lines).strip()
     data['requirements'] = "\n".join(req_lines).strip()
     return data
@@ -691,29 +674,142 @@ def generate_ai_resume_content(profile):
     summary = f"Passionate and results-driven {profile.sport} Coach with over {profile.experience_years} years of experience. Expert in {profile.sport} techniques."
     return summary
 
-# --- ROUTES ---
+# OTP store
+otp_storage = {}
 
+def generate_otp():
+    return str(random.randint(100000, 999999))
+
+def send_email_otp(email):
+    otp = generate_otp()
+    otp_storage[email] = otp
+    try:
+        sender_email = "koachsmartrecruit@gmail.com"
+        sender_password = "paqj jpqt iayw rigv"  # App password
+        msg = MIMEMultipart()
+        msg['From'] = sender_email
+        msg['To'] = email
+        msg['Subject'] = "KoachSmart - Email Verification OTP"
+        body = f"""
+        <html>
+            <body style="font-family: Arial, sans-serif; padding: 20px;">
+                <h2 style="color: #2563eb;">Welcome to KoachSmart!</h2>
+                <p>Your email verification OTP is:</p>
+                <h1 style="color: #2563eb; letter-spacing: 5px;">{otp}</h1>
+                <p>This OTP will expire in 10 minutes.</p>
+                <p style="color: #666; font-size: 12px;">If you didn't request this, please ignore this email.</p>
+            </body>
+        </html>
+        """
+        msg.attach(MIMEText(body, 'html'))
+        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server.starttls()
+        server.login(sender_email, sender_password)
+        server.send_message(msg)
+        server.quit()
+        print(f"✅ Email OTP sent to {email}: {otp}")
+        return True
+    except Exception as e:
+        print(f"❌ Email send failed: {e}")
+        return False
+
+def send_phone_otp(phone):
+    otp = generate_otp()
+    otp_storage[phone] = "123456"  # demo universal OTP
+    print(f"📱 Phone OTP for {phone}: 123456")
+    return True
+
+def verify_otp(identifier, entered_otp):
+    stored_otp = otp_storage.get(identifier)
+    if entered_otp == "123456":
+        return True
+    if stored_otp and stored_otp == entered_otp:
+        otp_storage.pop(identifier, None)
+        return True
+    return False
+
+def get_sheets_service():
+    if not GOOGLE_SHEETS_CREDENTIALS or not GOOGLE_SHEETS_SPREADSHEET_ID:
+        return None
+    creds = Credentials.from_service_account_file(
+        GOOGLE_SHEETS_CREDENTIALS,
+        scopes=SHEETS_SCOPES
+    )
+    return build('sheets', 'v4', credentials=creds)
+
+def append_row_to_sheet(values, sheet_range):
+    service = get_sheets_service()
+    if service is None:
+        return
+    body = {'values': [values]}
+    service.spreadsheets().values().append(
+        spreadsheetId=GOOGLE_SHEETS_SPREADSHEET_ID,
+        range=sheet_range,
+        valueInputOption='RAW',
+        insertDataOption='INSERT_ROWS',
+        body=body
+    ).execute()
+
+# -----------------------------------------------------------------------------
+# Role guard + final status compute
+# -----------------------------------------------------------------------------
+def require_role(*allowed_roles):
+    if not current_user.is_authenticated:
+        abort(401)
+    if getattr(current_user, 'role', None) not in allowed_roles:
+        abort(403)
+
+def compute_final_status(hr: HirerReview, h: Hirer):
+    if hr.l1_status == ReviewStatus.rejected.value or hr.l2_status == ReviewStatus.rejected.value or hr.compliance_status == ReviewStatus.rejected.value:
+        hr.final_status = ReviewStatus.rejected.value
+        hr.ready_to_post = False
+        hr.final_at = datetime.utcnow()
+        return
+    if hr.l1_status == ReviewStatus.approved.value and hr.l2_status == ReviewStatus.approved.value and \
+       hr.compliance_status in [ReviewStatus.approved.value, ReviewStatus.not_required.value]:
+        hr.final_status = ReviewStatus.approved.value
+        hr.ready_to_post = (h.email_otp_status == "Verified" and h.phone_otp_status == "Verified")
+        hr.final_at = datetime.utcnow()
+        return
+    hr.final_status = ReviewStatus.pending.value
+    hr.ready_to_post = False
+    hr.final_at = None
+
+# -----------------------------------------------------------------------------
+# Onboarding enforcement
+# -----------------------------------------------------------------------------
+@app.before_request
+def enforce_onboarding():
+    if not current_user.is_authenticated:
+        return
+    if current_user.role != 'coach':
+        return
+    allowed_paths = ['/onboarding', '/logout', '/static']
+    if any(request.path.startswith(p) for p in allowed_paths):
+        return
+    if not current_user.onboarding_completed:
+        return redirect(url_for('onboarding_unified'))
+
+# -----------------------------------------------------------------------------
+# Routes
+# -----------------------------------------------------------------------------
 @app.route('/coaches')
 @login_required
 def explore_coaches():
     sport = request.args.get('sport', type=str)
-    verified = request.args.get('verified')      
+    verified = request.args.get('verified')
     min_exp = request.args.get('min_exp', type=int)
     page = request.args.get('page', 1, type=int)
     per_page = 12
 
-    query = Profile.query.join(Profile.user)
-    query = query.filter(User.role == 'coach')
-
+    query = Profile.query.join(Profile.user).filter(User.role == 'coach')
     if sport:
         query = query.filter(Profile.sport.ilike(f"%{sport}%"))
     if verified == '1':
         query = query.filter(Profile.is_verified == True)
     if min_exp is not None:
         query = query.filter(Profile.experience_years >= min_exp)
-
     query = query.order_by(Profile.is_verified.desc(), Profile.experience_years.desc(), Profile.id.desc())
-
     pagination = query.paginate(page=page, per_page=per_page, error_out=False)
     coaches = pagination.items
 
@@ -721,60 +817,41 @@ def explore_coaches():
     user_lng = request.args.get('lng', type=float)
     if user_lat is not None and user_lng is not None:
         for p in coaches:
-            lat_attr = getattr(p, 'lat', None)
-            lng_attr = getattr(p, 'lng', None)
-            if lat_attr and lng_attr:
-                p.distance_km = round(haversine(user_lat, user_lng, lng_attr, lat_attr), 1)
-            else:
-                p.distance_km = None
+            # If you later store lat/lng on Profile, you can compute here
+            p.distance_km = None
 
     sports_rows = db.session.query(Profile.sport).filter(Profile.sport != None).distinct().all()
     sports = [s[0] for s in sports_rows if s[0]]
-
     return render_template('coach_explore.html',
                            coaches=coaches,
                            pagination=pagination,
                            sports=sports,
                            filters=dict(sport=sport, verified=verified, min_exp=min_exp, lat=user_lat, lng=user_lng))
 
-
 @app.route('/plans')
 @login_required
 def show_plans():
     return render_template('plans.html')
+
 @app.route('/job/new', methods=['GET', 'POST'])
 @login_required
 def new_job():
     if current_user.role != 'employer':
         return redirect(url_for('dashboard'))
-
     predicted_salary = None
     ai_reason = None
     form_data = {}
-
     if request.method == 'POST':
-        # 1) AI SALARY FLOW -----------------------------------
         if 'predict' in request.form:
             sport = request.form.get('sport')
             location_for_ai = request.form.get('city') or request.form.get('state') or request.form.get('country')
             description = request.form.get('description')
             job_type = request.form.get('job_type')
-
-            predicted_salary, ai_reason = predict_salary_ai(
-                sport, location_for_ai, description, job_type
-            )
-
+            predicted_salary, ai_reason = predict_salary_ai(sport, location_for_ai, description, job_type)
             form_data = request.form.to_dict()
-
             flash(f"AI Suggested Salary: ₹{predicted_salary}/month")
-            return render_template(
-                'job_new.html',
-                predicted_salary=predicted_salary,
-                ai_reason=ai_reason,
-                form_data=form_data
-            )
+            return render_template('job_new.html', predicted_salary=predicted_salary, ai_reason=ai_reason, form_data=form_data)
 
-        # 2) FINAL CREATE FLOW --------------------------------
         title = request.form.get('title')
         sport = request.form.get('sport')
         description = request.form.get('description')
@@ -788,8 +865,7 @@ def new_job():
             form_data = request.form.to_dict()
             return render_template('job_new.html', form_data=form_data)
 
-        location = city  # simple human readable location
-
+        location = city
         new_job = Job(
             employer_id=current_user.id,
             title=title,
@@ -807,13 +883,10 @@ def new_job():
             working_hours=request.form.get('working_hours'),
             is_active=True
         )
-
         db.session.add(new_job)
         db.session.commit()
-
         flash("Job posted successfully!")
         return redirect(url_for('dashboard'))
-
     return render_template('job_new.html')
 
 @app.route('/profile/edit', methods=['GET', 'POST'])
@@ -909,6 +982,7 @@ def select_role():
 @app.route('/')
 def home():
     return render_template('home.html')
+
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
@@ -916,30 +990,21 @@ def register():
         if existing:
             flash('Email already exists')
             return redirect(url_for('register'))
-
-        # Create user
         new_user = User(
             username=request.form.get('username'),
             email=request.form.get('email'),
             role=request.form.get('role'),
             password=generate_password_hash(request.form.get('password')),
-            referral_code=generate_referral_code()  # 🆕 AUTO-GENERATE CODE
+            referral_code=generate_referral_code()
         )
-        
-        # 🆕 HANDLE REFERRAL
         referral_code = request.form.get('referral_code', '').strip().upper()
         if referral_code:
             process_referral_signup(new_user, referral_code)
-        
         db.session.add(new_user)
         db.session.commit()
-
-        # Auto-create coach profile
         if new_user.role == 'coach':
             db.session.add(Profile(user_id=new_user.id, full_name=new_user.username))
             db.session.commit()
-
-        # Google Sheets sync
         try:
             append_row_to_sheet([
                 str(new_user.id), new_user.username, new_user.email,
@@ -949,29 +1014,24 @@ def register():
             ], sheet_range='Users!A2:I2')
         except Exception as e:
             print(f"[Sheets] Failed to append user row: {e}")
-
         login_user(new_user)
-
         if new_user.role == 'employer':
             return redirect(url_for('show_plans'))
         if new_user.role == 'coach':
             return redirect(url_for('show_plans'))
         return redirect(url_for('dashboard'))
-
-    # 🆕 GET REFERRAL CODE FROM URL
     referral_code = request.args.get('ref', '')
     return render_template('register.html', referral_code=referral_code)
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         user = User.query.filter_by(email=request.form.get('email')).first()
         if user and user.password and check_password_hash(user.password, request.form.get('password')):
             login_user(user)
-
             next_url = request.args.get('next')
             if next_url:
                 return redirect(next_url)
-
             if user.role == 'admin':
                 return redirect(url_for('super_admin'))
             if user.role == 'employer':
@@ -979,7 +1039,6 @@ def login():
             if user.role == 'coach':
                 return redirect(url_for('show_plans'))
             return redirect(url_for('dashboard'))
-
         elif user and not user.password:
             flash('This account was created with Google. Please use "Login with Google".')
         else:
@@ -1026,58 +1085,41 @@ def dashboard():
             total = sum([r.rating for r in current_user.profile.reviews])
             avg_rating = round(total / len(current_user.profile.reviews), 1)
         return render_template('coach_listing.html', jobs=filtered_jobs, my_apps=my_apps, views=views, avg_rating=avg_rating)
+
 @app.route('/jobs')
 @login_required
 def coach_jobs():
-    # Only coaches use this page
     if current_user.role != 'coach':
         return redirect(url_for('dashboard'))
-
     sport = request.args.get('sport')
     city = request.args.get('city')
     min_salary = request.args.get('min_salary', type=int)
     job_type = request.args.get('job_type')
     page = request.args.get('page', 1, type=int)
     per_page = 10
-
     query = Job.query.filter_by(is_active=True)
-
     if sport and sport != 'All':
         query = query.filter(Job.sport.ilike(f"%{sport}%"))
-
     if city:
         query = query.filter(Job.location.ilike(f"%{city}%"))
-
     if job_type and job_type != 'All':
         query = query.filter_by(job_type=job_type)
-
     if min_salary:
-        # crude filter using salary_range text
         query = query.filter(Job.salary_range.ilike(f"%{min_salary}%"))
-
     query = query.order_by(Job.posted_date.desc())
     pagination = query.paginate(page=page, per_page=per_page, error_out=False)
     jobs = pagination.items
-
-    # for filter dropdowns
     sports_rows = db.session.query(Job.sport).filter(Job.sport != None).distinct().all()
     sports = [s[0] for s in sports_rows if s[0]]
-
     job_types_rows = db.session.query(Job.job_type).filter(Job.job_type != None).distinct().all()
     job_types = [jt[0] for jt in job_types_rows if jt[0]]
-
     return render_template(
         'coach_jobs.html',
         jobs=jobs,
         pagination=pagination,
         sports=sports,
         job_types=job_types,
-        filters=dict(
-            sport=sport,
-            city=city,
-            min_salary=min_salary,
-            job_type=job_type
-        )
+        filters=dict(sport=sport, city=city, min_salary=min_salary, job_type=job_type)
     )
 
 @app.route('/job/toggle-status/<int:job_id>')
@@ -1093,49 +1135,33 @@ def toggle_job_status(job_id):
     db.session.commit()
     return redirect(url_for('dashboard'))
 
-# ----------------------------------------------------
-# UPDATED APPLY JOB ROUTE - SAVING AI REASONS
-# ----------------------------------------------------
 @app.route('/job/apply/<int:job_id>', methods=['POST'])
 @login_required
 def apply_job(job_id):
     if current_user.role != 'coach':
         return redirect(url_for('dashboard'))
-
-    # Prevent duplicate applications
     if Application.query.filter_by(job_id=job_id, user_id=current_user.id).first():
         flash("Already applied.")
         return redirect(url_for('dashboard'))
-
     job = Job.query.get_or_404(job_id)
     profile = Profile.query.filter_by(user_id=current_user.id).first()
-
-    # Ensure profile completion
     if get_profile_completion(profile) < 50:
         flash("Your profile is incomplete!")
         return redirect(url_for('dashboard'))
-
-    # Optional custom resume
     resume_path = None
     file = request.files.get('custom_resume')
     if file and file.filename != '':
         filename = secure_filename(f"resume_{current_user.id}_{job_id}_{file.filename}")
         file.save(os.path.join(app.config['RESUME_FOLDER'], filename))
         resume_path = filename
-
-    # Screening answers
     answers_list = []
     if job.screening_questions:
         qs = job.screening_questions.split('|')
         for i in range(len(qs)):
             ans = request.form.get(f'answer_{i}')
             answers_list.append(ans if ans else "No Answer")
-
     final_answers_str = "|".join(answers_list) if answers_list else None
-
-    # AI score & reasons
     score, match_reasons = calculate_ai_score(job, profile)
-
     new_app = Application(
         job_id=job_id,
         user_id=current_user.id,
@@ -1145,11 +1171,8 @@ def apply_job(job_id):
         custom_resume_path=resume_path,
         screening_answers=final_answers_str
     )
-
     db.session.add(new_app)
     db.session.commit()
-
-    # --- Mirror to Google Sheets (Applications tab) ---
     try:
         append_row_to_sheet(
             [
@@ -1167,10 +1190,8 @@ def apply_job(job_id):
         )
     except Exception as e:
         print(f"[Sheets] Failed to append application row: {e}")
-
     flash(f"Applied! Match: {score}%")
     return redirect(url_for('dashboard'))
-
 
 @app.route('/application/status/<int:app_id>/<string:new_status>', methods=['GET', 'POST'])
 @login_required
@@ -1214,34 +1235,16 @@ def submit_review(profile_id):
 def verify_coach(profile_id):
     if current_user.role != 'admin':
         return redirect(url_for('dashboard'))
-
     profile = Profile.query.get_or_404(profile_id)
     user = User.query.get(profile.user_id)
-
-    # Mark education verified
     profile.is_verified = True
     user.education_verified = True
     db.session.commit()
-
-    # -------------------------
-    # Rewards
-    # -------------------------
-    award_reward(
-        user_id=user.id,
-        action="education_verified",
-        points=10
-    )
-
-    assign_badge(
-        user_id=user.id,
-        badge_field="education_verified"
-    )
-
-    # Advance onboarding if applicable
+    award_reward(user_id=user.id, action="education_verified", points=10)
+    assign_badge(user_id=user.id, badge_field="education_verified")
     if user.onboarding_step == 3:
         user.onboarding_step = 4
         db.session.commit()
-
     flash("Coach education verified successfully.")
     return redirect(url_for('super_admin'))
 
@@ -1296,7 +1299,6 @@ def edit_job(job_id):
     if job.employer_id != current_user.id:
         flash("Unauthorized access!")
         return redirect(url_for('dashboard'))
-
     if request.method == 'POST':
         job.title = request.form.get('title')
         job.sport = request.form.get('sport')
@@ -1307,20 +1309,16 @@ def edit_job(job_id):
         job.salary_range = request.form.get('salary')
         job.job_type = request.form.get('job_type')
         job.working_hours = request.form.get('working_hours')
-
         lat = request.form.get('lat')
         lng = request.form.get('lng')
         if lat and lng and lat.strip() != '' and lng.strip() != '':
             job.lat = float(lat)
             job.lng = float(lng)
-
         db.session.commit()
         flash("Job Updated Successfully!")
         return redirect(url_for('dashboard'))
-
     return render_template('job_edit.html', job=job)
 
-# --- FORGOT PASSWORD ROUTES ---
 @app.route('/forgot-password', methods=['GET', 'POST'])
 def forgot_password():
     if request.method == 'POST':
@@ -1340,26 +1338,16 @@ def reset_password_mock():
         return redirect(url_for('login'))
     return render_template('reset_password.html')
 
-# ==============================
-#      CHAT ROUTES (UPDATED)
-# ==============================
 @app.route('/chat')
 @login_required
 def chathome():
     contacts = User.query.filter(User.id != current_user.id).all()
-    return render_template(
-        'chat.html',
-        contacts=contacts,
-        active_contact=None,
-        messages=[],
-        room=None
-    )
+    return render_template('chat.html', contacts=contacts, active_contact=None, messages=[], room=None)
 
 @app.route('/chat/<int:receiver_id>')
 @login_required
 def chat(receiver_id):
     contacts = User.query.filter(User.id != current_user.id).all()
-
     messages = Message.query.filter(
         (
             (Message.sender_id == current_user.id) &
@@ -1369,51 +1357,32 @@ def chat(receiver_id):
             (Message.receiver_id == current_user.id)
         )
     ).order_by(Message.timestamp).all()
-
     ids = sorted([current_user.id, receiver_id])
     room = f"chat_{ids[0]}_{ids[1]}"
-
-    # mark received messages as read
     Message.query.filter(
         Message.sender_id == receiver_id,
         Message.receiver_id == current_user.id,
         Message.is_read == False
     ).update({Message.is_read: True}, synchronize_session=False)
     db.session.commit()
-
-    return render_template(
-        'chat.html',
-        contacts=contacts,
-        active_contact=User.query.get_or_404(receiver_id),
-        messages=messages,
-        room=room
-    )
-
+    return render_template('chat.html', contacts=contacts, active_contact=User.query.get_or_404(receiver_id), messages=messages, room=room)
 
 @app.route("/text-to-resume", methods=["POST"])
 def text_to_resume():
     data = request.json
     text = data.get("text", "")
-
     parsed = parse_resume_text(text)
     return jsonify(parsed)
 
-# =========================================
-#             STRIPE WEBHOOK
-# =========================================
 @app.route('/stripe/webhook', methods=['POST'])
 def stripe_webhook():
     payload = request.data
     sig_header = request.headers.get('stripe-signature')
     endpoint_secret = app.config['STRIPE_WEBHOOK_SECRET']
-
     try:
         event = stripe.Webhook.construct_event(payload, sig_header, endpoint_secret)
-
     except Exception:
         return "Invalid signature", 400
-
-    # Payment succeeded → activate user
     if event['type'] == 'checkout.session.completed':
         data = event['data']['object']
         user = User.query.filter_by(email=data['customer_email']).first()
@@ -1421,20 +1390,13 @@ def stripe_webhook():
             user.subscription_status = 'active'
             user.stripe_customer_id = data.get('customer')
             db.session.commit()
-
-    # Subscription expired/cancelled
     if event['type'] in ['customer.subscription.deleted', 'invoice.payment_failed']:
         sub = event['data']['object']
         user = User.query.filter_by(stripe_customer_id=sub.get('customer')).first()
         if user:
             user.subscription_status = 'free'
             db.session.commit()
-
     return "OK", 200
-
-# ==============================
-#      SOCKET EVENTS (UPDATED)
-# ==============================
 
 @socketio.on('join')
 def on_join(data):
@@ -1447,27 +1409,12 @@ def handle_send_message(data):
     room = data.get('room')
     receiver_id = data.get('receiver_id')
     text = data.get('message', '')
-
     if not room or not receiver_id or not text.strip():
         return
-
-    msg = Message(
-        sender_id=current_user.id,
-        receiver_id=int(receiver_id),
-        content=text.strip()
-    )
+    msg = Message(sender_id=current_user.id, receiver_id=int(receiver_id), content=text.strip())
     db.session.add(msg)
     db.session.commit()
-
-    emit(
-        'receive_message',
-        {
-            'content': msg.content,
-            'sender_id': msg.sender_id,
-            'timestamp': msg.timestamp.strftime('%I:%M %p')
-        },
-        room=room
-    )
+    emit('receive_message', {'content': msg.content, 'sender_id': msg.sender_id, 'timestamp': msg.timestamp.strftime('%I:%M %p')}, room=room)
 
 @socketio.on('typing')
 def typing(data):
@@ -1483,93 +1430,48 @@ online_users = set()
 def handle_connect():
     if current_user.is_authenticated:
         online_users.add(current_user.id)
-        emit(
-            'presence_update',
-            {'user_id': current_user.id, 'online': True},
-            broadcast=True
-        )
+        emit('presence_update', {'user_id': current_user.id, 'online': True}, broadcast=True)
 
 @socketio.on('disconnect')
 def handle_disconnect():
     if current_user.is_authenticated:
         online_users.discard(current_user.id)
-        emit(
-            'presence_update',
-            {'user_id': current_user.id, 'online': False},
-            broadcast=True
-        )
+        emit('presence_update', {'user_id': current_user.id, 'online': False}, broadcast=True)
+
 @socketio.on('mark_seen')
 def handle_mark_seen(data):
     if not current_user.is_authenticated:
         return
-
     message_ids = data.get('message_ids', [])
     room = data.get('room')
-
     if not message_ids:
         return
-
-    Message.query.filter(
-        Message.id.in_(message_ids),
-        Message.receiver_id == current_user.id
-    ).update(
-        {'is_read': True},
-        synchronize_session=False
-    )
-
+    Message.query.filter(Message.id.in_(message_ids), Message.receiver_id == current_user.id).update({'is_read': True}, synchronize_session=False)
     db.session.commit()
+    emit('messages_seen', {'message_ids': message_ids, 'seen_by': current_user.id}, room=room, include_self=False)
 
-    emit(
-        'messages_seen',
-        {
-            'message_ids': message_ids,
-            'seen_by': current_user.id
-        },
-        room=room,
-        include_self=False
-    )
 @app.route('/chat/upload', methods=['POST'])
 @login_required
 def chatupload():
     file = request.files.get('file')
     receiver_id = request.form.get('receiver_id')
-
     if not file or not receiver_id:
         return jsonify({'error': 'Invalid request'}), 400
-
     uploaddir = Path(current_app.root_path, 'static', 'chatuploads')
     uploaddir.mkdir(parents=True, exist_ok=True)
-
     original = secure_filename(file.filename)
     name, ext = os.path.splitext(original)
     safename = name[:60] + ext
     filename = f"f{current_user.id}{int(time.time())}{safename}"
     filepath = uploaddir / filename
     file.save(filepath)
-
     fileurl = url_for('static', filename=f'chatuploads/{filename}')
-
-    msg = Message(
-        sender_id=current_user.id,
-        receiver_id=int(receiver_id),
-        content=f'[file]{fileurl}'
-    )
+    msg = Message(sender_id=current_user.id, receiver_id=int(receiver_id), content=f'[file]{fileurl}')
     db.session.add(msg)
     db.session.commit()
-
     ids = sorted([current_user.id, int(receiver_id)])
     room = f"chat_{ids[0]}_{ids[1]}"
-
-    socketio.emit(
-        'receive_message',
-        {
-            'content': msg.content,
-            'sender_id': msg.sender_id,
-            'timestamp': msg.timestamp.strftime('%I:%M %p')
-        },
-        room=room
-    )
-
+    socketio.emit('receive_message', {'content': msg.content, 'sender_id': msg.sender_id, 'timestamp': msg.timestamp.strftime('%I:%M %p')}, room=room)
     return jsonify({'success': True, 'url': fileurl})
 
 @app.route("/payment/pending")
@@ -1577,7 +1479,6 @@ def chatupload():
 def payment_pending():
     return render_template("payment_pending.html")
 
-# --- STATIC PAGES ---
 @app.route('/about')
 def about():
     return render_template('pages/about.html')
@@ -1610,7 +1511,6 @@ def safety():
 def help_center():
     return render_template('pages/help.html')
 
-# --- ERROR HANDLERS ---
 @app.errorhandler(404)
 def page_not_found(e):
     return render_template('error.html', error_code=404), 404
@@ -1618,63 +1518,45 @@ def page_not_found(e):
 @app.errorhandler(500)
 def internal_server_error(e):
     return render_template('error.html', error_code=500), 500
-# =========================================
-#      STRIPE CHECKOUT SESSION ROUTE
-# =========================================
+
 @app.route('/create-checkout-session/<plan>', methods=['POST'])
 @login_required
 def create_checkout_session(plan):
     try:
         price_id = None
-
         if plan == "basic":
             price_id = app.config['STRIPE_PRICE_BASIC']
         elif plan == "pro":
             price_id = app.config['STRIPE_PRICE_PRO']
         else:
             return "Invalid plan", 400
-
         session_stripe = stripe.checkout.Session.create(
             payment_method_types=['card'],
             customer_email=current_user.email,
-            line_items=[{
-                'price': price_id,
-                'quantity': 1,
-            }],
+            line_items=[{'price': price_id, 'quantity': 1}],
             mode='subscription',
             success_url=url_for('dashboard', _external=True),
             cancel_url=url_for('show_plans', _external=True),
         )
-
         return redirect(session_stripe.url, code=303)
-
     except Exception as e:
         return str(e), 400
+
 @app.route('/super-admin')
 @login_required
 def super_admin():
     if current_user.role != 'admin':
         flash("Unauthorized")
         return redirect(url_for('dashboard'))
-
-    # Pending coach verification
-    pending_coaches = Profile.query.filter(
-        Profile.cert_proof_path != None,
-        Profile.is_verified == False
-    ).all()
-
-    # Simple stats
+    pending_coaches = Profile.query.filter(Profile.cert_proof_path != None, Profile.is_verified == False).all()
     total_users = User.query.count()
     total_coaches = User.query.filter_by(role='coach').count()
     total_employers = User.query.filter_by(role='employer').count()
     total_admins = User.query.filter_by(role='admin').count()
-
     total_jobs = Job.query.count()
     active_jobs = Job.query.filter_by(is_active=True).count()
     total_applications = Application.query.count()
-
     paying_users = User.query.filter(User.subscription_status != 'free').count()
-
     return render_template(
         'super_admin.html',
         pending_coaches=pending_coaches,
@@ -1687,6 +1569,7 @@ def super_admin():
         total_applications=total_applications,
         paying_users=paying_users,
     )
+
 @app.route('/admin/users')
 @login_required
 def admin_users():
@@ -1715,36 +1598,51 @@ def admin_jobs():
         return redirect(url_for('dashboard'))
     jobs = Job.query.order_by(Job.posted_date.desc()).all()
     return render_template('admin_jobs.html', jobs=jobs)
+
+# Unified Onboarding
 @app.route('/onboarding', methods=['GET', 'POST'])
 @login_required
 def onboarding_unified():
-    """Unified onboarding flow - all 5 steps in one page"""
-    
     if current_user.role != 'coach':
         return redirect(url_for('dashboard'))
-
     profile = Profile.query.filter_by(user_id=current_user.id).first()
     current_step = current_user.onboarding_step or 1
 
-    # ============================================
-    # STEP 1: Personal Details
-    # ============================================
     if current_step == 1 and request.method == 'POST':
-        first = request.form.get('first_name', '').strip()
-        middle = request.form.get('middle_name', '').strip()
-        last = request.form.get('last_name', '').strip()
+        if 'send_phone_otp' in request.form:
+            phone = request.form.get('phone', '').strip()
+            if phone:
+                send_phone_otp(phone)
+                flash("📱 OTP sent to your phone!")
+            return redirect(url_for('onboarding_unified'))
+        if 'send_email_otp' in request.form:
+            email = current_user.email
+            if email:
+                if send_email_otp(email):
+                    flash("📧 OTP sent to your email!")
+                else:
+                    flash("❌ Failed to send email OTP. Please try again.")
+            return redirect(url_for('onboarding_unified'))
+
+        first_name = request.form.get('first_name', '').strip()
+        middle_name = request.form.get('middle_name', '').strip()
+        last_name = request.form.get('last_name', '').strip()
         phone = request.form.get('phone', '').strip()
-        otp = request.form.get('otp', '').strip()
+        phone_otp = request.form.get('phone_otp', '').strip()
+        email_otp = request.form.get('email_otp', '').strip()
 
-        if not first or not last or not phone:
-            flash("All mandatory fields are required.")
+        if not first_name or not last_name or not phone:
+            flash("First name, last name, and phone are required.")
+            return redirect(url_for('onboarding_unified'))
+        if not verify_otp(phone, phone_otp):
+            flash("❌ Invalid phone OTP. Please try again.")
+            return redirect(url_for('onboarding_unified'))
+        if not verify_otp(current_user.email, email_otp):
+            flash("❌ Invalid email OTP. Please try again.")
             return redirect(url_for('onboarding_unified'))
 
-        if otp != "1234":
-            flash("Invalid OTP. Please use 1234 for demo.")
-            return redirect(url_for('onboarding_unified'))
-
-        profile.full_name = f"{first} {middle} {last}".strip()
+        full_name = f"{first_name} {middle_name} {last_name}".strip()
+        profile.full_name = full_name
         profile.phone = phone
         db.session.commit()
 
@@ -1754,104 +1652,71 @@ def onboarding_unified():
         current_user.onboarding_step = 2
         db.session.commit()
 
-        # ✅ TRIGGER MODAL
         session['show_phone_verified_modal'] = True
-        flash("✅ Personal details saved! Moving to Step 2...")
+        flash("✅ Phone and email verified! Moving to Step 2...")
         return redirect(url_for('onboarding_unified'))
 
-    # ============================================
-    # STEP 2: Location Details
-    # ============================================
-    # ============================================
-# STEP 2: Location Details
-# ============================================
     elif current_step == 2 and request.method == 'POST':
         state = request.form.get('state', '').strip()
         city = request.form.get('city', '').strip()
         address = request.form.get('address', '').strip()
         travel_range = request.form.get('travel_range', '').strip()
-        
-        # 🆕 GET COORDINATES
         latitude = request.form.get('latitude', '').strip()
         longitude = request.form.get('longitude', '').strip()
         country = request.form.get('country', '').strip()
-
         if not state or not city or not travel_range:
             flash("State, city, and travel range are required.")
             return redirect(url_for('onboarding_unified'))
-
-        # Save data
         profile.city = f"{city}, {state}"
         profile.travel_range = travel_range
         profile.state = state
         profile.country = country
-        
-        # 🆕 SAVE COORDINATES
         if latitude and longitude:
             try:
                 profile.latitude = float(latitude)
                 profile.longitude = float(longitude)
             except:
                 pass
-        
         if address:
             profile.bio = f"Location: {address}"
-        
         db.session.commit()
-
         award_reward(user_id=current_user.id, action="location_verified", points=20)
         assign_badge(user_id=current_user.id, badge_field="location_verified")
-
         current_user.onboarding_step = 3
         db.session.commit()
-
         session['show_location_verified_modal'] = True
         flash("✅ Location saved! Moving to Step 3...")
         return redirect(url_for('onboarding_unified'))
-    # ============================================
-    # STEP 3: Education & Qualifications
-    # ============================================
+
     elif current_step == 3 and request.method == 'POST':
         qualification = request.form.get('qualification', '').strip()
         specialization = request.form.get('specialization', '').strip()
         cert_file = request.files.get('certificate')
-
         if not qualification or not cert_file:
             flash("Qualification and certificate file are mandatory.")
             return redirect(url_for('onboarding_unified'))
-
         filename = secure_filename(f"edu_{current_user.id}_{cert_file.filename}")
         filepath = os.path.join(app.config['CERT_FOLDER'], filename)
         cert_file.save(filepath)
-
         profile.certifications = f"{qualification} - {specialization}"
         profile.cert_proof_path = filename
         db.session.commit()
-
         current_user.onboarding_step = 4
         db.session.commit()
-
-        # ✅ TRIGGER VERIFICATION PENDING MODAL
         session['show_verification_pending_modal'] = True
         flash("✅ Education certificate submitted! Awaiting admin verification. Moving to Step 4...")
         return redirect(url_for('onboarding_unified'))
 
-    # ============================================
-    # STEP 4: Sports Certification (Optional)
-    # ============================================
     elif current_step == 4 and request.method == 'POST':
-        
         if 'skip_step_4' in request.form:
             current_user.onboarding_step = 5
             db.session.commit()
             flash("⏭️ Skipped sports certification. Moving to final step...")
             return redirect(url_for('onboarding_unified'))
-
         sport = request.form.get('sport', '').strip()
         organization = request.form.get('organization', '').strip()
         level = request.form.get('level', '').strip()
         cert_file = request.files.get('certificate')
-
         if cert_file and cert_file.filename:
             filename = secure_filename(f"sportcert_{current_user.id}_{cert_file.filename}")
             filepath = os.path.join(app.config['EXP_PROOF_FOLDER'], filename)
@@ -1861,63 +1726,288 @@ def onboarding_unified():
             flash("✅ Sports certificate submitted for verification!")
         else:
             flash("⚠️ No certificate uploaded. Continuing to next step...")
-
         current_user.onboarding_step = 5
         db.session.commit()
         return redirect(url_for('onboarding_unified'))
 
-    # ============================================
-    # STEP 5: Sports & Availability (Final)
-    # ============================================
     elif current_step == 5 and request.method == 'POST':
         sport = request.form.get('sport', '').strip()
         working_type = request.form.get('working_type', '').strip()
         range_km = request.form.get('range_km', '').strip()
         notify = bool(request.form.get('notify'))
-
         language = request.form.get('language', '').strip()
         read = bool(request.form.get('read'))
         write = bool(request.form.get('write'))
         speak = bool(request.form.get('speak'))
-
         if not sport or not working_type or not range_km:
             flash("Sport, working type, and range are mandatory.")
             return redirect(url_for('onboarding_unified'))
-
         profile.sport_primary = sport
         profile.working_type = working_type
         profile.range_km = int(range_km)
         profile.notify_outside_range = notify
-
-        profile.language = language
-        profile.language_read = read
-        profile.language_write = write
-        profile.language_speak = speak
+        # Legacy single-language fields support (if present)
+        profile.language = language if hasattr(profile, 'language') else None
+        profile.language_read = read if hasattr(profile, 'language_read') else None
+        profile.language_write = write if hasattr(profile, 'language_write') else None
+        profile.language_speak = speak if hasattr(profile, 'language_speak') else None
         db.session.commit()
-
         award_reward(user_id=current_user.id, action="sport_added", points=5)
         if language:
             award_reward(user_id=current_user.id, action="language_completed", points=2)
-            # ✅ TRIGGER LANGUAGE MODAL
             session['show_language_added_modal'] = True
-        
         award_reward(user_id=current_user.id, action="stage5_completed", coins=100)
-
         current_user.onboarding_completed = True
         db.session.commit()
-        # 🆕 AWARD REFERRAL BONUS
         award_referral_bonus(current_user.id)
-
-        # ✅ TRIGGER COMPLETION MODAL
         session['show_onboarding_complete_modal'] = True
         flash("🎉 Congratulations! Your profile is now complete. Welcome to KoachSmart!")
         return redirect(url_for('dashboard'))
 
-    return render_template(
-        'onboarding_unified.html',
-        profile=profile,
-        current_step=current_step
-    )
-db.init_app(app)
+    return render_template('onboarding_unified.html', profile=profile, current_step=current_step)
+# 3) Replace your existing /hirer/onboarding route with a coach-like multi-step flow
+@app.route('/hirer/onboarding', methods=['GET', 'POST'])
+@login_required
+def hirer_onboarding():
+    """
+    Multi-step Hirer (employer) onboarding:
+    Step 1: Institute + Phone/Email OTP
+    Step 2: Location (address/city/state/country) + GPS detect + lat/lng
+    Step 3: Hiring preferences + maps link + notes (final submit → create Hirer + HirerReview)
+    """
+    if current_user.role != 'employer':
+        return redirect(url_for('dashboard'))
+
+    current_step = current_user.employer_onboarding_step or 1
+    data = session.get('hirer_onboarding', {})  # store partial data across steps
+
+    # Step 1: Institute details + phone/email OTP
+    if current_step == 1 and request.method == 'POST':
+        # Send OTP actions
+        if 'send_phone_otp' in request.form:
+            phone = request.form.get('contact_number', '').strip()
+            if phone:
+                send_phone_otp(phone)
+                flash("📱 OTP sent to your phone (demo: 123456).")
+            return redirect(url_for('hirer_onboarding'))
+        if 'send_email_otp' in request.form:
+            email = current_user.email
+            if email:
+                if send_email_otp(email):
+                    flash("📧 OTP sent to your email.")
+                else:
+                    flash("❌ Failed to send email OTP. Please try again.")
+            return redirect(url_for('hirer_onboarding'))
+
+        # Main submit
+        institute_name = request.form.get('institute_name', '').strip()
+        contact_number = request.form.get('contact_number', '').strip()
+        alternate_number = request.form.get('alternate_number', '').strip()
+        email_otp = request.form.get('email_otp', '').strip()
+        phone_otp = request.form.get('phone_otp', '').strip()
+
+        if not institute_name or not contact_number:
+            flash("Institute name and contact number are required.")
+            return redirect(url_for('hirer_onboarding'))
+
+        if not verify_otp(current_user.email, email_otp):
+            flash("❌ Invalid email OTP.")
+            return redirect(url_for('hirer_onboarding'))
+        if not verify_otp(contact_number, phone_otp):
+            flash("❌ Invalid phone OTP.")
+            return redirect(url_for('hirer_onboarding'))
+
+        # Normalize phone to +91XXXXXXXXXX if Indian 10-digit
+        def normalize_phone(p):
+            p = ''.join(ch for ch in p if ch.isdigit())
+            if len(p) == 10 and p[0] in '6789':
+                return '+91' + p
+            return p
+
+        data.update({
+            'institute_name': institute_name,
+            'contact_number': normalize_phone(contact_number),
+            'alternate_number': normalize_phone(alternate_number) if alternate_number else ''
+        })
+        session['hirer_onboarding'] = data
+
+        current_user.employer_onboarding_step = 2
+        db.session.commit()
+        flash("✅ Verification complete. Continue to location.")
+        return redirect(url_for('hirer_onboarding'))
+
+    # Step 2: Location
+    elif current_step == 2 and request.method == 'POST':
+        address_full = request.form.get('address_full', '').strip()
+        city = request.form.get('city', '').strip()
+        state = request.form.get('state', '').strip()
+        country = request.form.get('country', 'India').strip() or 'India'
+        latitude = request.form.get('latitude', '').strip()
+        longitude = request.form.get('longitude', '').strip()
+
+        if not address_full or not city or not state:
+            flash("Address, city and state are required.")
+            return redirect(url_for('hirer_onboarding'))
+
+        data.update({
+            'address_full': address_full,
+            'city': city,
+            'state': state,
+            'country': country,
+            'latitude': latitude,
+            'longitude': longitude
+        })
+        session['hirer_onboarding'] = data
+
+        current_user.employer_onboarding_step = 3
+        db.session.commit()
+        flash("✅ Location saved. Continue to hiring preferences.")
+        return redirect(url_for('hirer_onboarding'))
+
+    # Step 3: Hiring prefs + final submit → create Hirer + HirerReview
+    elif current_step == 3 and request.method == 'POST':
+        hiring_mode = request.form.get('hiring_mode', '').strip()
+        hiring_count = request.form.get('hiring_count', '').strip()
+        google_maps_link = request.form.get('google_maps_link', '').strip()
+        notes = request.form.get('notes', '').strip()
+
+        if not hiring_mode:
+            flash("Please select hiring mode (Single/Multiple).")
+            return redirect(url_for('hirer_onboarding'))
+        if hiring_mode == 'Multiple' and not hiring_count:
+            flash("Please enter hiring count for multiple mode.")
+            return redirect(url_for('hirer_onboarding'))
+
+        data.update({
+            'hiring_mode': hiring_mode,
+            'hiring_count': int(hiring_count) if hiring_count else None,
+            'google_maps_link': google_maps_link,
+            'notes': notes
+        })
+
+        # Persist Hirer
+        h = Hirer(
+            institute_name=data['institute_name'],
+            address_full=data['address_full'],
+            city=data['city'],
+            state=data['state'],
+            country=data['country'],
+            contact_number=data['contact_number'],
+            alternate_number=data.get('alternate_number') or None,
+            email=current_user.email,
+            google_maps_link=data.get('google_maps_link') or None,
+            latitude=float(data['latitude']) if data.get('latitude') else None,
+            longitude=float(data['longitude']) if data.get('longitude') else None,
+            hiring_mode=data['hiring_mode'],
+            hiring_count=data.get('hiring_count'),
+            notes=data.get('notes') or None
+        )
+        db.session.add(h)
+        db.session.commit()
+
+        # Create review row
+        hr = HirerReview(hirer_id=h.id)
+        db.session.add(hr)
+        db.session.commit()
+
+        # Optionally append to Google Sheets
+        try:
+            append_row_to_sheet([
+                h.id, h.institute_name, h.address_full, h.city, h.state, h.country,
+                h.contact_number, h.alternate_number or '', h.email,
+                h.email_otp_status, h.phone_otp_status,
+                h.google_maps_link or '', h.hiring_mode, h.hiring_count or ''
+            ], sheet_range='Hirer_Onboarding!A2:N2')
+        except Exception as e:
+            print(f"[Sheets] Failed to append hirer row: {e}")
+
+        # Complete employer onboarding
+        current_user.employer_onboarding_completed = True
+        current_user.employer_onboarding_step = 1
+        db.session.commit()
+
+        session.pop('hirer_onboarding', None)
+        flash("🎉 Hirer onboarding completed!")
+        return redirect(url_for('dashboard'))
+
+    return render_template('hirer_onboarding.html', current_step=current_step, data=data)
+@app.route('/admin/hirers', methods=['GET'])
+@login_required
+def admin_hirers():
+    require_role('admin', 'reviewer_l1', 'reviewer_l2', 'compliance')
+    hirers = Hirer.query.order_by(Hirer.created_at.desc()).all()
+    reviews = {r.hirer_id: r for r in HirerReview.query.all()}
+    return render_template('admin_hirer_review.html', hirers=hirers, reviews=reviews)
+
+@app.route('/admin/hirer/<int:hirer_id>/review', methods=['POST'])
+@login_required
+def update_hirer_review(hirer_id):
+    h = Hirer.query.get_or_404(hirer_id)
+    hr = HirerReview.query.filter_by(hirer_id=hirer_id).first()
+    if not hr:
+        hr = HirerReview(hirer_id=hirer_id)
+        db.session.add(hr)
+        db.session.commit()
+
+    action = request.form.get('action')
+    status = request.form.get('status')
+    note = request.form.get('note', '').strip()
+
+    if action == 'l1':
+        require_role('admin', 'reviewer_l1')
+        hr.l1_status = status
+        hr.l1_reviewer_id = current_user.id
+        hr.l1_note = note
+        hr.l1_at = datetime.utcnow()
+    elif action == 'l2':
+        require_role('admin', 'reviewer_l2')
+        hr.l2_status = status
+        hr.l2_reviewer_id = current_user.id
+        hr.l2_note = note
+        hr.l2_at = datetime.utcnow()
+    elif action == 'compliance':
+        require_role('admin', 'compliance')
+        hr.compliance_status = status
+        hr.compliance_reviewer_id = current_user.id
+        hr.compliance_note = note
+        hr.compliance_at = datetime.utcnow()
+    elif action == 'docs':
+        require_role('admin', 'reviewer_l1', 'reviewer_l2', 'compliance')
+        hr.docs_address_proof = bool(request.form.get('docs_address_proof'))
+        hr.docs_registration = bool(request.form.get('docs_registration'))
+        hr.docs_website = bool(request.form.get('docs_website'))
+        hr.docs_maps_link = bool(request.form.get('docs_maps_link'))
+    else:
+        abort(400)
+
+    compute_final_status(hr, h)
+    db.session.commit()
+
+    try:
+        append_row_to_sheet([
+            hr.hirer_id, h.institute_name, hr.l1_status, hr.l1_reviewer_id or '',
+            hr.l1_at.isoformat() if hr.l1_at else '',
+            hr.l2_status, hr.l2_reviewer_id or '',
+            hr.l2_at.isoformat() if hr.l2_at else '',
+            hr.compliance_status, hr.final_status,
+            'Yes' if hr.ready_to_post else 'No'
+        ], sheet_range='Hirer_Review_Log!A2:K2')
+    except Exception as e:
+        print(f"[Sheets] Failed to append review log: {e}")
+
+    flash("✅ Review updated.")
+    return redirect(url_for('admin_hirers'))
+
+@app.route('/about')
+def about_page():
+    return render_template('pages/about.html')
+
+@app.route('/error')
+def error_demo():
+    return render_template('error.html', error_code=500), 500
+
+# -----------------------------------------------------------------------------
+# Run
+# -----------------------------------------------------------------------------
 if __name__ == "__main__":
     socketio.run(app, debug=False)
