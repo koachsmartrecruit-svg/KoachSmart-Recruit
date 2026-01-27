@@ -3,3 +3,7 @@ __pycache__/
 instance/
 .env
 credentials/
+static/videos/
+static/uploads/
+*.mp4
+*.pdf
