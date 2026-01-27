@@ -20,7 +20,7 @@
         <div class="row align-items-center position-relative z-1">
             <div class="col-md-8">
                 <h5 class="text-muted text-uppercase letter-spacing-2 mb-1">Overview</h5>
-                <h1 class="fw-bold display-5 mb-2">Welcome back, <span class="text-primary">{{ current_user.profile.full_name.split()[0] }}</span></h1>
+                <h1 class="fw-bold display-5 mb-2">Welcome back, <span class="text-primary">{% if current_user.profile and current_user.profile.full_name %}{{ current_user.profile.full_name.split()[0] }}{% else %}{{ current_user.username }}{% endif %}</span></h1>
                 <p class="text-muted opacity-75 mb-0" id="currentDate"></p>
             </div>
             <div class="col-md-4 text-md-end mt-3 mt-md-0">
@@ -206,8 +206,8 @@
             <div class="glass-card p-4 mb-4">
                 <h5 class="fw-bold mb-3">Profile Health</h5>
                 <div class="d-flex flex-column gap-3">
-                    <div class="d-flex align-items-center"><i class="fas {% if current_user.profile.resume_path %}fa-check-circle text-success{% else %}fa-circle text-muted{% endif %} me-3"></i><span>PDF Resume</span></div>
-                    <div class="d-flex align-items-center"><i class="fas {% if current_user.profile.is_verified %}fa-check-circle text-success{% else %}fa-circle text-muted{% endif %} me-3"></i><span>Admin Verification</span></div>
+                    <div class="d-flex align-items-center"><i class="fas {% if current_user.profile and current_user.profile.resume_path %}fa-check-circle text-success{% else %}fa-circle text-muted{% endif %} me-3"></i><span>PDF Resume</span></div>
+                    <div class="d-flex align-items-center"><i class="fas {% if current_user.profile and current_user.profile.is_verified %}fa-check-circle text-success{% else %}fa-circle text-muted{% endif %} me-3"></i><span>Admin Verification</span></div>
                 </div>
                 {% if profile_completion < 100 %}
                     <div class="mt-4 pt-3 border-top border-secondary"><a href="{{ url_for('edit_profile') }}" class="btn btn-sm btn-primary w-100">Complete Profile (+{{ 100 - profile_completion }}%)</a></div>

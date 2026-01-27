@@ -31,7 +31,6 @@ from flask_socketio import SocketIO, emit, join_room, leave_room
 import PyPDF2
 import docx
 
-from local_resume_parser import parse_resume_text
 
 # Email helpers
 from email.mime.text import MIMEText
@@ -41,6 +40,21 @@ from email.mime.multipart import MIMEMultipart
 from googleapiclient.discovery import build
 from google.oauth2.service_account import Credentials
 
+def validate_phone(phone):
+    return bool(re.fullmatch(r"[6-9]\d{9}", phone or ""))
+
+def validate_pincode(pin):
+    return bool(re.fullmatch(r"\d{6}", pin or ""))
+
+def validate_ifsc(ifsc):
+    return bool(re.fullmatch(r"[A-Z]{4}0[A-Z0-9]{6}", ifsc or ""))
+
+def validate_pan(pan):
+    return bool(re.fullmatch(r"[A-Z]{5}[0-9]{4}[A-Z]{1}", pan or ""))
+
+def allowed_file(filename):
+    allowed = {"pdf", "jpg", "jpeg", "png"}
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in allowed
 # -----------------------------------------------------------------------------
 # Load environment
 # -----------------------------------------------------------------------------
@@ -125,26 +139,29 @@ def enforce_employer_onboarding():
 
     # Public/auth/onboarding pages that should always be accessible
     always_allow_endpoints = {
-        'home', 'login', 'register', 'logout',
-        'forgot_password', 'reset_password_mock',
+        # Auth + account
+        'login', 'register', 'logout', 'forgot_password', 'reset_password_mock',
         'login_google', 'authorize_google', 'select_role',
-        'about', 'careers', 'success_stories', 'pricing',
+        
+        # Public pages
+        'home', 'about', 'careers', 'success_stories', 'pricing',
         'coach_guide', 'academy_guide', 'safety', 'help_center',
-        'payment_pending', 'error_demo',
+        'about_page', 'error_demo', 'payment_pending',
+        
+        # Onboarding and plans
         'hirer_onboarding',  # onboarding page itself
+        'show_plans',  # plans page (accessible before onboarding)
     }
 
+    # If the requested endpoint is public, allow it
     if request.endpoint in always_allow_endpoints:
         return
 
-    # Protected employer app pages
-    protected_employer_endpoints = {
-        'dashboard', 'new_job', 'edit_job', 'toggle_job_status',
-        'admin_jobs', 'admin_users', 'super_admin',
-    }
-
-    if (request.endpoint in protected_employer_endpoints) and (not current_user.employer_onboarding_completed):
-        return redirect(url_for('hirer_onboarding'))
+    # If onboarding is NOT completed, block all endpoints except allowed ones
+    if not current_user.employer_onboarding_completed:
+        # If endpoint is not in always_allow list, redirect to onboarding
+        if request.endpoint not in always_allow_endpoints:
+            return redirect(url_for('hirer_onboarding'))
 # DB and login manager BEFORE models
 db = SQLAlchemy(app)
 login_manager = LoginManager()
@@ -241,7 +258,7 @@ class User(UserMixin, db.Model):
 
     onboarding_step = db.Column(db.Integer, default=1)
     onboarding_completed = db.Column(db.Boolean, default=False)
-        # Hirer (employer) onboarding
+    # Hirer (employer) onboarding
     employer_onboarding_step = db.Column(db.Integer, default=1)
     employer_onboarding_completed = db.Column(db.Boolean, default=False)
     # Referral
@@ -372,6 +389,40 @@ class Hirer(db.Model):
     hiring_count = db.Column(db.Integer)
     notes = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+        # -------------------------------
+    # Sheet → Basic / Business Details
+    # -------------------------------
+    contact_person_name = db.Column(db.String(150))     # Contact Person Name
+    business_type = db.Column(db.String(100))           # Academy / School / Venue / Event
+    gst_number = db.Column(db.String(50))                # GST Number
+    years_active = db.Column(db.Integer)                # Years in operation
+
+    # -------------------------------
+    # Document uploads
+    # -------------------------------
+    gst_doc_path = db.Column(db.String(300))             # GST Certificate
+    registration_doc_path = db.Column(db.String(300))   # Registration Certificate
+    owner_id_doc_path = db.Column(db.String(300))        # Owner ID Proof
+
+    # -------------------------------
+    # Location extras
+    # -------------------------------
+    pincode = db.Column(db.String(10))                   # Postal Code
+
+    # -------------------------------
+    # Hiring Preferences
+    # -------------------------------
+    sports_categories = db.Column(db.Text)              # JSON / comma-separated
+    working_type = db.Column(db.String(50))              # Full-time / Part-time / Contract
+    budget_range = db.Column(db.String(100))             # Expected budget
+
+    # -------------------------------
+    # Risk / Compliance flags
+    # -------------------------------
+    duplicate_flag = db.Column(db.Boolean, default=False)
+    risk_flag = db.Column(db.Boolean, default=False)
+    payment_verified = db.Column(db.Boolean, default=False)
+
 
 class HirerReview(db.Model):
     __tablename__ = 'hirer_review'
@@ -496,7 +547,7 @@ def get_next_onboarding_step(user):
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(int(user_id))
+    return db.session.get(User, int(user_id))
 
 def get_profile_completion(profile):
     if not profile:
@@ -776,21 +827,6 @@ def compute_final_status(hr: HirerReview, h: Hirer):
     hr.final_at = None
 
 # -----------------------------------------------------------------------------
-# Onboarding enforcement
-# -----------------------------------------------------------------------------
-@app.before_request
-def enforce_onboarding():
-    if not current_user.is_authenticated:
-        return
-    if current_user.role != 'coach':
-        return
-    allowed_paths = ['/onboarding', '/logout', '/static']
-    if any(request.path.startswith(p) for p in allowed_paths):
-        return
-    if not current_user.onboarding_completed:
-        return redirect(url_for('onboarding_unified'))
-
-# -----------------------------------------------------------------------------
 # Routes
 # -----------------------------------------------------------------------------
 @app.route('/coaches')
@@ -946,6 +982,8 @@ def authorize_google():
         if user:
             login_user(user)
             if user.role == 'employer':
+                if not user.employer_onboarding_completed:
+                    return redirect(url_for('hirer_onboarding'))
                 return redirect(url_for('show_plans'))
             if user.role == 'coach':
                 return redirect(url_for('show_plans'))
@@ -973,6 +1011,8 @@ def select_role():
         login_user(user)
         session.pop('google_user', None)
         if user.role == 'employer':
+            if not user.employer_onboarding_completed:
+                return redirect(url_for('hirer_onboarding'))
             return redirect(url_for('show_plans'))
         if user.role == 'coach':
             return redirect(url_for('show_plans'))
@@ -993,7 +1033,7 @@ def register():
         new_user = User(
             username=request.form.get('username'),
             email=request.form.get('email'),
-            role=request.form.get('role'),
+            role='coach',
             password=generate_password_hash(request.form.get('password')),
             referral_code=generate_referral_code()
         )
@@ -1016,6 +1056,8 @@ def register():
             print(f"[Sheets] Failed to append user row: {e}")
         login_user(new_user)
         if new_user.role == 'employer':
+            if not new_user.employer_onboarding_completed:
+                return redirect(url_for('hirer_onboarding'))
             return redirect(url_for('show_plans'))
         if new_user.role == 'coach':
             return redirect(url_for('show_plans'))
@@ -1027,7 +1069,18 @@ def register():
 def login():
     if request.method == 'POST':
         user = User.query.filter_by(email=request.form.get('email')).first()
-        if user and user.password and check_password_hash(user.password, request.form.get('password')):
+        password_valid = False
+        if user and user.password and len(user.password) > 10:
+            try:
+                password_valid = check_password_hash(user.password, request.form.get('password'))
+            except (ValueError, AttributeError):
+                password_valid = False
+        if user and password_valid:
+
+            # 🚫 Block employer login from coach portal
+            if user.role == 'employer':
+                flash("Please login from Employer Login page.")
+                return redirect(url_for('employer_login'))
             login_user(user)
             next_url = request.args.get('next')
             if next_url:
@@ -1035,6 +1088,8 @@ def login():
             if user.role == 'admin':
                 return redirect(url_for('super_admin'))
             if user.role == 'employer':
+                if not user.employer_onboarding_completed:
+                    return redirect(url_for('hirer_onboarding'))
                 return redirect(url_for('show_plans'))
             if user.role == 'coach':
                 return redirect(url_for('show_plans'))
@@ -1063,7 +1118,8 @@ def dashboard():
             applications.extend(job.applications)
         return render_template('admin_dashboard.html', jobs=my_jobs, applications=applications, total_applicants=len(applications))
     else:
-        views = current_user.profile.views
+        profile = current_user.profile
+        views = profile.views if profile else 0
         query = Job.query.filter_by(is_active=True)
         if request.args.get('sport') and request.args.get('sport') != 'All':
             query = query.filter_by(sport=request.args.get('sport'))
@@ -1081,9 +1137,9 @@ def dashboard():
             filtered_jobs = all_jobs
         my_apps = Application.query.filter_by(user_id=current_user.id).all()
         avg_rating = 0
-        if current_user.profile.reviews:
-            total = sum([r.rating for r in current_user.profile.reviews])
-            avg_rating = round(total / len(current_user.profile.reviews), 1)
+        if profile and profile.reviews:
+            total = sum([r.rating for r in profile.reviews])
+            avg_rating = round(total / len(profile.reviews), 1)
         return render_template('coach_listing.html', jobs=filtered_jobs, my_apps=my_apps, views=views, avg_rating=avg_rating)
 
 @app.route('/jobs')
@@ -1766,171 +1822,234 @@ def onboarding_unified():
 
     return render_template('onboarding_unified.html', profile=profile, current_step=current_step)
 # 3) Replace your existing /hirer/onboarding route with a coach-like multi-step flow
-@app.route('/hirer/onboarding', methods=['GET', 'POST'])
-@login_required
+
+@app.route("/hirer/onboarding", methods=["GET", "POST"])
 def hirer_onboarding():
-    """
-    Multi-step Hirer (employer) onboarding:
-    Step 1: Institute + Phone/Email OTP
-    Step 2: Location (address/city/state/country) + GPS detect + lat/lng
-    Step 3: Hiring preferences + maps link + notes (final submit → create Hirer + HirerReview)
-    """
-    if current_user.role != 'employer':
-        return redirect(url_for('dashboard'))
+    if not current_user.is_authenticated:
+        return redirect(url_for("employer_login", next=request.path))
 
-    current_step = current_user.employer_onboarding_step or 1
-    data = session.get('hirer_onboarding', {})  # store partial data across steps
+    if current_user.role != "employer":
+        flash("Unauthorized access")
+        return redirect(url_for("dashboard"))
+    # Safety
+    if current_user.role != "employer":
+        flash("Unauthorized access")
+        return redirect(url_for("dashboard"))
 
-    # Step 1: Institute details + phone/email OTP
-    if current_step == 1 and request.method == 'POST':
-        # Send OTP actions
-        if 'send_phone_otp' in request.form:
-            phone = request.form.get('contact_number', '').strip()
-            if phone:
-                send_phone_otp(phone)
-                flash("📱 OTP sent to your phone (demo: 123456).")
-            return redirect(url_for('hirer_onboarding'))
-        if 'send_email_otp' in request.form:
-            email = current_user.email
-            if email:
-                if send_email_otp(email):
-                    flash("📧 OTP sent to your email.")
-                else:
-                    flash("❌ Failed to send email OTP. Please try again.")
-            return redirect(url_for('hirer_onboarding'))
-
-        # Main submit
-        institute_name = request.form.get('institute_name', '').strip()
-        contact_number = request.form.get('contact_number', '').strip()
-        alternate_number = request.form.get('alternate_number', '').strip()
-        email_otp = request.form.get('email_otp', '').strip()
-        phone_otp = request.form.get('phone_otp', '').strip()
-
-        if not institute_name or not contact_number:
-            flash("Institute name and contact number are required.")
-            return redirect(url_for('hirer_onboarding'))
-
-        if not verify_otp(current_user.email, email_otp):
-            flash("❌ Invalid email OTP.")
-            return redirect(url_for('hirer_onboarding'))
-        if not verify_otp(contact_number, phone_otp):
-            flash("❌ Invalid phone OTP.")
-            return redirect(url_for('hirer_onboarding'))
-
-        # Normalize phone to +91XXXXXXXXXX if Indian 10-digit
-        def normalize_phone(p):
-            p = ''.join(ch for ch in p if ch.isdigit())
-            if len(p) == 10 and p[0] in '6789':
-                return '+91' + p
-            return p
-
-        data.update({
-            'institute_name': institute_name,
-            'contact_number': normalize_phone(contact_number),
-            'alternate_number': normalize_phone(alternate_number) if alternate_number else ''
-        })
-        session['hirer_onboarding'] = data
-
-        current_user.employer_onboarding_step = 2
-        db.session.commit()
-        flash("✅ Verification complete. Continue to location.")
-        return redirect(url_for('hirer_onboarding'))
-
-    # Step 2: Location
-    elif current_step == 2 and request.method == 'POST':
-        address_full = request.form.get('address_full', '').strip()
-        city = request.form.get('city', '').strip()
-        state = request.form.get('state', '').strip()
-        country = request.form.get('country', 'India').strip() or 'India'
-        latitude = request.form.get('latitude', '').strip()
-        longitude = request.form.get('longitude', '').strip()
-
-        if not address_full or not city or not state:
-            flash("Address, city and state are required.")
-            return redirect(url_for('hirer_onboarding'))
-
-        data.update({
-            'address_full': address_full,
-            'city': city,
-            'state': state,
-            'country': country,
-            'latitude': latitude,
-            'longitude': longitude
-        })
-        session['hirer_onboarding'] = data
-
-        current_user.employer_onboarding_step = 3
-        db.session.commit()
-        flash("✅ Location saved. Continue to hiring preferences.")
-        return redirect(url_for('hirer_onboarding'))
-
-    # Step 3: Hiring prefs + final submit → create Hirer + HirerReview
-    elif current_step == 3 and request.method == 'POST':
-        hiring_mode = request.form.get('hiring_mode', '').strip()
-        hiring_count = request.form.get('hiring_count', '').strip()
-        google_maps_link = request.form.get('google_maps_link', '').strip()
-        notes = request.form.get('notes', '').strip()
-
-        if not hiring_mode:
-            flash("Please select hiring mode (Single/Multiple).")
-            return redirect(url_for('hirer_onboarding'))
-        if hiring_mode == 'Multiple' and not hiring_count:
-            flash("Please enter hiring count for multiple mode.")
-            return redirect(url_for('hirer_onboarding'))
-
-        data.update({
-            'hiring_mode': hiring_mode,
-            'hiring_count': int(hiring_count) if hiring_count else None,
-            'google_maps_link': google_maps_link,
-            'notes': notes
-        })
-
-        # Persist Hirer
-        h = Hirer(
-            institute_name=data['institute_name'],
-            address_full=data['address_full'],
-            city=data['city'],
-            state=data['state'],
-            country=data['country'],
-            contact_number=data['contact_number'],
-            alternate_number=data.get('alternate_number') or None,
-            email=current_user.email,
-            google_maps_link=data.get('google_maps_link') or None,
-            latitude=float(data['latitude']) if data.get('latitude') else None,
-            longitude=float(data['longitude']) if data.get('longitude') else None,
-            hiring_mode=data['hiring_mode'],
-            hiring_count=data.get('hiring_count'),
-            notes=data.get('notes') or None
-        )
-        db.session.add(h)
-        db.session.commit()
-
-        # Create review row
-        hr = HirerReview(hirer_id=h.id)
-        db.session.add(hr)
-        db.session.commit()
-
-        # Optionally append to Google Sheets
-        try:
-            append_row_to_sheet([
-                h.id, h.institute_name, h.address_full, h.city, h.state, h.country,
-                h.contact_number, h.alternate_number or '', h.email,
-                h.email_otp_status, h.phone_otp_status,
-                h.google_maps_link or '', h.hiring_mode, h.hiring_count or ''
-            ], sheet_range='Hirer_Onboarding!A2:N2')
-        except Exception as e:
-            print(f"[Sheets] Failed to append hirer row: {e}")
-
-        # Complete employer onboarding
-        current_user.employer_onboarding_completed = True
+    # Init session storage
+    if not current_user.employer_onboarding_step:
         current_user.employer_onboarding_step = 1
         db.session.commit()
 
-        session.pop('hirer_onboarding', None)
-        flash("🎉 Hirer onboarding completed!")
-        return redirect(url_for('dashboard'))
+    current_step = current_user.employer_onboarding_step
+    if "hirer_onboarding" not in session:
+        session["hirer_onboarding"] = {}
 
-    return render_template('hirer_onboarding.html', current_step=current_step, data=data)
+    data = session["hirer_onboarding"]
+
+    # ---------------------------
+    # STEP FORM SUBMIT
+    # ---------------------------
+    if request.method == "POST":
+        if "send_phone_otp" in request.form:
+            phone = request.form.get("contact_number", "").strip()
+            if validate_phone(phone):
+                send_phone_otp(phone)
+                flash("📱 Phone OTP sent successfully.")
+            else:
+                flash("❌ Invalid phone number.")
+            return redirect(url_for("hirer_onboarding"))
+
+        if "send_email_otp" in request.form:
+            send_email_otp(current_user.email)
+            flash("📧 Email OTP sent successfully.")
+            return redirect(url_for("hirer_onboarding"))
+
+
+        # 🔹 STEP 1
+        if current_step == 1:
+
+            institute = request.form.get("institute_name", "").strip()
+            phone = request.form.get("contact_number", "").strip()
+
+            if len(institute) < 3:
+                flash("Institute name must be at least 3 characters.")
+                return redirect(url_for("hirer_onboarding"))
+
+            if not validate_phone(phone):
+                flash("Invalid Indian mobile number.")
+                return redirect(url_for("hirer_onboarding"))
+
+            # OTP verification
+            phone_otp = request.form.get("phone_otp", "")
+            email_otp = request.form.get("email_otp", "")
+
+            if not verify_otp(phone, phone_otp):
+                flash("Invalid phone OTP.")
+                return redirect(url_for("hirer_onboarding"))
+
+            if not verify_otp(current_user.email, email_otp):
+                flash("Invalid email OTP.")
+                return redirect(url_for("hirer_onboarding"))
+
+            data.update({
+                "institute_name": institute,
+                "contact_person_name": request.form.get("contact_person_name"),
+                "contact_number": phone,
+                "alternate_number": request.form.get("alternate_number"),
+                "phone_verified": True,
+                "email_verified": True,
+            })
+
+
+            session["hirer_onboarding"] = data
+            current_user.employer_onboarding_step = 2
+            db.session.commit()
+
+
+
+        # 🔹 STEP 2
+        elif current_step == 2:
+            reg_doc = request.files.get("registration_doc")
+            owner_doc = request.files.get("owner_id_doc")
+            gst_doc = request.files.get("gst_doc")
+
+
+            if not reg_doc or not allowed_file(reg_doc.filename):
+                flash("Registration document is mandatory (PDF/JPG/PNG).")
+                return redirect(url_for("hirer_onboarding"))
+
+            if not owner_doc or not allowed_file(owner_doc.filename):
+                flash("Owner ID proof is mandatory.")
+                return redirect(url_for("hirer_onboarding"))
+
+            data.update({
+                "business_type": request.form.get("business_type"),
+                "gst_number": request.form.get("gst_number"),
+                "years_active": request.form.get("years_active"),
+            })
+
+            # Save files
+            reg_filename = secure_filename(f"reg_{current_user.id}_{reg_doc.filename}")
+            owner_filename = secure_filename(f"id_{current_user.id}_{owner_doc.filename}")
+
+            reg_doc.save(os.path.join(app.config['UPLOAD_FOLDER'], reg_filename))
+            owner_doc.save(os.path.join(app.config['UPLOAD_FOLDER'], owner_filename))
+
+            if gst_doc and allowed_file(gst_doc.filename):
+                gst_filename = secure_filename(f"gst_{current_user.id}_{gst_doc.filename}")
+                gst_doc.save(os.path.join(app.config['UPLOAD_FOLDER'], gst_filename))
+                data["gst_doc_path"] = gst_filename
+
+
+            data["registration_doc_path"] = reg_filename
+            data["owner_id_doc_path"] = owner_filename
+
+            session["hirer_onboarding"] = data
+            current_user.employer_onboarding_step = 3
+            db.session.commit()
+
+        # 🔹 STEP 3
+        elif current_step == 3:
+            pincode = request.form.get("pincode", "").strip()
+
+            if not validate_pincode(pincode):
+                flash("Invalid 6-digit pincode.")
+                return redirect(url_for("hirer_onboarding"))
+
+            radius = int(request.form.get("service_radius_km", 0))
+            if radius < 1 or radius > 100:
+                flash("Service radius must be between 1–100 km.")
+                return redirect(url_for("hirer_onboarding"))
+
+            data.update({
+                "address_full": request.form.get("address_full"),
+                "city": request.form.get("city"),
+                "state": request.form.get("state"),
+                "country": request.form.get("country"),
+                "latitude": request.form.get("latitude"),
+                "longitude": request.form.get("longitude"),
+                "pincode": pincode,
+                "service_radius_km": radius,
+            })
+
+            session["hirer_onboarding"] = data
+            current_user.employer_onboarding_step = 4
+            db.session.commit()
+
+
+        # 🔹 STEP 4 (FINAL)
+        existing = Hirer.query.filter_by(email=current_user.email).first()
+        if existing:
+            flash("You already completed onboarding.")
+            return redirect(url_for("dashboard"))
+
+        elif current_step == 4:
+            payload = session.get("hirer_onboarding", {})
+            raw_hiring_count = request.form.get("hiring_count")
+
+            if raw_hiring_count and raw_hiring_count.isdigit():
+                hiring_count = int(raw_hiring_count)
+            else:
+                hiring_count = None
+
+            hirer = Hirer(
+                institute_name = payload.get("institute_name"),
+                contact_person_name = payload.get("contact_person_name"),
+                contact_number = payload.get("contact_number"),
+                alternate_number = payload.get("alternate_number"),
+                business_type = payload.get("business_type"),
+                gst_number = payload.get("gst_number"),
+                years_active = payload.get("years_active"),
+                address_full = payload.get("address_full"),
+                city = payload.get("city"),
+                state = payload.get("state"),
+                country = payload.get("country"),
+                latitude = payload.get("latitude"),
+                longitude = payload.get("longitude"),
+                pincode = payload.get("pincode"),
+                hiring_count = hiring_count,
+                registration_doc_path = payload.get("registration_doc_path"),
+                owner_id_doc_path = payload.get("owner_id_doc_path"),
+                gst_doc_path = payload.get("gst_doc_path"),
+
+                hiring_mode = request.form.get("hiring_mode"),
+                google_maps_link = request.form.get("google_maps_link"),
+                notes = request.form.get("notes"),
+                email = current_user.email,
+
+                phone_otp_status="Verified",
+                email_otp_status="Verified",
+            )
+            mode = request.form.get("hiring_mode")
+            if not mode:
+                flash("Please select hiring mode.")
+                return redirect(url_for("hirer_onboarding"))
+
+
+            db.session.add(hirer)
+            db.session.commit()   # ✅ generate hirer.id first
+
+            review = HirerReview(hirer_id=hirer.id)
+            db.session.add(review)
+            db.session.commit()
+
+            current_user.employer_onboarding_completed = True
+            current_user.employer_onboarding_step = 4
+            
+            db.session.commit()
+            session.pop("hirer_onboarding", None)
+            flash("🎉 Onboarding completed successfully!")
+            return redirect(url_for("dashboard"))
+
+        session["hirer_onboarding"] = data
+        return redirect(url_for("hirer_onboarding"))
+
+    return render_template(
+        "hirer_onboarding.html",
+        current_step=current_step,
+        data=data
+    )
 @app.route('/admin/hirers', methods=['GET'])
 @login_required
 def admin_hirers():
@@ -1997,10 +2116,90 @@ def update_hirer_review(hirer_id):
 
     flash("✅ Review updated.")
     return redirect(url_for('admin_hirers'))
+# ================================
+# EMPLOYER REGISTER
+# ================================
+@app.route('/employer/register', methods=['GET', 'POST'])
+def employer_register():
 
-@app.route('/about')
-def about_page():
-    return render_template('pages/about.html')
+    # If already logged in → go dashboard
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+
+    if request.method == 'POST':
+        email = request.form.get('email')
+        existing = User.query.filter_by(email=email).first()
+        if existing:
+            flash("Email already registered.")
+            return redirect(url_for('employer_register'))
+
+        new_user = User(
+            username=request.form.get('company_name'),
+            email=email,
+            role='employer',   # 🔒 Force employer role
+            password=generate_password_hash(request.form.get('password')),
+            referral_code=generate_referral_code()
+        )
+
+        db.session.add(new_user)
+        db.session.commit()
+
+        # Optional Google Sheet logging (safe)
+        try:
+            append_row_to_sheet([
+                str(new_user.id),
+                new_user.username,
+                new_user.email,
+                '',
+                new_user.role,
+                '',
+                '',
+                new_user.subscription_status,
+                new_user.stripe_customer_id or ''
+            ], sheet_range='Users!A2:I2')
+        except Exception as e:
+            print(f"[Sheets] Employer append failed: {e}")
+
+        login_user(new_user)
+
+        # Employer always goes to onboarding
+        return redirect(url_for('hirer_onboarding'))
+
+    return render_template('employer_register.html')
+# ================================
+# EMPLOYER LOGIN
+# ================================
+@app.route('/employer/login', methods=['GET', 'POST'])
+def employer_login():
+
+    # If already logged in → go dashboard
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+
+    if request.method == 'POST':
+        email = request.form.get('email')
+        password = request.form.get('password')
+
+        user = User.query.filter_by(email=email, role='employer').first()
+
+        if user and user.password and check_password_hash(user.password, password):
+            login_user(user)
+
+            next_url = request.args.get("next")
+
+            # Enforce onboarding
+            if not user.employer_onboarding_completed:
+                return redirect(url_for('hirer_onboarding'))
+
+            # Redirect back if next exists
+            if next_url:
+                return redirect(next_url)
+
+            return redirect(url_for('dashboard'))
+
+        flash("Invalid employer credentials")
+
+    return render_template('employer_login.html')
 
 @app.route('/error')
 def error_demo():

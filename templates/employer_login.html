@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="auth-page">
+  <div class="auth-wrapper">
+
+    <div class="auth-form">
+      <div class="auth-form-inner">
+
+        <h2 class="auth-title">Employer Login</h2>
+        <p class="auth-subtitle">
+          Access your hiring dashboard.
+        </p>
+
+        <form method="POST">
+
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" name="email" class="form-control" required>
+          </div>
+
+          <div class="form-group">
+            <label>Password</label>
+            <input type="password" name="password" class="form-control" required>
+          </div>
+
+          <button type="submit" class="btn btn-primary w-100">
+            Login →
+          </button>
+
+        </form>
+
+        <p class="auth-footer">
+          New employer?
+          <a href="{{ url_for('employer_register') }}">Create account</a>
+        </p>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}
