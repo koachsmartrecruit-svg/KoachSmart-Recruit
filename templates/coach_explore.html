@@ -4,9 +4,11 @@
   <div class="d-flex align-items-center justify-content-between mb-3">
     <h3 class="m-0">Discover Coaches</h3>
     <div>
-      <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary btn-sm me-2">Back</a>
-      {% if current_user.role == 'employer' %}
-        <a href="{{ url_for('new_job') }}" class="btn btn-primary btn-sm">Post Job</a>
+      {% if current_user.role == 'coach' %}
+        <a href="{{ url_for('coach.dashboard') }}" class="btn btn-outline-secondary btn-sm me-2">Back</a>
+      {% elif current_user.role == 'employer' %}
+        <a href="{{ url_for('employer.dashboard') }}" class="btn btn-outline-secondary btn-sm me-2">Back</a>
+        <a href="{{ url_for('employer.new_job') }}" class="btn btn-primary btn-sm">Post Job</a>
       {% endif %}
     </div>
   </div>
@@ -86,13 +88,13 @@
   <nav aria-label="Page navigation" class="mt-4">
     <ul class="pagination">
       {% if pagination.has_prev %}
-        <li class="page-item"><a class="page-link" href="{{ url_for('explore_coaches', page=pagination.prev_num, **request.args.to_dict()) }}">Prev</a></li>
+        <li class="page-item"><a class="page-link" href="{{ url_for('employer.explore_coaches', page=pagination.prev_num, **request.args.to_dict()) }}">Prev</a></li>
       {% else %}
         <li class="page-item disabled"><span class="page-link">Prev</span></li>
       {% endif %}
       <li class="page-item disabled"><span class="page-link">Page {{ pagination.page }} / {{ pagination.pages }}</span></li>
       {% if pagination.has_next %}
-        <li class="page-item"><a class="page-link" href="{{ url_for('explore_coaches', page=pagination.next_num, **request.args.to_dict()) }}">Next</a></li>
+        <li class="page-item"><a class="page-link" href="{{ url_for('employer.explore_coaches', page=pagination.next_num, **request.args.to_dict()) }}">Next</a></li>
       {% else %}
         <li class="page-item disabled"><span class="page-link">Next</span></li>
       {% endif %}

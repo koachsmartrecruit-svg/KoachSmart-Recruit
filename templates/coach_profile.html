@@ -112,7 +112,7 @@
             <div class="glass-card p-4 border border-danger">
                 <h5 class="fw-bold text-danger mb-3"><i class="fas fa-exclamation-triangle me-2"></i>Danger Zone</h5>
                 <p class="text-muted small">Deleting your account is irreversible. All your data, applications, and history will be lost.</p>
-                <form action="{{ url_for('delete_profile') }}" method="POST" onsubmit="return confirm('Are you strictly sure? This cannot be undone.');">
+                <form action="{{ url_for('coach.delete_profile') }}" method="POST" onsubmit="return confirm('Are you strictly sure? This cannot be undone.');">
                     <button type="submit" class="btn btn-outline-danger">Delete My Account</button>
                 </form>
             </div>

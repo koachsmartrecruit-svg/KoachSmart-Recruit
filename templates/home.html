@@ -6,37 +6,37 @@
   <div class="container hero-clean-grid">
     
     <div class="hero-clean-copy">
-      <div class="badge-pill">AI for Sports Hiring</div>
+      <div class="badge-pill">AI for Sports Careers</div>
 
       <h1 class="hero-clean-title">
-        Hire <span class="highlight-blue">Verified Coaches</span><br>
-        in days, not months.
+        Find Your <span class="highlight-blue">Dream Coaching Job</span><br>
+        with AI-powered matching.
       </h1>
 
       <p class="hero-clean-subtitle">
-        KoachSmart-Recruit connects academies with verified multi-sport coaches.
-        AI match scores, smart filters and instant chat — all in one place.
+        KoachSmart connects verified coaches with top academies and sports organizations.
+        Get matched with opportunities that fit your skills, location, and career goals.
       </p>
 
       <div class="hero-clean-cta-row">
         {% if not current_user.is_authenticated %}
-          <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg hero-primary-cta">
+          <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg hero-primary-cta">
             <i class="fas fa-rocket me-2"></i> Get Started
           </a>
           <a href="#how-it-works" class="btn btn-outline-secondary btn-lg hero-secondary-cta">
             Learn More
           </a>
         {% else %}
-          <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-lg hero-primary-cta">
+          <a href="{{ url_for('coach.dashboard') }}" class="btn btn-primary btn-lg hero-primary-cta">
             Go to Dashboard
           </a>
         {% endif %}
       </div>
 
       <div class="hero-clean-meta">
-        <span>✓ Verified Coaches</span>
-        <span>⚡ AI Shortlisting</span>
-        <span>🔒 Secure Hiring</span>
+        <span>✓ Verified Opportunities</span>
+        <span>⚡ AI Job Matching</span>
+        <span>🔒 Secure Applications</span>
       </div>
     </div>
 
@@ -53,15 +53,15 @@
 
       <div class="hero-kpi-row">
         <div class="hero-kpi">
-          <span class="kpi-label">Verified Profiles</span>
+          <span class="kpi-label">Active Job Openings</span>
           <span class="kpi-value">500+</span>
         </div>
         <div class="hero-kpi">
-          <span class="kpi-label">Avg. Time to Hire</span>
+          <span class="kpi-label">Avg. Time to Get Hired</span>
           <span class="kpi-value">7 days</span>
         </div>
         <div class="hero-kpi">
-          <span class="kpi-label">Match Score Accuracy</span>
+          <span class="kpi-label">Match Success Rate</span>
           <span class="kpi-value">92%</span>
         </div>
       </div>
@@ -73,40 +73,42 @@
 <section class="segment-section py-5 bg-light">
     <div class="container">
         <div class="text-center mb-5 glide-up">
-            <h2 class="section-title">Who Are You?</h2>
-            <p class="section-subtitle">Choose your path and discover opportunities</p>
+            <h2 class="section-title">Start Your Journey</h2>
+            <p class="section-subtitle">Choose how you want to grow your sports career</p>
         </div>
         <div class="row g-4">
             <div class="col-md-6">
                 <div class="segment-card glide-up" style="transition-delay: 0.1s;">
                     <div class="segment-icon"><i class="fas fa-user-tie"></i></div>
-                    <h3>For Coaches</h3>
-                    <p>Build your brand. Get discovered by top academies.</p>
+                    <h3>I'm a Coach</h3>
+                    <p>Find your next coaching opportunity with top academies.</p>
                     <ul class="feature-list mb-4">
                         <li>Get verified with trust badge</li>
-                        <li>Access 100+ job opportunities</li>
+                        <li>Access 500+ job opportunities</li>
+                        <li>AI-powered job matching</li>
+                        <li>Direct chat with recruiters</li>
                     </ul>
                     {% if not current_user.is_authenticated %}
-                        <a href="{{ url_for('register') }}?role=coach" class="btn btn-primary w-100 btn-biometric">Join as Coach</a>
+                        <a href="{{ url_for('auth.register') }}?role=coach" class="btn btn-primary w-100 btn-biometric">Start My Career</a>
                     {% else %}
-                        <a href="{{ url_for('dashboard') }}" class="btn btn-primary w-100 btn-biometric">View Dashboard</a>
+                        <a href="{{ url_for('coach.dashboard') }}" class="btn btn-primary w-100 btn-biometric">View Jobs</a>
                     {% endif %}
                 </div>
             </div>
             <div class="col-md-6">
                 <div class="segment-card glide-up" style="transition-delay: 0.2s;">
                     <div class="segment-icon" style="background: linear-gradient(135deg, var(--accent-orange), #dc2626);"><i class="fas fa-building"></i></div>
-                    <h3>For Academies</h3>
-                    <p>Hire verified talent with AI matching instantly.</p>
+                    <h3>I'm Hiring Coaches</h3>
+                    <p>Find and hire verified coaching talent instantly.</p>
                     <ul class="feature-list mb-4">
                         <li>Access verified coach database</li>
                         <li>AI-powered candidate matching</li>
                         <li>Post unlimited job openings</li>
                     </ul>
                     {% if not current_user.is_authenticated %}
-                        <a href="{{ url_for('register') }}?role=employer" class="btn btn-primary w-100 btn-biometric" style="background: var(--accent-orange);">Join as Academy</a>
+                        <a href="{{ url_for('employer.register') }}" class="btn btn-primary w-100 btn-biometric" style="background: var(--accent-orange);">Post Jobs</a>
                     {% else %}
-                        <a href="{{ url_for('dashboard') }}" class="btn btn-primary w-100 btn-biometric" style="background: var(--accent-orange);">View Dashboard</a>
+                        <a href="{{ url_for('employer.dashboard') }}" class="btn btn-primary w-100 btn-biometric" style="background: var(--accent-orange);">View Dashboard</a>
                     {% endif %}
                 </div>
             </div>
@@ -117,14 +119,14 @@
 <section class="how-it-works py-5" id="how-it-works">
     <div class="container">
         <div class="text-center mb-4 glide-up">
-            <h2 class="section-title">How It Works</h2>
-            <p class="section-subtitle">Simple steps to success (Hover cards to flip)</p>
+            <h2 class="section-title">How It Works for Coaches</h2>
+            <p class="section-subtitle">Your path to the perfect coaching job (Hover cards to flip)</p>
         </div>
 
         <div class="d-flex justify-content-center mb-5 glide-up" style="transition-delay: 0.1s;">
             <div class="glass-card p-1 d-inline-flex rounded-pill" style="border: 1px solid var(--border-color); background: white;">
                 <button class="btn btn-primary rounded-pill px-4 py-2 shadow-sm" id="btn-coach" onclick="toggleSteps('coach')">For Coaches</button>
-                <button class="btn btn-outline-dark border-0 rounded-pill px-4 py-2 text-muted" id="btn-academy" onclick="toggleSteps('academy')">For Academies</button>
+                <button class="btn btn-outline-dark border-0 rounded-pill px-4 py-2 text-muted" id="btn-academy" onclick="toggleSteps('academy')">For Recruiters</button>
             </div>
         </div>
 
@@ -138,8 +140,8 @@
                             <i class="fas fa-user-plus text-primary fs-2 mt-3"></i>
                         </div>
                         <div class="flip-card-back">
-                            <h4>Sign Up</h4>
-                            <p class="small">Sign up in 2 minutes. Add your certifications, experience, and sports preferences.</p>
+                            <h4>Build Your Profile</h4>
+                            <p class="small">Create your professional coaching profile in minutes. Add your certifications, experience, and sports specializations.</p>
                         </div>
                     </div>
                 </div>
@@ -153,8 +155,8 @@
                             <i class="fas fa-list-alt text-primary fs-2 mt-3"></i>
                         </div>
                         <div class="flip-card-back">
-                            <h4>Showcase Skills</h4>
-                            <p class="small">List your past coaching roles, key achievements, and specializations to build a strong profile.</p>
+                            <h4>Stand Out</h4>
+                            <p class="small">Showcase your coaching achievements, certifications, and success stories to attract top academies.</p>
                         </div>
                     </div>
                 </div>
@@ -168,8 +170,8 @@
                             <i class="fas fa-shield-alt text-primary fs-2 mt-3"></i>
                         </div>
                         <div class="flip-card-back">
-                            <h4>Earn Trust</h4>
-                            <p class="small">Upload documents for verification and earn your trust badge to stand out.</p>
+                            <h4>Build Trust</h4>
+                            <p class="small">Get verified with our trust badge system. Upload documents and build credibility with potential employers.</p>
                         </div>
                     </div>
                 </div>
@@ -183,8 +185,8 @@
                             <i class="fas fa-handshake text-primary fs-2 mt-3"></i>
                         </div>
                         <div class="flip-card-back">
-                            <h4>Connect</h4>
-                            <p class="small">Apply to jobs, connect with academies, and land your dream position.</p>
+                            <h4>Land Your Dream Job</h4>
+                            <p class="small">Browse opportunities, get matched with perfect roles, and connect directly with hiring managers.</p>
                         </div>
                     </div>
                 </div>
@@ -197,12 +199,12 @@
                     <div class="flip-card-inner">
                         <div class="flip-card-front">
                             <div class="step-number mb-3" style="background: var(--accent-orange);">1</div>
-                            <h4>Post a Job</h4>
+                            <h4>Post Jobs</h4>
                             <i class="fas fa-file-upload text-warning fs-2 mt-3"></i>
                         </div>
                         <div class="flip-card-back" style="background: linear-gradient(135deg, var(--accent-orange), #ea580c);">
-                            <h4>AI Auto-Fill</h4>
-                            <p class="small">Use our AI Auto-Fill to upload a PDF description or post requirements in seconds.</p>
+                            <h4>Quick Setup</h4>
+                            <p class="small">Post job requirements quickly with our AI-powered job description builder.</p>
                         </div>
                     </div>
                 </div>
@@ -212,12 +214,12 @@
                     <div class="flip-card-inner">
                         <div class="flip-card-front">
                             <div class="step-number mb-3" style="background: var(--accent-orange);">2</div>
-                            <h4>Smart Screen</h4>
+                            <h4>Get Matches</h4>
                             <i class="fas fa-filter text-warning fs-2 mt-3"></i>
                         </div>
                         <div class="flip-card-back" style="background: linear-gradient(135deg, var(--accent-orange), #ea580c);">
-                            <h4>AI Ranking</h4>
-                            <p class="small">Our AI ranks candidates by skill match score, saving you hours of review.</p>
+                            <h4>AI Screening</h4>
+                            <p class="small">Our AI automatically matches and ranks the best coaches for your specific requirements.</p>
                         </div>
                     </div>
                 </div>
@@ -227,12 +229,12 @@
                     <div class="flip-card-inner">
                         <div class="flip-card-front">
                             <div class="step-number mb-3" style="background: var(--accent-orange);">3</div>
-                            <h4>Review Profiles</h4>
+                            <h4>Review Talent</h4>
                             <i class="fas fa-search text-warning fs-2 mt-3"></i>
                         </div>
                         <div class="flip-card-back" style="background: linear-gradient(135deg, var(--accent-orange), #ea580c);">
-                            <h4>See Details</h4>
-                            <p class="small">View detailed profiles, certifications, and verification status before contacting.</p>
+                            <h4>Verified Profiles</h4>
+                            <p class="small">Review detailed, verified coach profiles with certifications and background checks.</p>
                         </div>
                     </div>
                 </div>
@@ -246,8 +248,8 @@
                             <i class="fas fa-user-check text-warning fs-2 mt-3"></i>
                         </div>
                         <div class="flip-card-back" style="background: linear-gradient(135deg, var(--accent-orange), #ea580c);">
-                            <h4>Onboard</h4>
-                            <p class="small">Shortlist candidates, schedule interviews, and onboard verified talent instantly.</p>
+                            <h4>Quick Onboarding</h4>
+                            <p class="small">Interview, select, and onboard your chosen coaches with our streamlined process.</p>
                         </div>
                     </div>
                 </div>
@@ -258,15 +260,15 @@
 </section>
 <section class="mini-parallax">
   <div class="mini-parallax-inner">
-    <h2 class="parallax-heading">Trusted By Coaches Everywhere</h2>
-    <p class="parallax-sub">AI-powered hiring built for sports.</p>
+    <h2 class="parallax-heading">Your Coaching Career Starts Here</h2>
+    <p class="parallax-sub">AI-powered job matching built for sports professionals.</p>
   </div>
 </section>
 <section class="testimonials-section py-5">
     <div class="container">
         <div class="text-center mb-5 glide-up">
             <h2 class="section-title">Success Stories</h2>
-            <p class="section-subtitle">Real coaches, real results</p>
+            <p class="section-subtitle">Real coaches, real career transformations</p>
         </div>
         <div class="row g-4">
             <div class="col-lg-4 col-md-6 glide-up" style="transition-delay: 0.1s;">
@@ -278,7 +280,7 @@
                             <p>Cricket Coach • Mumbai</p>
                         </div>
                     </div>
-                    <p class="testimonial-text">"I got hired within 2 weeks. The verified profile feature really helped me stand out. The academy loved seeing my certifications!"</p>
+                    <p class="testimonial-text">"KoachSmart helped me find my dream job in just 2 weeks! The verified profile feature made all the difference - academies trusted me instantly."</p>
                     <div class="testimonial-rating">
                         <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
                     </div>
@@ -293,7 +295,7 @@
                             <p>Badminton Coach • Bangalore</p>
                         </div>
                     </div>
-                    <p class="testimonial-text">"The verification badge gave me credibility instantly. Academies trust KoachSmarT-Recruit, and it shows."</p>
+                    <p class="testimonial-text">"The AI matching is incredible! I got connected with 3 perfect opportunities that matched my skills and location preferences exactly."</p>
                     <div class="testimonial-rating">
                         <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
                     </div>
@@ -322,36 +324,36 @@
 <section class="tech-section py-5 bg-white">
     <div class="container">
         <div class="text-center mb-5 glide-up">
-            <h2 class="section-title">Why Choose KoachSmarT?</h2>
-            <p class="section-subtitle">Built with cutting-edge technology for trust</p>
+            <h2 class="section-title">Why Coaches Choose KoachSmart</h2>
+            <p class="section-subtitle">Built with cutting-edge technology for your success</p>
         </div>
         <div class="row g-4">
             <div class="col-lg-3 col-md-6 glide-up" style="transition-delay: 0.1s;">
                 <div class="tech-card">
                     <div class="tech-icon"><i class="fas fa-brain"></i></div>
-                    <h4>AI Matching</h4>
-                    <p>Smart algorithms match coaches based on 50+ data points</p>
+                    <h4>Smart Job Matching</h4>
+                    <p>AI algorithms find opportunities that perfectly match your skills, experience, and preferences</p>
                 </div>
             </div>
             <div class="col-lg-3 col-md-6 glide-up" style="transition-delay: 0.2s;">
                 <div class="tech-card">
                     <div class="tech-icon"><i class="fas fa-sliders-h"></i></div>
-                    <h4>Smart Filters</h4>
-                    <p>Quickly narrow down candidates by sport, location, and experience level</p>
+                    <h4>Personalized Search</h4>
+                    <p>Filter opportunities by sport, location, salary, and career level to find your perfect fit</p>
                 </div>
             </div>
             <div class="col-lg-3 col-md-6 glide-up" style="transition-delay: 0.3s;">
                 <div class="tech-card">
                     <div class="tech-icon"><i class="fas fa-shield-alt"></i></div>
-                    <h4>Verified Trust</h4>
-                    <p>Background checks and document verification for peace of mind</p>
+                    <h4>Verified Profile</h4>
+                    <p>Build trust with employers through our comprehensive verification and background check system</p>
                 </div>
             </div>
             <div class="col-lg-3 col-md-6 glide-up" style="transition-delay: 0.4s;">
                 <div class="tech-card">
                     <div class="tech-icon"><i class="fas fa-bolt"></i></div>
-                    <h4>Instant Connect</h4>
-                    <p>Direct messaging and quick interview scheduling</p>
+                    <h4>Direct Connect</h4>
+                    <p>Chat directly with hiring managers and schedule interviews without middlemen</p>
                 </div>
             </div>
         </div>
@@ -363,13 +365,13 @@
     <div class="container">
         <div class="row justify-content-center">
             <div class="col-lg-8 text-center glide-up">
-                <h2 class="fade-in">Ready to Transform Your Sports Career?</h2>
-                <p class="fade-in-delay-1">Join thousands of coaches and academies already using KoachSmarT-Recruit</p>
+                <h2 class="fade-in">Ready to Advance Your Coaching Career?</h2>
+                <p class="fade-in-delay-1">Join thousands of coaches who've found their dream jobs through KoachSmart</p>
                 <div class="fade-in-delay-2 mt-4">
-                    <a href="{{ url_for('register') }}" class="btn btn-white btn-lg btn-icon me-3 btn-biometric">
-                        <i class="fas fa-rocket text-primary"></i> Get Started Free
+                    <a href="{{ url_for('auth.register') }}" class="btn btn-white btn-lg btn-icon me-3 btn-biometric">
+                        <i class="fas fa-rocket text-primary"></i> Start My Journey
                     </a>
-                    <a href="{{ url_for('login') }}" class="btn btn-white btn-lg btn-icon me-3" style="background: rgba(255, 255, 255, 0.1); color: white; border-color: white;">
+                    <a href="{{ url_for('auth.login') }}" class="btn btn-white btn-lg btn-icon me-3" style="background: rgba(255, 255, 255, 0.1); color: white; border-color: white;">
                         Sign In
                     </a>
                 </div>

@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KoachSmart Verification - {{ stage_info.title }}</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    <style>
+        .verification-container {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .verification-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            max-width: 800px;
+            width: 100%;
+            overflow: hidden;
+        }
+        
+        .stage-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .badge-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 2rem;
+        }
+        
+        .stage-progress {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        
+        .progress-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .progress-dot.active {
+            background: #ffd700;
+        }
+        
+        .progress-dot.completed {
+            background: #28a745;
+        }
+        
+        .verification-content {
+            padding: 40px;
+        }
+        
+        .language-selector {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .language-option {
+            padding: 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: white;
+        }
+        
+        .language-option:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+        }
+        
+        .language-option.selected {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+        
+        .reward-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            text-align: center;
+            display: none;
+        }
+        
+        .reward-popup.show {
+            display: block;
+            animation: popupShow 0.5s ease;
+        }
+        
+        @keyframes popupShow {
+            from { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+            to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        }
+        
+        .coins-display {
+            background: linear-gradient(45deg, #ffd700, #ffed4e);
+            color: #333;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: bold;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .verification-item {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            transition: all 0.3s ease;
+        }
+        
+        .verification-item.completed {
+            background: #f8fff8;
+            border-color: #28a745;
+        }
+        
+        .verification-item.pending {
+            background: #fff8f0;
+            border-color: #ffc107;
+        }
+        
+        .file-upload-area {
+            border: 2px dashed #dee2e6;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .file-upload-area:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+        
+        .file-upload-area.dragover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+    </style>
+</head>
+<body>
+    <div class="verification-container">
+        <div class="verification-card">
+            <!-- Stage Header -->
+            <div class="stage-header">
+                <div class="badge-icon">
+                    <i class="bi bi-{{ stage_info.icon }}"></i>
+                </div>
+                <h2>{{ stage_info.title }}</h2>
+                <p>{{ stage_info.description }}</p>
+                
+                <!-- Progress Dots -->
+                <div class="stage-progress">
+                    {% for i in range(1, 5) %}
+                        <div class="progress-dot {% if i < current_stage %}completed{% elif i == current_stage %}active{% endif %}"></div>
+                    {% endfor %}
+                </div>
+                
+                <!-- Coins Display -->
+                <div class="coins-display">
+                    <i class="bi bi-coin"></i>
+                    <span>{{ user.coins }} Coins</span>
+                </div>
+            </div>
+            
+            <!-- Language Selection (First Time Only) -->
+            {% if show_language_selector %}
+            <div class="verification-content">
+                <h4 class="text-center mb-4">
+                    <i class="bi bi-translate me-2"></i>
+                    Choose Your Preferred Language
+                </h4>
+                <p class="text-center text-muted mb-4">
+                    Select the language you're most comfortable with. You can change this later.
+                </p>
+                
+                <form method="POST" id="languageForm">
+                    <input type="hidden" name="action" value="set_language">
+                    <div class="language-selector">
+                        <div class="language-option" data-lang="english">
+                            <div class="fs-2 mb-2">🇺🇸</div>
+                            <div class="fw-bold">English</div>
+                        </div>
+                        <div class="language-option" data-lang="hindi">
+                            <div class="fs-2 mb-2">🇮🇳</div>
+                            <div class="fw-bold">हिंदी</div>
+                        </div>
+                        <div class="language-option" data-lang="marathi">
+                            <div class="fs-2 mb-2">🇮🇳</div>
+                            <div class="fw-bold">मराठी</div>
+                        </div>
+                        <div class="language-option" data-lang="tamil">
+                            <div class="fs-2 mb-2">🇮🇳</div>
+                            <div class="fw-bold">தமிழ்</div>
+                        </div>
+                        <div class="language-option" data-lang="telugu">
+                            <div class="fs-2 mb-2">🇮🇳</div>
+                            <div class="fw-bold">తెలుగు</div>
+                        </div>
+                        <div class="language-option" data-lang="gujarati">
+                            <div class="fs-2 mb-2">🇮🇳</div>
+                            <div class="fw-bold">ગુજરાતી</div>
+                        </div>
+                    </div>
+                    
+                    <input type="hidden" name="selected_language" id="selectedLanguage">
+                    
+                    <div class="text-center mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg px-5" disabled id="languageSubmit">
+                            Continue <i class="bi bi-arrow-right ms-2"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+            {% else %}
+            
+            <!-- Main Content -->
+            <div class="verification-content">
+                <form method="POST" enctype="multipart/form-data" id="verificationForm">
+                    
+                    <!-- Stage 1: Basic Verification -->
+                    {% if current_stage == 1 %}
+                        <h4 class="mb-4">
+                            <i class="bi bi-person-check me-2 text-warning"></i>
+                            Stage 1: Basic Verification (Orange Badge)
+                        </h4>
+                        
+                        <!-- Name Verification -->
+                        <div class="verification-item {% if verification.name_verified %}completed{% else %}pending{% endif %}">
+                            <div class="me-3">
+                                <i class="bi bi-{% if verification.name_verified %}check-circle-fill text-success{% else %}clock text-warning{% endif %} fs-4"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="fw-bold">Full Name</div>
+                                <div class="text-muted small">Enter your complete name as per official documents</div>
+                                {% if not verification.name_verified %}
+                                    <div class="mt-2">
+                                        <input type="text" class="form-control" name="full_name" placeholder="Enter your full name" required>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            {% if verification.name_verified %}
+                                <div class="text-success fw-bold">+50 Coins</div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Phone Verification -->
+                        <div class="verification-item {% if verification.phone_verified %}completed{% else %}pending{% endif %}">
+                            <div class="me-3">
+                                <i class="bi bi-{% if verification.phone_verified %}check-circle-fill text-success{% else %}phone text-warning{% endif %} fs-4"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="fw-bold">Phone Number Verification</div>
+                                <div class="text-muted small">Verify via WhatsApp OTP</div>
+                                {% if not verification.phone_verified %}
+                                    <div class="mt-2 row">
+                                        <div class="col-md-6">
+                                            <input type="tel" class="form-control" name="phone" placeholder="Enter 10-digit mobile number" required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <button type="button" class="btn btn-outline-primary" onclick="sendPhoneOTP()">
+                                                Send OTP
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="mt-2" id="otpField" style="display: none;">
+                                        <input type="text" class="form-control" name="phone_otp" placeholder="Enter 6-digit OTP" maxlength="6">
+                                    </div>
+                                {% endif %}
+                            </div>
+                            {% if verification.phone_verified %}
+                                <div class="text-success fw-bold">+50 Coins</div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Email Verification -->
+                        <div class="verification-item {% if verification.email_verified %}completed{% else %}pending{% endif %}">
+                            <div class="me-3">
+                                <i class="bi bi-{% if verification.email_verified %}check-circle-fill text-success{% else %}envelope text-warning{% endif %} fs-4"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="fw-bold">Email Verification</div>
+                                <div class="text-muted small">{{ user.email }}</div>
+                                {% if not verification.email_verified %}
+                                    <div class="mt-2">
+                                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="sendEmailOTP()">
+                                            Send Email OTP
+                                        </button>
+                                    </div>
+                                    <div class="mt-2" id="emailOtpField" style="display: none;">
+                                        <input type="text" class="form-control" name="email_otp" placeholder="Enter 6-digit OTP" maxlength="6">
+                                    </div>
+                                {% endif %}
+                            </div>
+                            {% if verification.email_verified %}
+                                <div class="text-success fw-bold">+50 Coins</div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Aadhar Verification -->
+                        <div class="verification-item {% if verification.aadhar_verified %}completed{% else %}pending{% endif %}">
+                            <div class="me-3">
+                                <i class="bi bi-{% if verification.aadhar_verified %}check-circle-fill text-success{% else %}card-text text-warning{% endif %} fs-4"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="fw-bold">Aadhar Card Verification</div>
+                                <div class="text-muted small">Automatic verification with UIDAI</div>
+                                {% if not verification.aadhar_verified %}
+                                    <div class="mt-2">
+                                        <input type="text" class="form-control" name="aadhar_number" placeholder="Enter 12-digit Aadhar number" maxlength="12" pattern="[0-9]{12}">
+                                    </div>
+                                {% endif %}
+                            </div>
+                            {% if verification.aadhar_verified %}
+                                <div class="text-success fw-bold">+50 Coins</div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Username Creation -->
+                        <div class="verification-item {% if verification.username_created %}completed{% else %}pending{% endif %}">
+                            <div class="me-3">
+                                <i class="bi bi-{% if verification.username_created %}check-circle-fill text-success{% else %}at text-warning{% endif %} fs-4"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="fw-bold">Create Username</div>
+                                <div class="text-muted small">This will be used for your public profile URL</div>
+                                {% if not verification.username_created %}
+                                    <div class="mt-2">
+                                        <input type="text" class="form-control" name="username" placeholder="e.g., rahul-sharma" required>
+                                        <small class="text-muted">Your profile will be: koachsmart.com/coach/your-username</small>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <input type="hidden" name="action" value="complete_stage_1">
+                    
+                    <!-- Stage 2: Location & Availability -->
+                    {% elif current_stage == 2 %}
+                        <h4 class="mb-4">
+                            <i class="bi bi-geo-alt me-2 text-info"></i>
+                            Stage 2: Location & Availability (Purple Badge)
+                        </h4>
+                        
+                        <!-- Language Selection -->
+                        <div class="verification-item {% if verification.language_selected %}completed{% else %}pending{% endif %}">
+                            <div class="me-3">
+                                <i class="bi bi-{% if verification.language_selected %}check-circle-fill text-success{% else %}translate text-warning{% endif %} fs-4"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="fw-bold">Languages You Can Speak & Understand</div>
+                                <div class="text-muted small">Select up to 5 languages</div>
+                                {% if not verification.language_selected %}
+                                    <div class="mt-2">
+                                        <select class="form-select" name="languages" multiple>
+                                            <option value="english">English</option>
+                                            <option value="hindi">Hindi</option>
+                                            <option value="marathi">Marathi</option>
+                                            <option value="tamil">Tamil</option>
+                                            <option value="telugu">Telugu</option>
+                                            <option value="gujarati">Gujarati</option>
+                                            <option value="kannada">Kannada</option>
+                                            <option value="bengali">Bengali</option>
+                                        </select>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- State Selection -->
+                        <div class="verification-item {% if verification.state_selected %}completed{% else %}pending{% endif %}">
+                            <div class="me-3">
+                                <i class="bi bi-{% if verification.state_selected %}check-circle-fill text-success{% else %}map text-warning{% endif %} fs-4"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="fw-bold">State</div>
+                                {% if not verification.state_selected %}
+                                    <div class="mt-2">
+                                        <select class="form-select" name="state" required>
+                                            <option value="">Select State</option>
+                                            <option value="Maharashtra">Maharashtra</option>
+                                            <option value="Delhi">Delhi</option>
+                                            <option value="Karnataka">Karnataka</option>
+                                            <option value="Tamil Nadu">Tamil Nadu</option>
+                                            <option value="Gujarat">Gujarat</option>
+                                            <option value="Rajasthan">Rajasthan</option>
+                                            <option value="Uttar Pradesh">Uttar Pradesh</option>
+                                        </select>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- City Selection -->
+                        <div class="verification-item {% if verification.city_selected %}completed{% else %}pending{% endif %}">
+                            <div class="me-3">
+                                <i class="bi bi-{% if verification.city_selected %}check-circle-fill text-success{% else %}building text-warning{% endif %} fs-4"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="fw-bold">City</div>
+                                {% if not verification.city_selected %}
+                                    <div class="mt-2">
+                                        <input type="text" class="form-control" name="city" placeholder="Enter your city" required>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Location Mapping -->
+                        <div class="verification-item {% if verification.location_mapped %}completed{% else %}pending{% endif %}">
+                            <div class="me-3">
+                                <i class="bi bi-{% if verification.location_mapped %}check-circle-fill text-success{% else %}geo-alt text-warning{% endif %} fs-4"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="fw-bold">Map Your Home Address</div>
+                                <div class="text-muted small">Use map pin for accurate location matching</div>
+                                {% if not verification.location_mapped %}
+                                    <div class="mt-2">
+                                        <button type="button" class="btn btn-outline-primary" onclick="detectLocation()">
+                                            <i class="bi bi-geo-alt me-2"></i>Use Current Location
+                                        </button>
+                                        <input type="hidden" name="latitude" id="latitude">
+                                        <input type="hidden" name="longitude" id="longitude">
+                                    </div>
+                                {% endif %}
+                            </div>
+                            {% if verification.location_mapped %}
+                                <div class="text-success fw-bold">+100 Coins</div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Serviceable Area -->
+                        <div class="verification-item {% if verification.serviceable_area_set %}completed{% else %}pending{% endif %}">
+                            <div class="me-3">
+                                <i class="bi bi-{% if verification.serviceable_area_set %}check-circle-fill text-success{% else %}circle text-warning{% endif %} fs-4"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="fw-bold">Serviceable Area</div>
+                                <div class="text-muted small">How far can you travel for coaching?</div>
+                                {% if not verification.serviceable_area_set %}
+                                    <div class="mt-2">
+                                        <select class="form-select" name="serviceable_range" required>
+                                            <option value="">Select Range</option>
+                                            <option value="5">Up to 5 KM</option>
+                                            <option value="10">Up to 10 KM</option>
+                                            <option value="15">Up to 15 KM</option>
+                                            <option value="20">Up to 20 KM</option>
+                                            <option value="30">Up to 30 KM</option>
+                                            <option value="50">Up to 50 KM</option>
+                                            <option value="anywhere">Anywhere</option>
+                                        </select>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Job Type -->
+                        <div class="verification-item {% if verification.job_type_selected %}completed{% else %}pending{% endif %}">
+                            <div class="me-3">
+                                <i class="bi bi-{% if verification.job_type_selected %}check-circle-fill text-success{% else %}briefcase text-warning{% endif %} fs-4"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="fw-bold">Job Preference</div>
+                                <div class="text-muted small">Select multiple options</div>
+                                {% if not verification.job_type_selected %}
+                                    <div class="mt-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="job_types" value="full_time" id="fullTime">
+                                            <label class="form-check-label" for="fullTime">Full Time</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="job_types" value="part_time" id="partTime">
+                                            <label class="form-check-label" for="partTime">Part Time</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="job_types" value="session_flexible" id="sessionFlexible">
+                                            <label class="form-check-label" for="sessionFlexible">Session Flexible</label>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <input type="hidden" name="action" value="complete_stage_2">
+                    
+                    <!-- Stage 3: Education & Experience -->
+                    {% elif current_stage == 3 %}
+                        <h4 class="mb-4">
+                            <i class="bi bi-mortarboard me-2 text-primary"></i>
+                            Stage 3: Education & Experience (Blue Badge)
+                        </h4>
+                        
+                        <!-- Education Qualification -->
+                        <div class="verification-item {% if verification.education_qualification_added %}completed{% else %}pending{% endif %}">
+                            <div class="me-3">
+                                <i class="bi bi-{% if verification.education_qualification_added %}check-circle-fill text-success{% else %}book text-warning{% endif %} fs-4"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="fw-bold">Highest Education Qualification</div>
+                                <div class="text-muted small">Select your highest qualification</div>
+                                {% if not verification.education_qualification_added %}
+                                    <div class="mt-2">
+                                        <select class="form-select" name="education_level" required>
+                                            <option value="">Select Qualification</option>
+                                            <option value="10th">10th Pass</option>
+                                            <option value="12th">12th Pass</option>
+                                            <option value="diploma">Diploma</option>
+                                            <option value="graduate">Graduate</option>
+                                            <option value="postgraduate">Post Graduate</option>
+                                            <option value="phd">PhD</option>
+                                        </select>
+                                        <input type="text" class="form-control mt-2" name="specialization" placeholder="Field/Specialization (optional)">
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Education Document -->
+                        <div class="verification-item {% if verification.education_document_uploaded %}completed{% else %}pending{% endif %}">
+                            <div class="me-3">
+                                <i class="bi bi-{% if verification.education_document_uploaded %}check-circle-fill text-success{% else %}file-earmark text-warning{% endif %} fs-4"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="fw-bold">Upload Education Certificate</div>
+                                <div class="text-muted small">Upload your highest qualification certificate</div>
+                                {% if not verification.education_document_uploaded %}
+                                    <div class="mt-2">
+                                        <div class="file-upload-area" onclick="document.getElementById('educationFile').click()">
+                                            <i class="bi bi-cloud-upload fs-2 text-muted"></i>
+                                            <div class="mt-2">Click to upload or drag & drop</div>
+                                            <small class="text-muted">PDF, JPG, PNG (Max 10MB)</small>
+                                        </div>
+                                        <input type="file" id="educationFile" name="education_document" accept=".pdf,.jpg,.jpeg,.png" style="display: none;" required>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            {% if verification.education_document_uploaded %}
+                                <div class="text-success fw-bold">+200 Coins</div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Professional Certification -->
+                        <div class="verification-item {% if verification.professional_certification_added %}completed{% else %}pending{% endif %}">
+                            <div class="me-3">
+                                <i class="bi bi-{% if verification.professional_certification_added %}check-circle-fill text-success{% else %}award text-warning{% endif %} fs-4"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="fw-bold">Professional Certification</div>
+                                <div class="text-muted small">Do you have any sports coaching certification?</div>
+                                {% if not verification.professional_certification_added %}
+                                    <div class="mt-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="has_certification" value="yes" id="certYes">
+                                            <label class="form-check-label" for="certYes">Yes, I have certification</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="has_certification" value="no" id="certNo">
+                                            <label class="form-check-label" for="certNo">No, but I want to know about courses</label>
+                                        </div>
+                                        <div class="mt-2" id="certificationDetails" style="display: none;">
+                                            <input type="text" class="form-control mb-2" name="certification_name" placeholder="Certification name (e.g., AIFF Level 1)">
+                                            <input type="file" class="form-control" name="certification_document" accept=".pdf,.jpg,.jpeg,.png">
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            {% if verification.professional_certification_added %}
+                                <div class="text-success fw-bold">+500 Coins</div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Playing Level -->
+                        <div class="verification-item {% if verification.playing_level_added %}completed{% else %}pending{% endif %}">
+                            <div class="me-3">
+                                <i class="bi bi-{% if verification.playing_level_added %}check-circle-fill text-success{% else %}trophy text-warning{% endif %} fs-4"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="fw-bold">Highest Playing Level</div>
+                                <div class="text-muted small">What's the highest level you've played at?</div>
+                                {% if not verification.playing_level_added %}
+                                    <div class="mt-2">
+                                        <select class="form-select" name="playing_level">
+                                            <option value="">Select Level</option>
+                                            <option value="school">School Level</option>
+                                            <option value="college">College Level</option>
+                                            <option value="district">District Level</option>
+                                            <option value="state">State Level</option>
+                                            <option value="national">National Level</option>
+                                            <option value="international">International Level</option>
+                                            <option value="professional">Professional</option>
+                                        </select>
+                                        <input type="file" class="form-control mt-2" name="playing_document" accept=".pdf,.jpg,.jpeg,.png" placeholder="Upload proof (optional)">
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Experience -->
+                        <div class="verification-item {% if verification.experience_added %}completed{% else %}pending{% endif %}">
+                            <div class="me-3">
+                                <i class="bi bi-{% if verification.experience_added %}check-circle-fill text-success{% else %}clock-history text-warning{% endif %} fs-4"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="fw-bold">Coaching Experience</div>
+                                <div class="text-muted small">How many years of coaching experience do you have?</div>
+                                {% if not verification.experience_added %}
+                                    <div class="mt-2">
+                                        <select class="form-select" name="experience_years" required>
+                                            <option value="">Select Experience</option>
+                                            <option value="fresher">Fresher (0 years)</option>
+                                            <option value="0-1">0-1 years</option>
+                                            <option value="1-3">1-3 years</option>
+                                            <option value="3-5">3-5 years</option>
+                                            <option value="5+">5+ years</option>
+                                        </select>
+                                        <textarea class="form-control mt-2" name="experience_details" rows="3" placeholder="Brief details about your coaching experience (optional)"></textarea>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <input type="hidden" name="action" value="complete_stage_3">
+                    
+                    <!-- Stage 4: Advanced Certification -->
+                    {% elif current_stage == 4 %}
+                        <h4 class="mb-4">
+                            <i class="bi bi-shield-check me-2 text-success"></i>
+                            Stage 4: Advanced Certification (Green Badge)
+                        </h4>
+                        
+                        <div class="alert alert-info mb-4">
+                            <i class="bi bi-info-circle me-2"></i>
+                            <strong>Certified Badge Benefits:</strong>
+                            <ul class="mb-0 mt-2">
+                                <li>Direct contact with leads</li>
+                                <li>Premium features access</li>
+                                <li>Higher visibility in search</li>
+                                <li>Annual subscription: ₹1999</li>
+                            </ul>
+                        </div>
+                        
+                        <!-- First Aid Certification -->
+                        <div class="verification-item {% if verification.first_aid_certified %}completed{% else %}pending{% endif %}">
+                            <div class="me-3">
+                                <i class="bi bi-{% if verification.first_aid_certified %}check-circle-fill text-success{% else %}heart-pulse text-warning{% endif %} fs-4"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="fw-bold">First Aid Certification</div>
+                                <div class="text-muted small">Essential for sports coaching safety</div>
+                                {% if not verification.first_aid_certified %}
+                                    <div class="mt-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="first_aid" value="yes" id="firstAidYes">
+                                            <label class="form-check-label" for="firstAidYes">Yes, I have certification</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="first_aid" value="no" id="firstAidNo">
+                                            <label class="form-check-label" for="firstAidNo">No, I want to get certified</label>
+                                        </div>
+                                        <div class="mt-2" id="firstAidUpload" style="display: none;">
+                                            <input type="file" class="form-control" name="first_aid_document" accept=".pdf,.jpg,.jpeg,.png">
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            {% if verification.first_aid_certified %}
+                                <div class="text-success fw-bold">+550 Coins</div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Coaching Principles -->
+                        <div class="verification-item {% if verification.coaching_principles_certified %}completed{% else %}pending{% endif %}">
+                            <div class="me-3">
+                                <i class="bi bi-{% if verification.coaching_principles_certified %}check-circle-fill text-success{% else %}book text-warning{% endif %} fs-4"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="fw-bold">Certificate in Coaching Principles</div>
+                                <div class="text-muted small">Fundamental coaching methodology</div>
+                                {% if not verification.coaching_principles_certified %}
+                                    <div class="mt-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="coaching_principles" value="yes" id="coachingYes">
+                                            <label class="form-check-label" for="coachingYes">Yes, I have certification</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="coaching_principles" value="no" id="coachingNo">
+                                            <label class="form-check-label" for="coachingNo">No, I want to get certified</label>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            {% if verification.coaching_principles_certified %}
+                                <div class="text-success fw-bold">+500 Coins</div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Soft Skills -->
+                        <div class="verification-item {% if verification.soft_skills_certified %}completed{% else %}pending{% endif %}">
+                            <div class="me-3">
+                                <i class="bi bi-{% if verification.soft_skills_certified %}check-circle-fill text-success{% else %}people text-warning{% endif %} fs-4"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="fw-bold">Soft Skills Assessment</div>
+                                <div class="text-muted small">Communication and leadership skills</div>
+                                {% if not verification.soft_skills_certified %}
+                                    <div class="mt-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="soft_skills" value="yes" id="softSkillsYes">
+                                            <label class="form-check-label" for="softSkillsYes">Yes, I have certification</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="soft_skills" value="test" id="softSkillsTest">
+                                            <label class="form-check-label" for="softSkillsTest">Take assessment test</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="soft_skills" value="no" id="softSkillsNo">
+                                            <label class="form-check-label" for="softSkillsNo">I want to get certified</label>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            {% if verification.soft_skills_certified %}
+                                <div class="text-success fw-bold">+500 Coins</div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- CV Upload -->
+                        <div class="verification-item {% if verification.cv_uploaded %}completed{% else %}pending{% endif %}">
+                            <div class="me-3">
+                                <i class="bi bi-{% if verification.cv_uploaded %}check-circle-fill text-success{% else %}file-person text-warning{% endif %} fs-4"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="fw-bold">Upload CV or Build with AI</div>
+                                <div class="text-muted small">Professional resume for better opportunities</div>
+                                {% if not verification.cv_uploaded %}
+                                    <div class="mt-2">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <input type="file" class="form-control" name="cv_document" accept=".pdf,.doc,.docx">
+                                                <small class="text-muted">Upload existing CV</small>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <a href="{{ url_for('coach.resume_builder') }}" class="btn btn-outline-primary w-100">
+                                                    <i class="bi bi-robot me-2"></i>Build with AI
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <input type="hidden" name="action" value="complete_stage_4">
+                    
+                    {% endif %}
+                    
+                    <!-- Submit Button -->
+                    <div class="text-center mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg px-5">
+                            {% if current_stage == 4 %}
+                                Complete Verification <i class="bi bi-check-circle ms-2"></i>
+                            {% else %}
+                                Continue to Next Stage <i class="bi bi-arrow-right ms-2"></i>
+                            {% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Reward Popup -->
+    <div class="reward-popup" id="rewardPopup">
+        <div class="fs-1 mb-3">🎉</div>
+        <h4 class="mb-3">Congratulations!</h4>
+        <p class="mb-3" id="rewardMessage">You've earned coins!</p>
+        <div class="coins-display mb-3">
+            <i class="bi bi-coin"></i>
+            <span id="rewardCoins">+50 Coins</span>
+        </div>
+        <button class="btn btn-primary" onclick="closeRewardPopup()">Continue</button>
+    </div>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Language Selection
+        document.querySelectorAll('.language-option').forEach(option => {
+            option.addEventListener('click', function() {
+                document.querySelectorAll('.language-option').forEach(opt => opt.classList.remove('selected'));
+                this.classList.add('selected');
+                document.getElementById('selectedLanguage').value = this.dataset.lang;
+                document.getElementById('languageSubmit').disabled = false;
+            });
+        });
+        
+        // OTP Functions
+        function sendPhoneOTP() {
+            const phone = document.querySelector('input[name="phone"]').value;
+            if (phone.length === 10) {
+                document.getElementById('otpField').style.display = 'block';
+                showReward('Phone OTP sent!', 0);
+            } else {
+                alert('Please enter a valid 10-digit phone number');
+            }
+        }
+        
+        function sendEmailOTP() {
+            document.getElementById('emailOtpField').style.display = 'block';
+            showReward('Email OTP sent!', 0);
+        }
+        
+        // Location Detection
+        function detectLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    document.getElementById('latitude').value = position.coords.latitude;
+                    document.getElementById('longitude').value = position.coords.longitude;
+                    showReward('Location detected successfully!', 100);
+                });
+            } else {
+                alert('Geolocation is not supported by this browser.');
+            }
+        }
+        
+        // Certification toggles
+        document.querySelectorAll('input[name="has_certification"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                const details = document.getElementById('certificationDetails');
+                if (this.value === 'yes') {
+                    details.style.display = 'block';
+                } else {
+                    details.style.display = 'none';
+                }
+            });
+        });
+        
+        document.querySelectorAll('input[name="first_aid"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                const upload = document.getElementById('firstAidUpload');
+                if (this.value === 'yes') {
+                    upload.style.display = 'block';
+                } else {
+                    upload.style.display = 'none';
+                }
+            });
+        });
+        
+        // Reward Popup
+        function showReward(message, coins) {
+            document.getElementById('rewardMessage').textContent = message;
+            document.getElementById('rewardCoins').textContent = `+${coins} Coins`;
+            document.getElementById('rewardPopup').classList.add('show');
+        }
+        
+        function closeRewardPopup() {
+            document.getElementById('rewardPopup').classList.remove('show');
+        }
+        
+        // File Upload Preview
+        document.querySelectorAll('input[type="file"]').forEach(input => {
+            input.addEventListener('change', function() {
+                if (this.files.length > 0) {
+                    const fileName = this.files[0].name;
+                    const uploadArea = this.previousElementSibling;
+                    if (uploadArea && uploadArea.classList.contains('file-upload-area')) {
+                        uploadArea.innerHTML = `
+                            <i class="bi bi-file-check fs-2 text-success"></i>
+                            <div class="mt-2 text-success">${fileName}</div>
+                            <small class="text-muted">File selected successfully</small>
+                        `;
+                    }
+                }
+            });
+        });
+        
+        // Form Submission
+        document.getElementById('verificationForm')?.addEventListener('submit', function(e) {
+            const submitBtn = this.querySelector('button[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing...';
+        });
+    </script>
+</body>
+</html>

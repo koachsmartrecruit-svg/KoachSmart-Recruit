@@ -83,10 +83,10 @@
 
             <div class="d-flex align-items-center gap-2">
                 {% if current_user.role in ['employer', 'admin'] %}
-                  <a href="{{ url_for('explore_coaches') }}" class="btn btn-outline-primary btn-sm">
+                  <a href="{{ url_for('employer.explore_coaches') }}" class="btn btn-outline-primary btn-sm">
                     <i class="fas fa-search me-1"></i> Explore Coaches
                   </a>
-                  <a href="{{ url_for('new_job') }}" class="btn btn-primary btn-sm fw-bold">
+                  <a href="{{ url_for('employer.new_job') }}" class="btn btn-primary btn-sm fw-bold">
                     <i class="fas fa-plus-circle me-2"></i> Post Job
                   </a>
                 {% else %}
@@ -161,7 +161,7 @@
         {% if app.status == 'Shortlisted' %}
             <div class="p-3 border border-warning rounded bg-light mb-4">
                 <h6 class="text-warning mb-2">Schedule Interview</h6>
-                <form action="{{ url_for('update_status', app_id=app.id, new_status='Interview') }}" method="POST">
+                <form action="{{ url_for('employer.update_status', app_id=app.id, new_status='Interview') }}" method="POST">
                     <label class="small text-muted mb-1">Meeting Link (Zoom/Calendly)</label>
                     <input type="text" name="meeting_link" class="form-control form-control-sm mb-2" required>
                     <button type="submit" class="btn btn-warning w-100 fw-bold text-dark">Send Invite</button>
@@ -171,10 +171,10 @@
 
         <div class="d-grid gap-2">
             {% if app.status == 'Applied' %}
-                <a href="{{ url_for('update_status', app_id=app.id, new_status='Shortlisted') }}" class="btn btn-primary">Shortlist</a>
-                <a href="{{ url_for('update_status', app_id=app.id, new_status='Rejected') }}" class="btn btn-outline-danger">Reject</a>
+                <a href="{{ url_for('employer.update_status', app_id=app.id, new_status='Shortlisted') }}" class="btn btn-primary">Shortlist</a>
+                <a href="{{ url_for('employer.update_status', app_id=app.id, new_status='Rejected') }}" class="btn btn-outline-danger">Reject</a>
             {% elif app.status == 'Interview' %}
-                <a href="{{ url_for('update_status', app_id=app.id, new_status='Hired') }}" class="btn btn-success text-white">Hire Candidate</a>
+                <a href="{{ url_for('employer.update_status', app_id=app.id, new_status='Hired') }}" class="btn btn-success text-white">Hire Candidate</a>
             {% endif %}
         </div>
     </div>

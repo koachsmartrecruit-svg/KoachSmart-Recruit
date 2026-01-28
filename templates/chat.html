@@ -113,7 +113,7 @@
     <div class="p-3 border-bottom"><strong>Messages</strong></div>
 
     {% for u in contacts %}
-      <a href="{{ url_for('chat', receiver_id=u.id) }}"
+      <a href="{{ url_for('chat.chat_with_user', user_id=u.id) }}"
          class="contact-item {% if active_contact and active_contact.id == u.id %}active{% endif %}">
         <div class="avatar">{{ u.username[0]|upper }}</div>
         <div>

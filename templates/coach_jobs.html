@@ -46,7 +46,7 @@
         </div>
       </div>
       <div class="d-flex justify-content-end mt-3 gap-2">
-        <a href="{{ url_for('coach_jobs') }}" class="btn btn-outline-secondary btn-sm">Clear</a>
+        <a href="{{ url_for('coach.coach_jobs') }}" class="btn btn-outline-secondary btn-sm">Clear</a>
         <button type="submit" class="btn btn-primary btn-sm">Apply Filters</button>
       </div>
     </div>
@@ -80,7 +80,7 @@
             <span class="badge bg-light text-dark small">
               Posted by {{ job.employer.username if job.employer else 'Employer' }}
             </span>
-            <form method="post" action="{{ url_for('apply_job', job_id=job.id) }}">
+            <form method="post" action="{{ url_for('coach.apply_job', job_id=job.id) }}">>
               <button type="submit" class="btn btn-primary btn-sm">Apply</button>
             </form>
           </div>
@@ -99,7 +99,7 @@
     <ul class="pagination pagination-sm justify-content-center">
       {% if pagination.has_prev %}
       <li class="page-item">
-        <a class="page-link" href="{{ url_for('coach_jobs', page=pagination.prev_num, **filters) }}">Prev</a>
+        <a class="page-link" href="{{ url_for('coach.coach_jobs', page=pagination.prev_num, **filters) }}">Prev</a>
       </li>
       {% else %}
       <li class="page-item disabled"><span class="page-link">Prev</span></li>
@@ -113,7 +113,7 @@
 
       {% if pagination.has_next %}
       <li class="page-item">
-        <a class="page-link" href="{{ url_for('coach_jobs', page=pagination.next_num, **filters) }}">Next</a>
+        <a class="page-link" href="{{ url_for('coach.coach_jobs', page=pagination.next_num, **filters) }}">Next</a>
       </li>
       {% else %}
       <li class="page-item disabled"><span class="page-link">Next</span></li>

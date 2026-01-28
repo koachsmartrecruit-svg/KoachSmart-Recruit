@@ -52,6 +52,44 @@
             border-radius: 8px;
             margin-top: 1rem;
         }
+        
+        /* Onboarding Brand Enhancements */
+        .onboarding-brand a {
+            color: inherit;
+            transition: all 0.3s ease;
+        }
+        
+        .onboarding-brand a:hover {
+            transform: translateY(-2px);
+        }
+        
+        .onboarding-brand-subtitle {
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            opacity: 0.8;
+            margin-top: 2px;
+        }
+        
+        .onboarding-logout {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+        }
+        
+        .onboarding-logout .btn {
+            border-color: rgba(255, 255, 255, 0.3);
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 0.875rem;
+            padding: 0.375rem 0.75rem;
+            transition: all 0.3s ease;
+        }
+        
+        .onboarding-logout .btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.5);
+            color: white;
+        }
     </style>
 </head>
 <body class="onboarding-active">
@@ -64,10 +102,20 @@
             <div class="onboarding-sidebar">
                 <!-- Brand -->
                 <div class="onboarding-brand">
-                    <div class="onboarding-brand-icon">
-                        <i class="bi bi-building"></i>
-                    </div>
-                    <div class="onboarding-brand-text">KoachSmart</div>
+                    <a href="{{ url_for('employer.dashboard') }}" class="text-decoration-none">
+                        <div class="onboarding-brand-icon">
+                            <i class="bi bi-building"></i>
+                        </div>
+                        <div class="onboarding-brand-text">KoachSmart</div>
+                        <div class="onboarding-brand-subtitle">RECRUITMENT</div>
+                    </a>
+                </div>
+
+                <!-- Logout Button -->
+                <div class="onboarding-logout">
+                    <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-light btn-sm">
+                        <i class="bi bi-box-arrow-right me-1"></i> Logout
+                    </a>
                 </div>
 
                 <!-- Step Navigation -->

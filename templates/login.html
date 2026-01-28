@@ -20,7 +20,7 @@
         </p>
 
         <!-- OPTIONAL : GOOGLE LOGIN -->
-        <a href="{{ url_for('login_google') }}"
+        <a href="{{ url_for('auth.login_google') }}"
            class="btn btn-outline-primary w-100 mb-3">
           Continue with Google
         </a>
@@ -60,7 +60,7 @@
           </div>
 
           <div class="auth-forgot">
-            <a href="{{ url_for('forgot_password') }}">
+            <a href="{{ url_for('auth.forgot_password') }}">
               Forgot password?
             </a>
           </div>
@@ -73,7 +73,7 @@
 
         <p class="auth-footer">
           Don’t have an account?
-          <a href="{{ url_for('register') }}">Create one</a>
+          <a href="{{ url_for('auth.register') }}">Create one</a>
         </p>
 
         <p class="auth-security">

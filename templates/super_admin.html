@@ -12,10 +12,10 @@
         <small>Monitor users, coaches, jobs and subscriptions</small>
       </div>
       <div>
-        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary btn-sm">
+        <a href="{{ url_for('coach.dashboard') }}" class="btn btn-outline-secondary btn-sm">
           Back to App
         </a>
-        <a href="{{ url_for('logout') }}" class="btn btn-danger btn-sm">
+        <a href="{{ url_for('auth.logout') }}" class="btn btn-danger btn-sm">
           Logout
         </a>
       </div>
@@ -96,9 +96,9 @@
     <div class="card superadmin-quicknav mb-4">
       <div class="card-body py-2">
         <div class="d-flex flex-wrap gap-2">
-          <a href="{{ url_for('super_admin') }}" class="btn btn-sm btn-primary">Pending Coaches</a>
-          <a href="{{ url_for('admin_users') }}" class="btn btn-sm btn-outline-primary">Manage Users</a>
-          <a href="{{ url_for('admin_jobs') }}" class="btn btn-sm btn-outline-primary">Manage Jobs</a>
+          <a href="{{ url_for('admin.super_admin') }}" class="btn btn-sm btn-primary">Pending Coaches</a>
+          <a href="{{ url_for('admin.admin_users') }}" class="btn btn-sm btn-outline-primary">Manage Users</a>
+          <a href="{{ url_for('admin.admin_jobs') }}" class="btn btn-sm btn-outline-primary">Manage Jobs</a>
         </div>
       </div>
     </div>
@@ -170,18 +170,18 @@
                     {% endif %}
                   </td>
                   <td>
-                    <a href="{{ url_for('view_resume', user_id=p.user_id) }}"
+                    <a href="{{ url_for('coach.view_resume', user_id=p.user_id) }}"
                        class="btn btn-sm btn-outline-info">
                       Resume
                     </a>
                   </td>
                   <td class="text-end">
-                    <a href="{{ url_for('verify_coach', profile_id=p.id) }}"
+                    <a href="{{ url_for('admin.verify_coach', profile_id=p.id) }}"
                        class="btn btn-sm btn-success"
                        onclick="return confirm('Verify this coach?');">
                       Verify
                     </a>
-                    <a href="{{ url_for('reject_coach', profile_id=p.id) }}"
+                    <a href="{{ url_for('admin.reject_coach', profile_id=p.id) }}"
                        class="btn btn-sm btn-danger"
                        onclick="return confirm('Reject and remove cert proof?');">
                       Reject

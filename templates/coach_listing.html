@@ -10,7 +10,7 @@
                 <strong>Profile Completion: {{ profile_completion }}%</strong><br>
                 <small>Complete your certifications and quiz to unlock more rewards!</small>
             </div>
-            <a href="{{ url_for('edit_profile') }}" class="btn btn-sm btn-warning">Complete Now</a>
+            <a href="{{ url_for('coach.edit_profile') }}" class="btn btn-sm btn-warning">Complete Now</a>
         </div>
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
@@ -24,7 +24,7 @@
                 <p class="text-muted opacity-75 mb-0" id="currentDate"></p>
             </div>
             <div class="col-md-4 text-md-end mt-3 mt-md-0">
-                <a href="{{ url_for('edit_profile') }}" class="btn btn-outline-light">
+                <a href="{{ url_for('coach.edit_profile') }}" class="btn btn-outline-light">
                     <i class="fas fa-user-edit me-2"></i>Edit Profile
                 </a>
             </div>
@@ -88,7 +88,7 @@
                     
                     <div class="collapse mb-4" id="filterPanel">
                         <div class="glass-card p-3">
-                            <form action="{{ url_for('dashboard') }}" method="GET" class="row g-3">
+                            <form action="{{ url_for('coach.dashboard') }}" method="GET" class="row g-3">
                                 <div class="col-md-4">
                                     <select class="form-select form-select-sm" name="sport">
                                         <option value="All">All Sports</option>
@@ -134,7 +134,7 @@
                             <div class="modal fade" id="applyModal{{ job.id }}" tabindex="-1">
                                 <div class="modal-dialog modal-dialog-centered">
                                     <div class="modal-content glass-card border-0">
-                                        <form action="{{ url_for('apply_job', job_id=job.id) }}" method="POST" enctype="multipart/form-data">
+                                        <form action="{{ url_for('coach.apply_job', job_id=job.id) }}" method="POST" enctype="multipart/form-data">
                                             <div class="modal-header border-bottom border-secondary">
                                                 <h5 class="modal-title">Apply for {{ job.title }}</h5>
                                                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
@@ -210,14 +210,14 @@
                     <div class="d-flex align-items-center"><i class="fas {% if current_user.profile and current_user.profile.is_verified %}fa-check-circle text-success{% else %}fa-circle text-muted{% endif %} me-3"></i><span>Admin Verification</span></div>
                 </div>
                 {% if profile_completion < 100 %}
-                    <div class="mt-4 pt-3 border-top border-secondary"><a href="{{ url_for('edit_profile') }}" class="btn btn-sm btn-primary w-100">Complete Profile (+{{ 100 - profile_completion }}%)</a></div>
+                    <div class="mt-4 pt-3 border-top border-secondary"><a href="{{ url_for('coach.edit_profile') }}" class="btn btn-sm btn-primary w-100">Complete Profile (+{{ 100 - profile_completion }}%)</a></div>
                 {% endif %}
             </div>
 
             <div class="glass-card p-4">
                 <h5 class="fw-bold mb-3">Quick Actions</h5>
                 <div class="d-grid gap-2">
-                    <a href="{{ url_for('resume_builder') }}" class="btn btn-outline-light text-start"><i class="fas fa-magic me-2 text-info"></i> AI Resume Builder</a>
+                    <a href="{{ url_for('coach.resume_builder') }}" class="btn btn-outline-light text-start"><i class="fas fa-magic me-2 text-info"></i> AI Resume Builder</a>
                     <button class="btn btn-outline-light text-start" onclick="getLocation()"><i class="fas fa-map-marker-alt me-2 text-danger"></i> Find Jobs Near Me</button>
                 </div>
             </div>
@@ -270,6 +270,21 @@
         </div>
     </div>
 </div>
+
+<!-- Onboarding Complete Modal -->
+<div class="modal fade" id="onboardingCompleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass-card border-0">
+            <div class="modal-body text-center p-5">
+                <div class="mb-4"><i class="fas fa-check-circle text-success fa-4x"></i></div>
+                <h2 class="fw-bold mb-3">You're All Set! 🚀</h2>
+                <p class="text-muted mb-4">Your profile is complete. Start exploring jobs now.</p>
+                <button type="button" class="btn btn-light btn-lg px-5" onclick="window.location.href='{{ url_for('coach.dashboard') }}'">Celebrate 🎉</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     {% if session.get('show_onboarding_complete_modal') %}

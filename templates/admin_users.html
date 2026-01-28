@@ -32,7 +32,7 @@
           <td>{{ u.subscription_status or 'free' }}</td>
           <td>
             <form method="post"
-                  action="{{ url_for('admin_change_role', user_id=u.id) }}"
+                  action="{{ url_for('admin.admin_change_role', user_id=u.id) }}"
                   class="d-flex gap-2">
               <select name="role" class="form-select form-select-sm" style="width:auto;">
                 <option value="coach" {{ 'selected' if u.role == 'coach' else '' }}>coach</option>
@@ -54,7 +54,7 @@
     </table>
   </div>
 
-  <a href="{{ url_for('super_admin') }}" class="btn btn-outline-secondary mt-3">
+  <a href="{{ url_for('admin.super_admin') }}" class="btn btn-outline-secondary mt-3">
     Back to Super Admin
   </a>
 </div>

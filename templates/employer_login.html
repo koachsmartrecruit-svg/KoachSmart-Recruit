@@ -1,44 +1,358 @@
 {% extends "base.html" %}
 {% block content %}
 
-<div class="auth-page">
-  <div class="auth-wrapper">
-
-    <div class="auth-form">
-      <div class="auth-form-inner">
-
-        <h2 class="auth-title">Employer Login</h2>
-        <p class="auth-subtitle">
-          Access your hiring dashboard.
-        </p>
-
-        <form method="POST">
-
-          <div class="form-group">
-            <label>Email</label>
-            <input type="email" name="email" class="form-control" required>
+<!-- ================= HERO SECTION ================= -->
+<section class="employer-auth-hero">
+  <div class="employer-auth-overlay"></div>
+  
+  <div class="container-fluid h-100">
+    <div class="row h-100">
+      <!-- Left Side - Branding & Benefits -->
+      <div class="col-lg-6 d-flex align-items-center justify-content-center employer-auth-left">
+        <div class="employer-auth-content">
+          <div class="employer-auth-brand mb-4">
+            <div class="brand-icon">
+              <i class="fas fa-building"></i>
+            </div>
+            <h1 class="brand-title">KoachSmart</h1>
+            <p class="brand-subtitle">RECRUITMENT PLATFORM</p>
+          </div>
+          
+          <h2 class="auth-hero-title">Welcome Back</h2>
+          <p class="auth-hero-subtitle">Access your hiring dashboard and manage your coaching talent pipeline</p>
+          
+          <div class="auth-benefits">
+            <div class="benefit-item">
+              <i class="fas fa-users-cog"></i>
+              <span>Manage Applications</span>
+            </div>
+            <div class="benefit-item">
+              <i class="fas fa-chart-line"></i>
+              <span>Track Hiring Progress</span>
+            </div>
+            <div class="benefit-item">
+              <i class="fas fa-comments"></i>
+              <span>Direct Communication</span>
+            </div>
+            <div class="benefit-item">
+              <i class="fas fa-shield-check"></i>
+              <span>Verified Candidates</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Right Side - Login Form -->
+      <div class="col-lg-6 d-flex align-items-center justify-content-center employer-auth-right">
+        <div class="employer-auth-form">
+          <div class="auth-form-header">
+            <h3>Sign In to Your Account</h3>
+            <p>Enter your credentials to access your employer dashboard</p>
           </div>
 
-          <div class="form-group">
-            <label>Password</label>
-            <input type="password" name="password" class="form-control" required>
+          <form method="POST" class="auth-form">
+            <div class="form-floating mb-3">
+              <input type="email" class="form-control" id="email" name="email" placeholder="name@company.com" required>
+              <label for="email">
+                <i class="fas fa-envelope me-2"></i>Email Address
+              </label>
+            </div>
+
+            <div class="form-floating mb-4">
+              <input type="password" class="form-control" id="password" name="password" placeholder="Password" required>
+              <label for="password">
+                <i class="fas fa-lock me-2"></i>Password
+              </label>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mb-4">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="remember">
+                <label class="form-check-label" for="remember">
+                  Remember me
+                </label>
+              </div>
+              <a href="#" class="forgot-password-link">Forgot password?</a>
+            </div>
+
+            <button type="submit" class="btn btn-employer-primary w-100 mb-4">
+              <i class="fas fa-sign-in-alt me-2"></i>
+              Sign In to Dashboard
+            </button>
+          </form>
+
+          <div class="auth-divider">
+            <span>New to KoachSmart?</span>
           </div>
 
-          <button type="submit" class="btn btn-primary w-100">
-            Login →
-          </button>
-
-        </form>
-
-        <p class="auth-footer">
-          New employer?
-          <a href="{{ url_for('employer_register') }}">Create account</a>
-        </p>
-
+          <div class="auth-footer">
+            <p>Don't have an employer account?</p>
+            <a href="{{ url_for('employer.register') }}" class="btn btn-outline-employer w-100">
+              <i class="fas fa-user-plus me-2"></i>
+              Create Employer Account
+            </a>
+          </div>
+        </div>
       </div>
     </div>
-
   </div>
-</div>
+</section>
+
+<style>
+.employer-auth-hero {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #1d4ed8 100%);
+  position: relative;
+}
+
+.employer-auth-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(30, 64, 175, 0.9), rgba(59, 130, 246, 0.8));
+}
+
+.employer-auth-left {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  position: relative;
+  z-index: 2;
+}
+
+.employer-auth-right {
+  background: rgba(255, 255, 255, 0.98);
+  position: relative;
+  z-index: 2;
+}
+
+.employer-auth-content {
+  max-width: 400px;
+  text-align: center;
+  color: white;
+}
+
+.employer-auth-brand {
+  margin-bottom: 2rem;
+}
+
+.brand-icon {
+  width: 80px;
+  height: 80px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1rem;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.brand-icon i {
+  font-size: 2rem;
+  color: white;
+}
+
+.brand-title {
+  font-size: 2.5rem;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+  color: white;
+}
+
+.brand-subtitle {
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 2px;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 0;
+}
+
+.auth-hero-title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  color: white;
+}
+
+.auth-hero-subtitle {
+  font-size: 1.1rem;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 2rem;
+  line-height: 1.6;
+}
+
+.auth-benefits {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.benefit-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  transition: all 0.3s ease;
+}
+
+.benefit-item:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+}
+
+.benefit-item i {
+  font-size: 1.25rem;
+  color: #fbbf24;
+}
+
+.benefit-item span {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: white;
+}
+
+.employer-auth-form {
+  max-width: 400px;
+  width: 100%;
+  padding: 2rem;
+}
+
+.auth-form-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.auth-form-header h3 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 0.5rem;
+}
+
+.auth-form-header p {
+  color: #6b7280;
+  font-size: 0.95rem;
+}
+
+.form-floating > .form-control {
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1rem 0.75rem;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.form-floating > .form-control:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-floating > label {
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.form-check-input:checked {
+  background-color: #3b82f6;
+  border-color: #3b82f6;
+}
+
+.forgot-password-link {
+  color: #3b82f6;
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.forgot-password-link:hover {
+  color: #1d4ed8;
+  text-decoration: underline;
+}
+
+.btn-employer-primary {
+  background: linear-gradient(135deg, #1e40af, #3b82f6);
+  border: none;
+  border-radius: 12px;
+  padding: 0.875rem 1.5rem;
+  font-weight: 600;
+  font-size: 1rem;
+  color: white;
+  transition: all 0.3s ease;
+}
+
+.btn-employer-primary:hover {
+  background: linear-gradient(135deg, #1d4ed8, #2563eb);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+  color: white;
+}
+
+.auth-divider {
+  text-align: center;
+  margin: 1.5rem 0;
+  position: relative;
+}
+
+.auth-divider::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: #e5e7eb;
+}
+
+.auth-divider span {
+  background: white;
+  padding: 0 1rem;
+  color: #6b7280;
+  font-size: 0.875rem;
+  position: relative;
+  z-index: 1;
+}
+
+.auth-footer {
+  text-align: center;
+}
+
+.auth-footer p {
+  color: #6b7280;
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+}
+
+.btn-outline-employer {
+  border: 2px solid #3b82f6;
+  color: #3b82f6;
+  border-radius: 12px;
+  padding: 0.875rem 1.5rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-outline-employer:hover {
+  background: #3b82f6;
+  color: white;
+  transform: translateY(-2px);
+}
+
+@media (max-width: 991px) {
+  .employer-auth-left {
+    display: none;
+  }
+  
+  .employer-auth-right {
+    background: white;
+  }
+  
+  .employer-auth-hero {
+    background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+  }
+}
+</style>
 
 {% endblock %}

@@ -1,101 +1,450 @@
 {% extends "base.html" %}
 {% block content %}
 
-<!-- ================= HERO VIDEO ================= -->
-<section class="employer-hero">
-  <video autoplay muted loop playsinline>
-    <source src="{{ url_for('static', filename='videos/employer-hero.mp4') }}" type="video/mp4">
-  </video>
-
-  <div class="employer-hero-overlay"></div>
-
-  <div class="container employer-hero-content">
-    <div class="employer-hero-card">
-      <!-- Eyebrow -->
-      <span class="hero-eyebrow">For Sports Academies & Recruiters</span>
-
-      <!-- Headline -->
-      <h1>
-        Hire <span class="hero-highlight">Verified Coaches</span><br>
-        in Days, Not Months
-      </h1>
-
-      <!-- Subtext -->
-      <p class="hero-subtext">
-        AI-powered matching, instant chat, and trusted verification —
-        everything you need to hire faster with confidence.
-      </p>
-
-      <!-- Inline CTA Hint -->
-      <div class="hero-inline-cta">
-        <span>👇 Create your free employer account below</span>
+<!-- ================= HERO SECTION ================= -->
+<section class="employer-auth-hero">
+  <div class="employer-auth-overlay"></div>
+  
+  <div class="container-fluid h-100">
+    <div class="row h-100">
+      <!-- Left Side - Branding & Benefits -->
+      <div class="col-lg-6 d-flex align-items-center justify-content-center employer-auth-left">
+        <div class="employer-auth-content">
+          <div class="employer-auth-brand mb-4">
+            <div class="brand-icon">
+              <i class="fas fa-building"></i>
+            </div>
+            <h1 class="brand-title">KoachSmart</h1>
+            <p class="brand-subtitle">RECRUITMENT PLATFORM</p>
+          </div>
+          
+          <h2 class="auth-hero-title">Start Hiring Today</h2>
+          <p class="auth-hero-subtitle">Join hundreds of academies and organizations finding top coaching talent</p>
+          
+          <div class="auth-stats">
+            <div class="stat-item">
+              <div class="stat-number">500+</div>
+              <div class="stat-label">Verified Coaches</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-number">95%</div>
+              <div class="stat-label">Match Success</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-number">7 Days</div>
+              <div class="stat-label">Avg. Hire Time</div>
+            </div>
+          </div>
+          
+          <div class="auth-benefits">
+            <div class="benefit-item">
+              <i class="fas fa-search"></i>
+              <span>AI-Powered Matching</span>
+            </div>
+            <div class="benefit-item">
+              <i class="fas fa-shield-check"></i>
+              <span>Pre-Verified Profiles</span>
+            </div>
+            <div class="benefit-item">
+              <i class="fas fa-comments"></i>
+              <span>Direct Communication</span>
+            </div>
+            <div class="benefit-item">
+              <i class="fas fa-chart-line"></i>
+              <span>Hiring Analytics</span>
+            </div>
+          </div>
+        </div>
       </div>
+      
+      <!-- Right Side - Registration Form -->
+      <div class="col-lg-6 d-flex align-items-center justify-content-center employer-auth-right">
+        <div class="employer-auth-form">
+          <div class="auth-form-header">
+            <h3>Create Employer Account</h3>
+            <p>Get started with your free account and post your first job</p>
+          </div>
 
-      <!-- Benefits -->
-      <div class="employer-benefits">
-        <div class="employer-benefit">
-          <i class="fas fa-check-circle"></i> Pre-verified coach profiles
-        </div>
-        <div class="employer-benefit">
-          <i class="fas fa-bolt"></i> AI-powered shortlisting
-        </div>
-        <div class="employer-benefit">
-          <i class="fas fa-comments"></i> Direct chat with candidates
-        </div>
-        <div class="employer-benefit">
-          <i class="fas fa-shield-alt"></i> Secure hiring workflow
+          <form method="POST" class="auth-form">
+            <div class="form-floating mb-3">
+              <input type="text" class="form-control" id="company_name" name="company_name" placeholder="Academy Name" required>
+              <label for="company_name">
+                <i class="fas fa-building me-2"></i>Academy / Company Name
+              </label>
+            </div>
+
+            <div class="form-floating mb-3">
+              <input type="email" class="form-control" id="email" name="email" placeholder="name@company.com" required>
+              <label for="email">
+                <i class="fas fa-envelope me-2"></i>Business Email
+              </label>
+            </div>
+
+            <div class="form-floating mb-4">
+              <input type="password" class="form-control" id="password" name="password" placeholder="Password" required minlength="8">
+              <label for="password">
+                <i class="fas fa-lock me-2"></i>Password
+              </label>
+              <div class="form-text">Minimum 8 characters required</div>
+            </div>
+
+            <div class="form-check mb-4">
+              <input class="form-check-input" type="checkbox" id="terms" required>
+              <label class="form-check-label" for="terms">
+                I agree to the <a href="#" class="text-primary">Terms of Service</a> and <a href="#" class="text-primary">Privacy Policy</a>
+              </label>
+            </div>
+
+            <button type="submit" class="btn btn-employer-primary w-100 mb-4">
+              <i class="fas fa-rocket me-2"></i>
+              Create Account & Start Hiring
+            </button>
+          </form>
+
+          <div class="auth-divider">
+            <span>Already have an account?</span>
+          </div>
+
+          <div class="auth-footer">
+            <a href="{{ url_for('employer.login') }}" class="btn btn-outline-employer w-100">
+              <i class="fas fa-sign-in-alt me-2"></i>
+              Sign In to Existing Account
+            </a>
+          </div>
+          
+          <div class="trust-indicators mt-4">
+            <div class="trust-item">
+              <i class="fas fa-lock"></i>
+              <span>Secure & Encrypted</span>
+            </div>
+            <div class="trust-item">
+              <i class="fas fa-clock"></i>
+              <span>Setup in 5 Minutes</span>
+            </div>
+            <div class="trust-item">
+              <i class="fas fa-credit-card"></i>
+              <span>No Credit Card Required</span>
+            </div>
+          </div>
         </div>
       </div>
-
     </div>
   </div>
 </section>
 
-<!-- ================= REGISTER FORM ================= -->
-<div class="auth-page">
-  <div class="auth-wrapper">
+<style>
+.employer-auth-hero {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #1d4ed8 100%);
+  position: relative;
+}
 
-    <div class="auth-form">
-      <div class="auth-form-inner">
+.employer-auth-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(30, 64, 175, 0.9), rgba(59, 130, 246, 0.8));
+}
 
-        <h2 class="auth-title">Create Employer Account</h2>
-        <p class="auth-subtitle">
-          Register your academy and start hiring verified coaches.
-        </p>
+.employer-auth-left {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  position: relative;
+  z-index: 2;
+}
 
-        <form method="POST">
+.employer-auth-right {
+  background: rgba(255, 255, 255, 0.98);
+  position: relative;
+  z-index: 2;
+}
 
-          <div class="form-group">
-            <label>Academy / Company Name</label>
-            <input type="text" name="company_name" class="form-control" required>
-          </div>
+.employer-auth-content {
+  max-width: 400px;
+  text-align: center;
+  color: white;
+}
 
-          <div class="form-group">
-            <label>Business Email</label>
-            <input type="email" name="email" class="form-control" required>
-          </div>
+.employer-auth-brand {
+  margin-bottom: 2rem;
+}
 
-          <div class="form-group password-field">
-            <label>Password</label>
-            <input type="password" name="password" class="form-control password-input" required>
-            <button type="button" class="password-toggle">Show</button>
-          </div>
+.brand-icon {
+  width: 80px;
+  height: 80px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1rem;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
 
-          <button type="submit" class="btn btn-primary w-100">
-            Create Employer Account →
-          </button>
+.brand-icon i {
+  font-size: 2rem;
+  color: white;
+}
 
-        </form>
+.brand-title {
+  font-size: 2.5rem;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+  color: white;
+}
 
-        <p class="auth-footer">
-          Already registered?
-          <a href="{{ url_for('employer_login') }}">Employer Login</a>
-        </p>
+.brand-subtitle {
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 2px;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 0;
+}
 
-      </div>
-    </div>
+.auth-hero-title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  color: white;
+}
 
-  </div>
-</div>
+.auth-hero-subtitle {
+  font-size: 1.1rem;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 2rem;
+  line-height: 1.6;
+}
+
+.auth-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.stat-item {
+  text-align: center;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.stat-number {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #fbbf24;
+  margin-bottom: 0.25rem;
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 500;
+}
+
+.auth-benefits {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.benefit-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  transition: all 0.3s ease;
+}
+
+.benefit-item:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+}
+
+.benefit-item i {
+  font-size: 1.25rem;
+  color: #fbbf24;
+}
+
+.benefit-item span {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: white;
+}
+
+.employer-auth-form {
+  max-width: 400px;
+  width: 100%;
+  padding: 2rem;
+}
+
+.auth-form-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.auth-form-header h3 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 0.5rem;
+}
+
+.auth-form-header p {
+  color: #6b7280;
+  font-size: 0.95rem;
+}
+
+.form-floating > .form-control {
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1rem 0.75rem;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.form-floating > .form-control:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-floating > label {
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.form-text {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+}
+
+.form-check-input:checked {
+  background-color: #3b82f6;
+  border-color: #3b82f6;
+}
+
+.form-check-label {
+  font-size: 0.875rem;
+  color: #4b5563;
+}
+
+.btn-employer-primary {
+  background: linear-gradient(135deg, #1e40af, #3b82f6);
+  border: none;
+  border-radius: 12px;
+  padding: 0.875rem 1.5rem;
+  font-weight: 600;
+  font-size: 1rem;
+  color: white;
+  transition: all 0.3s ease;
+}
+
+.btn-employer-primary:hover {
+  background: linear-gradient(135deg, #1d4ed8, #2563eb);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+  color: white;
+}
+
+.auth-divider {
+  text-align: center;
+  margin: 1.5rem 0;
+  position: relative;
+}
+
+.auth-divider::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: #e5e7eb;
+}
+
+.auth-divider span {
+  background: white;
+  padding: 0 1rem;
+  color: #6b7280;
+  font-size: 0.875rem;
+  position: relative;
+  z-index: 1;
+}
+
+.auth-footer {
+  text-align: center;
+}
+
+.btn-outline-employer {
+  border: 2px solid #3b82f6;
+  color: #3b82f6;
+  border-radius: 12px;
+  padding: 0.875rem 1.5rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-outline-employer:hover {
+  background: #3b82f6;
+  color: white;
+  transform: translateY(-2px);
+}
+
+.trust-indicators {
+  display: flex;
+  justify-content: space-between;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.trust-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.trust-item i {
+  font-size: 1.25rem;
+  color: #10b981;
+}
+
+.trust-item span {
+  font-size: 0.75rem;
+  color: #6b7280;
+  text-align: center;
+  font-weight: 500;
+}
+
+@media (max-width: 991px) {
+  .employer-auth-left {
+    display: none;
+  }
+  
+  .employer-auth-right {
+    background: white;
+  }
+  
+  .employer-auth-hero {
+    background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+  }
+  
+  .trust-indicators {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .trust-item {
+    flex-direction: row;
+    justify-content: center;
+  }
+}
+</style>
 
 {% endblock %}

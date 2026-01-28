@@ -41,7 +41,7 @@
           <td><strong>{{ hr.final_status if hr else 'Pending' }}</strong></td>
           <td>{{ 'Yes' if (hr and hr.ready_to_post) else 'No' }}</td>
           <td>
-            <form method="POST" action="{{ url_for('update_hirer_review', hirer_id=h.id) }}" class="d-flex gap-2">
+            <form method="POST" action="{{ url_for('admin.update_hirer_review', hirer_id=h.id) }}" class="d-flex gap-2">
               <input type="hidden" name="action" value="l1">
               <select name="status" class="form-select form-select-sm" style="width:140px">
                 <option>Pending</option><option>Approved</option><option>Rejected</option>
@@ -68,7 +68,7 @@
               <button class="btn btn-sm btn-warning">Save Compliance</button>
             </form>
 
-            <form method="POST" action="{{ url_for('update_hirer_review', hirer_id=h.id) }}" class="d-flex gap-2 mt-2">
+            <form method="POST" action="{{ url_for('admin.update_hirer_review', hirer_id=h.id) }}" class="d-flex gap-2 mt-2">
               <input type="hidden" name="action" value="docs">
               <div class="form-check"><input class="form-check-input" type="checkbox" name="docs_address_proof" {% if hr and hr.docs_address_proof %}checked{% endif %}> <label class="form-check-label">Address</label></div>
               <div class="form-check"><input class="form-check-input" type="checkbox" name="docs_registration" {% if hr and hr.docs_registration %}checked{% endif %}> <label class="form-check-label">Registration</label></div>

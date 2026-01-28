@@ -1,0 +1,167 @@
+<!-- EMPLOYER NAVBAR -->
+<nav class="navbar navbar-expand-lg navbar-modern fixed-top employer-navbar">
+    <div class="container">
+        <a class="navbar-brand ks-logo-ref" href="{{ url_for('employer.dashboard') }}">
+            <span class="ks-box">
+                <span class="ks-letter ks-k">K</span>
+                <span class="ks-letter ks-s">S</span>
+            </span>
+
+            <span class="ks-text">
+                <span class="ks-title">KoachSmart</span>
+                <span class="ks-subtitle">RECRUITMENT</span>
+            </span>
+        </a>
+
+        <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#employerNavbar">
+            <i class="fas fa-bars text-dark"></i>
+        </button>
+
+        <div class="collapse navbar-collapse" id="employerNavbar">
+            <ul class="navbar-nav ms-auto align-items-center gap-3">
+
+                <!-- Dashboard -->
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('employer.dashboard') }}">
+                        <i class="fas fa-tachometer-alt me-1"></i> Dashboard
+                    </a>
+                </li>
+
+                <!-- Post Job -->
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('employer.new_job') }}">
+                        <i class="fas fa-plus-circle me-1"></i> Post Job
+                    </a>
+                </li>
+
+                <!-- Browse Coaches -->
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('employer.explore_coaches') }}">
+                        <i class="fas fa-search me-1"></i> Browse Coaches
+                    </a>
+                </li>
+
+                <!-- Messages -->
+                <li class="nav-item">
+                    <a class="nav-link position-relative" href="{{ url_for('chat.chat_home') }}">
+                        <i class="fas fa-comments me-1"></i> Messages
+                        <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle">
+                            <span class="visually-hidden">New messages</span>
+                        </span>
+                    </a>
+                </li>
+
+                <!-- Profile Dropdown -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <div class="employer-avatar me-2">
+                            <i class="fas fa-building"></i>
+                        </div>
+                        <span class="d-none d-md-inline">{{ current_user.username }}</span>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                        <li>
+                            <h6 class="dropdown-header">
+                                <i class="fas fa-building me-2"></i>{{ current_user.username }}
+                            </h6>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item" href="{{ url_for('employer.dashboard') }}">
+                                <i class="fas fa-tachometer-alt me-2"></i> Dashboard
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="{{ url_for('employer.new_job') }}">
+                                <i class="fas fa-plus-circle me-2"></i> Post New Job
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="#">
+                                <i class="fas fa-cog me-2"></i> Settings
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}">
+                                <i class="fas fa-sign-out-alt me-2"></i> Logout
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<style>
+.employer-navbar {
+    background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+    box-shadow: 0 2px 20px rgba(30, 64, 175, 0.1);
+}
+
+.employer-navbar .navbar-brand .ks-box {
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.employer-navbar .navbar-brand .ks-letter {
+    color: white;
+}
+
+.employer-navbar .navbar-brand .ks-title {
+    color: white;
+}
+
+.employer-navbar .navbar-brand .ks-subtitle {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.employer-navbar .nav-link {
+    color: rgba(255, 255, 255, 0.9) !important;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.employer-navbar .nav-link:hover {
+    color: white !important;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+}
+
+.employer-avatar {
+    width: 32px;
+    height: 32px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 14px;
+}
+
+.employer-navbar .dropdown-menu {
+    border: none;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+    border-radius: 12px;
+    padding: 0.5rem 0;
+}
+
+.employer-navbar .dropdown-item {
+    padding: 0.5rem 1rem;
+    transition: all 0.2s ease;
+}
+
+.employer-navbar .dropdown-item:hover {
+    background: #f8fafc;
+}
+
+.employer-navbar .dropdown-header {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #374151;
+    padding: 0.5rem 1rem;
+}
+</style>
