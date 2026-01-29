@@ -1,56 +1,55 @@
 {% extends "base.html" %}
 {% block content %}
 
-<!-- ================= HERO SECTION ================= -->
-<section class="employer-auth-hero">
-  <div class="employer-auth-overlay"></div>
-  
-  <div class="container-fluid h-100">
-    <div class="row h-100">
-      <!-- Left Side - Branding & Benefits -->
-      <div class="col-lg-6 d-flex align-items-center justify-content-center employer-auth-left">
-        <div class="employer-auth-content">
-          <div class="employer-auth-brand mb-4">
-            <div class="brand-icon">
-              <i class="fas fa-building"></i>
+<div class="employer-registration-page">
+  <div class="container-fluid">
+    <div class="row min-vh-100">
+      <!-- Left Side - Branding -->
+      <div class="col-lg-6 employer-brand-section">
+        <div class="brand-content">
+          <div class="brand-header">
+            <div class="brand-logo">
+              <i class="fas fa-users"></i>
             </div>
-            <h1 class="brand-title">KoachSmart</h1>
-            <p class="brand-subtitle">RECRUITMENT PLATFORM</p>
+            <h1>KoachSmart</h1>
+            <p>RECRUITMENT PLATFORM</p>
           </div>
           
-          <h2 class="auth-hero-title">Start Hiring Today</h2>
-          <p class="auth-hero-subtitle">Join hundreds of academies and organizations finding top coaching talent</p>
+          <div class="brand-message">
+            <h2>Find Top Coaching Talent</h2>
+            <p>Connect with verified coaches and build your dream team</p>
+          </div>
           
-          <div class="auth-stats">
-            <div class="stat-item">
-              <div class="stat-number">500+</div>
-              <div class="stat-label">Verified Coaches</div>
+          <div class="stats-grid">
+            <div class="stat-card">
+              <h3>500+</h3>
+              <p>Verified Coaches</p>
             </div>
-            <div class="stat-item">
-              <div class="stat-number">95%</div>
-              <div class="stat-label">Match Success</div>
+            <div class="stat-card">
+              <h3>95%</h3>
+              <p>Success Rate</p>
             </div>
-            <div class="stat-item">
-              <div class="stat-number">7 Days</div>
-              <div class="stat-label">Avg. Hire Time</div>
+            <div class="stat-card">
+              <h3>7 Days</h3>
+              <p>Avg Hire Time</p>
             </div>
           </div>
           
-          <div class="auth-benefits">
-            <div class="benefit-item">
-              <i class="fas fa-search"></i>
+          <div class="features-list">
+            <div class="feature-item">
+              <i class="fas fa-check-circle"></i>
               <span>AI-Powered Matching</span>
             </div>
-            <div class="benefit-item">
-              <i class="fas fa-shield-check"></i>
+            <div class="feature-item">
+              <i class="fas fa-check-circle"></i>
               <span>Pre-Verified Profiles</span>
             </div>
-            <div class="benefit-item">
-              <i class="fas fa-comments"></i>
+            <div class="feature-item">
+              <i class="fas fa-check-circle"></i>
               <span>Direct Communication</span>
             </div>
-            <div class="benefit-item">
-              <i class="fas fa-chart-line"></i>
+            <div class="feature-item">
+              <i class="fas fa-check-circle"></i>
               <span>Hiring Analytics</span>
             </div>
           </div>
@@ -58,63 +57,90 @@
       </div>
       
       <!-- Right Side - Registration Form -->
-      <div class="col-lg-6 d-flex align-items-center justify-content-center employer-auth-right">
-        <div class="employer-auth-form">
-          <div class="auth-form-header">
-            <h3>Create Employer Account</h3>
+      <div class="col-lg-6 employer-form-section">
+        <div class="form-container">
+          <div class="form-header">
+            <h2>Create Employer Account</h2>
             <p>Get started with your free account and post your first job</p>
           </div>
 
-          <form method="POST" class="auth-form">
-            <div class="form-floating mb-3">
-              <input type="text" class="form-control" id="company_name" name="company_name" placeholder="Academy Name" required>
-              <label for="company_name">
-                <i class="fas fa-building me-2"></i>Academy / Company Name
+          <form method="POST" class="registration-form">
+            <!-- Company Name Field -->
+            <div class="input-group-custom">
+              <label class="input-label">
+                <i class="fas fa-building"></i>
+                Academy / Company Name
+              </label>
+              <input 
+                type="text" 
+                name="company_name" 
+                class="form-input" 
+                placeholder="Enter your academy or company name" 
+                required
+              >
+            </div>
+
+            <!-- Email Field -->
+            <div class="input-group-custom">
+              <label class="input-label">
+                <i class="fas fa-envelope"></i>
+                Business Email
+              </label>
+              <input 
+                type="email" 
+                name="email" 
+                class="form-input" 
+                placeholder="name@company.com" 
+                required
+              >
+            </div>
+
+            <!-- Password Field -->
+            <div class="input-group-custom">
+              <label class="input-label">
+                <i class="fas fa-lock"></i>
+                Password
+              </label>
+              <input 
+                type="password" 
+                name="password" 
+                class="form-input" 
+                placeholder="Create a secure password" 
+                required 
+                minlength="8"
+              >
+              <small class="input-help">Minimum 8 characters required</small>
+            </div>
+
+            <!-- Terms Checkbox -->
+            <div class="checkbox-group">
+              <label class="checkbox-label">
+                <input type="checkbox" required>
+                <span class="checkmark"></span>
+                I agree to the <a href="#" class="link-primary">Terms of Service</a> and <a href="#" class="link-primary">Privacy Policy</a>
               </label>
             </div>
 
-            <div class="form-floating mb-3">
-              <input type="email" class="form-control" id="email" name="email" placeholder="name@company.com" required>
-              <label for="email">
-                <i class="fas fa-envelope me-2"></i>Business Email
-              </label>
-            </div>
-
-            <div class="form-floating mb-4">
-              <input type="password" class="form-control" id="password" name="password" placeholder="Password" required minlength="8">
-              <label for="password">
-                <i class="fas fa-lock me-2"></i>Password
-              </label>
-              <div class="form-text">Minimum 8 characters required</div>
-            </div>
-
-            <div class="form-check mb-4">
-              <input class="form-check-input" type="checkbox" id="terms" required>
-              <label class="form-check-label" for="terms">
-                I agree to the <a href="#" class="text-primary">Terms of Service</a> and <a href="#" class="text-primary">Privacy Policy</a>
-              </label>
-            </div>
-
-            <button type="submit" class="btn btn-employer-primary w-100 mb-4">
-              <i class="fas fa-rocket me-2"></i>
+            <!-- Submit Button -->
+            <button type="submit" class="submit-btn">
+              <i class="fas fa-rocket"></i>
               Create Account & Start Hiring
             </button>
           </form>
 
-          <div class="auth-divider">
-            <span>Already have an account?</span>
-          </div>
-
-          <div class="auth-footer">
-            <a href="{{ url_for('employer.login') }}" class="btn btn-outline-employer w-100">
-              <i class="fas fa-sign-in-alt me-2"></i>
+          <!-- Sign In Link -->
+          <div class="form-footer">
+            <p>Already have an account?</p>
+            <a href="{{ url_for('employer.login') }}" class="signin-link">
+              <i class="fas fa-sign-in-alt"></i>
               Sign In to Existing Account
             </a>
           </div>
           
-          <div class="trust-indicators mt-4">
+          <!-- Trust Indicators -->
+          <div class="trust-badges">
             <div class="trust-item">
-              <i class="fas fa-lock"></i>
+              <i class="fas fa-shield-alt"></i>
               <span>Secure & Encrypted</span>
             </div>
             <div class="trust-item">
@@ -130,275 +156,310 @@
       </div>
     </div>
   </div>
-</section>
+</div>
 
 <style>
-.employer-auth-hero {
+/* Reset and Base Styles */
+.employer-registration-page {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   min-height: 100vh;
-  background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #1d4ed8 100%);
-  position: relative;
 }
 
-.employer-auth-overlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, rgba(30, 64, 175, 0.9), rgba(59, 130, 246, 0.8));
-}
-
-.employer-auth-left {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
-  border-right: 1px solid rgba(255, 255, 255, 0.1);
-  position: relative;
-  z-index: 2;
-}
-
-.employer-auth-right {
-  background: rgba(255, 255, 255, 0.98);
-  position: relative;
-  z-index: 2;
-}
-
-.employer-auth-content {
-  max-width: 400px;
-  text-align: center;
+/* Left Brand Section */
+.employer-brand-section {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
   color: white;
 }
 
-.employer-auth-brand {
-  margin-bottom: 2rem;
+.brand-content {
+  max-width: 400px;
+  text-align: center;
 }
 
-.brand-icon {
+.brand-header {
+  margin-bottom: 3rem;
+}
+
+.brand-logo {
   width: 80px;
   height: 80px;
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.2);
   border-radius: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 0 auto 1rem;
-  border: 2px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  border: 2px solid rgba(255, 255, 255, 0.3);
 }
 
-.brand-icon i {
+.brand-logo i {
   font-size: 2rem;
   color: white;
 }
 
-.brand-title {
+.brand-header h1 {
   font-size: 2.5rem;
   font-weight: 800;
   margin-bottom: 0.5rem;
   color: white;
 }
 
-.brand-subtitle {
+.brand-header p {
   font-size: 0.875rem;
   font-weight: 600;
   letter-spacing: 2px;
   color: rgba(255, 255, 255, 0.8);
-  margin-bottom: 0;
+  margin: 0;
 }
 
-.auth-hero-title {
+.brand-message {
+  margin-bottom: 3rem;
+}
+
+.brand-message h2 {
   font-size: 2rem;
   font-weight: 700;
   margin-bottom: 1rem;
   color: white;
 }
 
-.auth-hero-subtitle {
+.brand-message p {
   font-size: 1.1rem;
   color: rgba(255, 255, 255, 0.9);
-  margin-bottom: 2rem;
   line-height: 1.6;
 }
 
-.auth-stats {
+.stats-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 1rem;
-  margin-bottom: 2rem;
+  margin-bottom: 3rem;
 }
 
-.stat-item {
+.stat-card {
+  background: rgba(255, 255, 255, 0.15);
+  padding: 1.5rem 1rem;
+  border-radius: 15px;
   text-align: center;
-  padding: 1rem;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-.stat-number {
+.stat-card h3 {
   font-size: 1.5rem;
   font-weight: 800;
   color: #fbbf24;
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.5rem;
 }
 
-.stat-label {
+.stat-card p {
   font-size: 0.75rem;
   color: rgba(255, 255, 255, 0.8);
-  font-weight: 500;
+  margin: 0;
 }
 
-.auth-benefits {
+.features-list {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1rem;
 }
 
-.benefit-item {
+.feature-item {
   display: flex;
   align-items: center;
   gap: 0.75rem;
   padding: 0.75rem;
   background: rgba(255, 255, 255, 0.1);
   border-radius: 12px;
+  backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.15);
-  transition: all 0.3s ease;
 }
 
-.benefit-item:hover {
-  background: rgba(255, 255, 255, 0.15);
-  transform: translateY(-2px);
-}
-
-.benefit-item i {
+.feature-item i {
+  color: #10b981;
   font-size: 1.25rem;
-  color: #fbbf24;
 }
 
-.benefit-item span {
+.feature-item span {
   font-size: 0.875rem;
   font-weight: 500;
   color: white;
 }
 
-.employer-auth-form {
-  max-width: 400px;
-  width: 100%;
+/* Right Form Section */
+.employer-form-section {
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: 2rem;
 }
 
-.auth-form-header {
+.form-container {
+  max-width: 400px;
+  width: 100%;
+}
+
+.form-header {
   text-align: center;
   margin-bottom: 2rem;
 }
 
-.auth-form-header h3 {
+.form-header h2 {
   font-size: 1.75rem;
   font-weight: 700;
   color: #1f2937;
   margin-bottom: 0.5rem;
 }
 
-.auth-form-header p {
+.form-header p {
   color: #6b7280;
   font-size: 0.95rem;
+  margin: 0;
 }
 
-.form-floating > .form-control {
+/* Form Styles */
+.registration-form {
+  margin-bottom: 2rem;
+}
+
+.input-group-custom {
+  margin-bottom: 1.5rem;
+}
+
+.input-label {
+  display: block;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.input-label i {
+  color: #667eea;
+  margin-right: 0.5rem;
+  width: 16px;
+}
+
+.form-input {
+  width: 100%;
+  padding: 0.875rem 1rem;
   border: 2px solid #e5e7eb;
   border-radius: 12px;
-  padding: 1rem 0.75rem;
   font-size: 1rem;
   transition: all 0.3s ease;
+  background: white;
 }
 
-.form-floating > .form-control:focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+.form-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
-.form-floating > label {
-  color: #6b7280;
-  font-weight: 500;
-}
-
-.form-text {
+.input-help {
+  display: block;
   font-size: 0.75rem;
   color: #6b7280;
   margin-top: 0.25rem;
 }
 
-.form-check-input:checked {
-  background-color: #3b82f6;
-  border-color: #3b82f6;
+.checkbox-group {
+  margin-bottom: 1.5rem;
 }
 
-.form-check-label {
+.checkbox-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
   font-size: 0.875rem;
   color: #4b5563;
+  cursor: pointer;
+  line-height: 1.5;
 }
 
-.btn-employer-primary {
-  background: linear-gradient(135deg, #1e40af, #3b82f6);
+.checkbox-label input[type="checkbox"] {
+  margin: 0;
+  width: 18px;
+  height: 18px;
+  accent-color: #667eea;
+}
+
+.link-primary {
+  color: #667eea;
+  text-decoration: none;
+}
+
+.link-primary:hover {
+  text-decoration: underline;
+}
+
+.submit-btn {
+  width: 100%;
+  background: linear-gradient(135deg, #667eea, #764ba2);
   border: none;
   border-radius: 12px;
-  padding: 0.875rem 1.5rem;
+  padding: 1rem 1.5rem;
   font-weight: 600;
   font-size: 1rem;
   color: white;
+  cursor: pointer;
   transition: all 0.3s ease;
+  margin-bottom: 1.5rem;
 }
 
-.btn-employer-primary:hover {
-  background: linear-gradient(135deg, #1d4ed8, #2563eb);
+.submit-btn:hover {
+  background: linear-gradient(135deg, #5a67d8, #6b46c1);
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
-  color: white;
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
 }
 
-.auth-divider {
+.submit-btn i {
+  margin-right: 0.5rem;
+}
+
+/* Form Footer */
+.form-footer {
   text-align: center;
-  margin: 1.5rem 0;
-  position: relative;
+  margin-bottom: 2rem;
 }
 
-.auth-divider::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: #e5e7eb;
-}
-
-.auth-divider span {
-  background: white;
-  padding: 0 1rem;
+.form-footer p {
   color: #6b7280;
+  margin-bottom: 1rem;
   font-size: 0.875rem;
-  position: relative;
-  z-index: 1;
 }
 
-.auth-footer {
-  text-align: center;
-}
-
-.btn-outline-employer {
-  border: 2px solid #3b82f6;
-  color: #3b82f6;
-  border-radius: 12px;
-  padding: 0.875rem 1.5rem;
+.signin-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #667eea;
+  text-decoration: none;
   font-weight: 600;
+  padding: 0.75rem 1.5rem;
+  border: 2px solid #667eea;
+  border-radius: 12px;
   transition: all 0.3s ease;
 }
 
-.btn-outline-employer:hover {
-  background: #3b82f6;
+.signin-link:hover {
+  background: #667eea;
   color: white;
   transform: translateY(-2px);
 }
 
-.trust-indicators {
+/* Trust Badges */
+.trust-badges {
   display: flex;
   justify-content: space-between;
-  padding-top: 1rem;
+  padding-top: 1.5rem;
   border-top: 1px solid #e5e7eb;
 }
 
@@ -422,20 +483,17 @@
   font-weight: 500;
 }
 
+/* Responsive Design */
 @media (max-width: 991px) {
-  .employer-auth-left {
+  .employer-brand-section {
     display: none;
   }
   
-  .employer-auth-right {
-    background: white;
-  }
-  
-  .employer-auth-hero {
+  .employer-form-section {
     background: linear-gradient(135deg, #f8fafc, #e2e8f0);
   }
   
-  .trust-indicators {
+  .trust-badges {
     flex-direction: column;
     gap: 1rem;
   }
@@ -443,6 +501,20 @@
   .trust-item {
     flex-direction: row;
     justify-content: center;
+  }
+}
+
+@media (max-width: 576px) {
+  .form-container {
+    padding: 1rem;
+  }
+  
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .features-list {
+    grid-template-columns: 1fr;
   }
 }
 </style>

@@ -1,0 +1,263 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Reports - KoachSmart{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Admin Reports & Statistics</h4>
+                </div>
+                <div class="card-body">
+                    <!-- Summary Statistics -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="card text-center border-0 bg-light">
+                                <div class="card-body">
+                                    <h2 class="text-primary">{{ total_admins }}</h2>
+                                    <p class="card-text text-muted">Total Admins</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card text-center border-0 bg-light">
+                                <div class="card-body">
+                                    <h2 class="text-success">{{ active_admins }}</h2>
+                                    <p class="card-text text-muted">Active Admins</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card text-center border-0 bg-light">
+                                <div class="card-body">
+                                    <h2 class="text-info">{{ total_verifications }}</h2>
+                                    <p class="card-text text-muted">Total Verifications</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card text-center border-0 bg-light">
+                                <div class="card-body">
+                                    <h2 class="text-warning">{{ "%.1f"|format(avg_approval_rate) }}%</h2>
+                                    <p class="card-text text-muted">Avg Approval Rate</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Overall Statistics -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="card border-0 bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title">Overall Performance</h6>
+                                    <p class="mb-2"><strong>Total Approvals:</strong> {{ total_approvals }}</p>
+                                    <p class="mb-2"><strong>Total Rejections:</strong> {{ total_rejections }}</p>
+                                    <p class="mb-2"><strong>Total Decisions:</strong> {{ total_approvals + total_rejections }}</p>
+                                    <p class="mb-0"><strong>Average Approval Rate:</strong> {{ "%.1f"|format(avg_approval_rate) }}%</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card border-0 bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title">Admin Status</h6>
+                                    <p class="mb-2"><strong>Active:</strong> {{ active_admins }}</p>
+                                    <p class="mb-2"><strong>Inactive:</strong> {{ total_admins - active_admins }}</p>
+                                    <p class="mb-2"><strong>Super Admins:</strong> 
+                                        {% set super_admin_count = admins | selectattr('role', 'equalto', 'super_admin') | list | length %}
+                                        {{ super_admin_count }}
+                                    </p>
+                                    <p class="mb-0"><strong>Regional Admins:</strong> 
+                                        {% set regional_admin_count = admins | selectattr('role', 'equalto', 'regional_admin') | list | length %}
+                                        {{ regional_admin_count }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Performance Chart -->
+                    <div class="card border-0 bg-light mb-4">
+                        <div class="card-body">
+                            <h6 class="card-title">Decision Distribution</h6>
+                            <canvas id="decisionChart" height="80"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Admin Performance Table -->
+                    <div class="card border-0">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">Individual Admin Performance</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Admin Name</th>
+                                            <th>Role</th>
+                                            <th>Status</th>
+                                            <th>Verifications</th>
+                                            <th>Approvals</th>
+                                            <th>Rejections</th>
+                                            <th>Approval Rate</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for admin in admins %}
+                                        <tr>
+                                            <td>
+                                                <strong>{{ admin.user.username }}</strong><br>
+                                                <small class="text-muted">{{ admin.user.email }}</small>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary">{{ admin.role.replace('_', ' ').title() }}</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge {% if admin.is_active %}bg-success{% else %}bg-danger{% endif %}">
+                                                    {% if admin.is_active %}Active{% else %}Inactive{% endif %}
+                                                </span>
+                                            </td>
+                                            <td>{{ admin.total_verifications }}</td>
+                                            <td><span class="text-success">{{ admin.total_approvals }}</span></td>
+                                            <td><span class="text-danger">{{ admin.total_rejections }}</span></td>
+                                            <td>
+                                                <strong>{{ "%.1f"|format(admin.get_approval_rate()) }}%</strong>
+                                            </td>
+                                            <td>
+                                                <a href="{{ url_for('admin_mgmt.admin_performance', admin_id=admin.id) }}" 
+                                                   class="btn btn-sm btn-outline-primary">
+                                                    View
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Export Options -->
+                    <div class="mt-4">
+                        <h6>Export Reports</h6>
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-outline-primary" onclick="exportCSV()">
+                                <i class="fas fa-download"></i> Export as CSV
+                            </button>
+                            <button type="button" class="btn btn-outline-primary" onclick="exportPDF()">
+                                <i class="fas fa-file-pdf"></i> Export as PDF
+                            </button>
+                            <button type="button" class="btn btn-outline-primary" onclick="printReport()">
+                                <i class="fas fa-print"></i> Print
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Back Button -->
+                    <div class="mt-4">
+                        <a href="{{ url_for('admin_mgmt.dashboard') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('decisionChart').getContext('2d');
+    const approvals = {{ total_approvals }};
+    const rejections = {{ total_rejections }};
+    
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['Approvals', 'Rejections'],
+            datasets: [{
+                label: 'Decisions',
+                data: [approvals, rejections],
+                backgroundColor: ['#28a745', '#dc3545'],
+                borderColor: ['#28a745', '#dc3545'],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+});
+
+function exportCSV() {
+    const table = document.querySelector('table');
+    let csv = [];
+    
+    // Get headers
+    const headers = Array.from(table.querySelectorAll('thead th')).map(th => th.textContent.trim());
+    csv.push(headers.join(','));
+    
+    // Get rows
+    Array.from(table.querySelectorAll('tbody tr')).forEach(tr => {
+        const cells = Array.from(tr.querySelectorAll('td')).map(td => {
+            let text = td.textContent.trim();
+            // Escape quotes and wrap in quotes if contains comma
+            if (text.includes(',')) {
+                text = '"' + text.replace(/"/g, '""') + '"';
+            }
+            return text;
+        });
+        csv.push(cells.join(','));
+    });
+    
+    // Download
+    const csvContent = csv.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'admin_reports_' + new Date().toISOString().split('T')[0] + '.csv';
+    a.click();
+}
+
+function exportPDF() {
+    alert('PDF export feature coming soon!');
+}
+
+function printReport() {
+    window.print();
+}
+</script>
+
+<style>
+    .card {
+        border: none;
+        border-radius: 8px;
+    }
+    .card-header {
+        border-radius: 8px 8px 0 0;
+    }
+    @media print {
+        .btn, .btn-group {
+            display: none;
+        }
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="glass-card p-4 mb-4">
+                <h2 class="fw-bold mb-3">🏆 Coach Verification Journey</h2>
+                <p class="text-muted">Complete all stages to become a Certified Coach and unlock premium features!</p>
+                
+                <!-- Progress Overview -->
+                <div class="row g-3 mb-4">
+                    <div class="col-md-3">
+                        <div class="text-center p-3 rounded {{ 'bg-warning bg-opacity-20' if progress.stage_1.completed else 'bg-secondary bg-opacity-10' }}">
+                            <div class="fs-2 mb-2">🟠</div>
+                            <h6>Stage 1</h6>
+                            <small>Orange Badge</small>
+                            {% if progress.stage_1.completed %}
+                                <div class="badge bg-success mt-2">Completed</div>
+                            {% else %}
+                                <div class="progress mt-2" style="height: 4px;">
+                                    <div class="progress-bar bg-warning" style="width: {{ (progress.stage_1.score / progress.stage_1.max_score * 100) }}%"></div>
+                                </div>
+                                <small class="text-muted">{{ progress.stage_1.score }}/{{ progress.stage_1.max_score }}</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-3">
+                        <div class="text-center p-3 rounded {{ 'bg-primary bg-opacity-20' if progress.stage_2.completed else 'bg-secondary bg-opacity-10' }}">
+                            <div class="fs-2 mb-2">🟣</div>
+                            <h6>Stage 2</h6>
+                            <small>Purple Badge</small>
+                            {% if progress.stage_2.completed %}
+                                <div class="badge bg-success mt-2">Completed</div>
+                            {% elif progress.stage_1.completed %}
+                                <div class="progress mt-2" style="height: 4px;">
+                                    <div class="progress-bar bg-primary" style="width: {{ (progress.stage_2.score / progress.stage_2.max_score * 100) }}%"></div>
+                                </div>
+                                <small class="text-muted">{{ progress.stage_2.score }}/{{ progress.stage_2.max_score }}</small>
+                            {% else %}
+                                <div class="badge bg-secondary mt-2">Locked</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-3">
+                        <div class="text-center p-3 rounded {{ 'bg-info bg-opacity-20' if progress.stage_3.completed else 'bg-secondary bg-opacity-10' }}">
+                            <div class="fs-2 mb-2">🔵</div>
+                            <h6>Stage 3</h6>
+                            <small>Blue Badge</small>
+                            {% if progress.stage_3.completed %}
+                                <div class="badge bg-success mt-2">Completed</div>
+                            {% elif progress.stage_2.completed %}
+                                <div class="progress mt-2" style="height: 4px;">
+                                    <div class="progress-bar bg-info" style="width: {{ (progress.stage_3.score / progress.stage_3.max_score * 100) }}%"></div>
+                                </div>
+                                <small class="text-muted">{{ progress.stage_3.score }}/{{ progress.stage_3.max_score }}</small>
+                            {% else %}
+                                <div class="badge bg-secondary mt-2">Locked</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-3">
+                        <div class="text-center p-3 rounded {{ 'bg-success bg-opacity-20' if progress.stage_4.completed else 'bg-secondary bg-opacity-10' }}">
+                            <div class="fs-2 mb-2">🟢</div>
+                            <h6>Stage 4</h6>
+                            <small>Green Badge</small>
+                            {% if progress.stage_4.completed %}
+                                <div class="badge bg-success mt-2">Certified Coach!</div>
+                            {% elif progress.stage_3.completed %}
+                                <div class="progress mt-2" style="height: 4px;">
+                                    <div class="progress-bar bg-success" style="width: {{ (progress.stage_4.score / progress.stage_4.max_score * 100) }}%"></div>
+                                </div>
+                                <small class="text-muted">{{ progress.stage_4.score }}/{{ progress.stage_4.max_score }}</small>
+                            {% else %}
+                                <div class="badge bg-secondary mt-2">Locked</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Current Stage Action -->
+                <div class="text-center">
+                    {% if current_stage == 1 %}
+                        <a href="{{ url_for('verification.stage1') }}" class="btn btn-warning btn-lg">
+                            <i class="fas fa-user-check me-2"></i>Complete Basic Verification
+                        </a>
+                    {% elif current_stage == 2 %}
+                        <a href="{{ url_for('verification.stage2') }}" class="btn btn-primary btn-lg">
+                            <i class="fas fa-map-marker-alt me-2"></i>Set Location & Availability
+                        </a>
+                    {% elif current_stage == 3 %}
+                        <a href="{{ url_for('verification.stage3') }}" class="btn btn-info btn-lg">
+                            <i class="fas fa-graduation-cap me-2"></i>Add Education & Experience
+                        </a>
+                    {% elif current_stage == 4 %}
+                        <a href="{{ url_for('verification.stage4') }}" class="btn btn-success btn-lg">
+                            <i class="fas fa-certificate me-2"></i>Get Advanced Certifications
+                        </a>
+                    {% else %}
+                        <div class="alert alert-success">
+                            <h4>🎉 Congratulations!</h4>
+                            <p>You are now a Certified Coach with all badges earned!</p>
+                            <a href="{{ url_for('coach.dashboard') }}" class="btn btn-success">Go to Dashboard</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <!-- Rewards Summary -->
+            <div class="glass-card p-4 mb-4">
+                <h5 class="fw-bold mb-3">💰 Rewards Earned</h5>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Total Coins:</span>
+                    <span class="fw-bold text-warning">{{ progress.total_coins }}</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Current Badge:</span>
+                    <span class="fw-bold">
+                        {% if progress.badge_level == 'green' %}🟢 Certified Coach
+                        {% elif progress.badge_level == 'blue' %}🔵 Blue Badge
+                        {% elif progress.badge_level == 'purple' %}🟣 Purple Badge
+                        {% elif progress.badge_level == 'orange' %}🟠 Orange Badge
+                        {% else %}No Badge Yet
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+            
+            <!-- Quick Actions -->
+            <div class="glass-card p-4">
+                <h5 class="fw-bold mb-3">⚡ Quick Actions</h5>
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('verification.stage1') }}" class="btn btn-outline-warning btn-sm">Stage 1: Basic Info</a>
+                    <a href="{{ url_for('verification.stage2') }}" class="btn btn-outline-primary btn-sm">Stage 2: Location</a>
+                    <a href="{{ url_for('verification.stage3') }}" class="btn btn-outline-info btn-sm">Stage 3: Education</a>
+                    <a href="{{ url_for('verification.stage4') }}" class="btn btn-outline-success btn-sm">Stage 4: Certification</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

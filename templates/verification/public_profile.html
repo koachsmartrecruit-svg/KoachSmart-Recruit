@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ slug_page.meta_title or (user.profile.full_name + ' - KoachSmart Coach') }}</title>
+    <meta name="description" content="{{ slug_page.meta_description or 'Professional sports coach on KoachSmart platform' }}">
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="{{ slug_page.meta_title or (user.profile.full_name + ' - KoachSmart Coach') }}">
+    <meta property="og:description" content="{{ slug_page.meta_description or 'Professional sports coach on KoachSmart platform' }}">
+    <meta property="og:type" content="profile">
+    <meta property="og:url" content="{{ request.url }}">
+    {% if user.profile_pic %}
+    <meta property="og:image" content="{{ url_for('static', filename='profile_pics/' + user.profile_pic) }}">
+    {% endif %}
+</head>
+<body class="bg-dark text-light">
+    <!-- Header -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark border-bottom">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="/">
+                <i class="fas fa-trophy text-warning me-2"></i>KoachSmart
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/">Home</a>
+                <a class="nav-link" href="/register">Join as Coach</a>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Main Content -->
+    <div class="container py-5">
+        <div class="row">
+            <!-- Profile Header -->
+            <div class="col-lg-8">
+                <div class="glass-card p-4 mb-4">
+                    <div class="row align-items-center">
+                        <div class="col-md-3 text-center">
+                            {% if user.profile_pic %}
+                                <img src="{{ url_for('static', filename='profile_pics/' + user.profile_pic) }}" 
+                                     class="rounded-circle img-fluid mb-3" style="width: 150px; height: 150px; object-fit: cover;">
+                            {% else %}
+                                <div class="bg-primary bg-opacity-20 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" 
+                                     style="width: 150px; height: 150px;">
+                                    <i class="fas fa-user fs-1 text-primary"></i>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-9">
+                            <h1 class="fw-bold mb-2">{{ user.profile.full_name or user.username }}</h1>
+                            <p class="text-primary fs-5 mb-2">
+                                <i class="fas fa-medal me-2"></i>{{ user.profile.sport or 'Sports Coach' }}
+                            </p>
+                            
+                            <!-- Badges -->
+                            <div class="mb-3">
+                                {% if stage %}
+                                    {% if stage.green_badge %}
+                                        <span class="badge bg-success me-2">🟢 Certified Coach</span>
+                                    {% elif stage.blue_badge %}
+                                        <span class="badge bg-info me-2">🔵 Blue Badge</span>
+                                    {% elif stage.purple_badge %}
+                                        <span class="badge bg-primary me-2">🟣 Purple Badge</span>
+                                    {% elif stage.orange_badge %}
+                                        <span class="badge bg-warning me-2">🟠 Orange Badge</span>
+                                    {% endif %}
+                                {% endif %}
+                                
+                                {% if profile and profile.is_verified %}
+                                    <span class="badge bg-success me-2">
+                                        <i class="fas fa-check-circle me-1"></i>Verified
+                                    </span>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Basic Info -->
+                            <div class="row g-3">
+                                {% if profile and profile.experience_years %}
+                                <div class="col-md-6">
+                                    <small class="text-muted d-block">Experience</small>
+                                    <span class="fw-bold">{{ profile.experience_years }} years</span>
+                                </div>
+                                {% endif %}
+                                
+                                {% if profile and profile.city %}
+                                <div class="col-md-6">
+                                    <small class="text-muted d-block">Location</small>
+                                    <span class="fw-bold">
+                                        <i class="fas fa-map-marker-alt me-1"></i>{{ profile.city }}
+                                        {% if profile.state %}, {{ profile.state }}{% endif %}
+                                    </span>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- About Section -->
+                {% if profile and profile.bio %}
+                <div class="glass-card p-4 mb-4">
+                    <h4 class="fw-bold mb-3">About</h4>
+                    <p class="text-muted">{{ profile.bio }}</p>
+                </div>
+                {% endif %}
+                
+                <!-- Certifications -->
+                {% if profile and profile.certifications %}
+                <div class="glass-card p-4 mb-4">
+                    <h4 class="fw-bold mb-3">Certifications</h4>
+                    <p class="text-muted">{{ profile.certifications }}</p>
+                </div>
+                {% endif %}
+                
+                <!-- Achievements -->
+                {% if slug_page.achievements %}
+                <div class="glass-card p-4 mb-4">
+                    <h4 class="fw-bold mb-3">Achievements</h4>
+                    <p class="text-muted">{{ slug_page.achievements }}</p>
+                </div>
+                {% endif %}
+                
+                <!-- Testimonials -->
+                {% if slug_page.testimonials %}
+                <div class="glass-card p-4 mb-4">
+                    <h4 class="fw-bold mb-3">Testimonials</h4>
+                    <p class="text-muted">{{ slug_page.testimonials }}</p>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Sidebar -->
+            <div class="col-lg-4">
+                <!-- Contact Card -->
+                <div class="glass-card p-4 mb-4">
+                    <h5 class="fw-bold mb-3">Contact Coach</h5>
+                    <div class="d-grid gap-2">
+                        <a href="/register" class="btn btn-primary">
+                            <i class="fas fa-comments me-2"></i>Send Message
+                        </a>
+                        <a href="/register" class="btn btn-outline-primary">
+                            <i class="fas fa-calendar me-2"></i>Book Session
+                        </a>
+                    </div>
+                    <p class="text-muted small mt-3">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Join KoachSmart to contact this coach
+                    </p>
+                </div>
+                
+                <!-- Stats -->
+                <div class="glass-card p-4 mb-4">
+                    <h5 class="fw-bold mb-3">Profile Stats</h5>
+                    <div class="row g-3 text-center">
+                        <div class="col-6">
+                            <div class="border-end">
+                                <div class="fs-4 fw-bold text-primary">{{ slug_page.page_views }}</div>
+                                <small class="text-muted">Profile Views</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="fs-4 fw-bold text-success">{{ profile.views if profile else 0 }}</div>
+                            <small class="text-muted">Total Views</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Verification Status -->
+                {% if stage %}
+                <div class="glass-card p-4 mb-4">
+                    <h5 class="fw-bold mb-3">Verification Status</h5>
+                    <div class="d-flex flex-column gap-2">
+                        <div class="d-flex align-items-center">
+                            <i class="fas {{ 'fa-check-circle text-success' if stage.stage_1_completed else 'fa-circle text-muted' }} me-2"></i>
+                            <span class="small">Basic Verification</span>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <i class="fas {{ 'fa-check-circle text-success' if stage.stage_2_completed else 'fa-circle text-muted' }} me-2"></i>
+                            <span class="small">Location Verified</span>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <i class="fas {{ 'fa-check-circle text-success' if stage.stage_3_completed else 'fa-circle text-muted' }} me-2"></i>
+                            <span class="small">Education Verified</span>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <i class="fas {{ 'fa-check-circle text-success' if stage.stage_4_completed else 'fa-circle text-muted' }} me-2"></i>
+                            <span class="small">Certified Coach</span>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Join CTA -->
+                <div class="glass-card p-4 text-center">
+                    <h5 class="fw-bold mb-3">Are you a coach?</h5>
+                    <p class="text-muted small mb-3">Create your professional profile and connect with opportunities</p>
+                    <a href="/register" class="btn btn-warning">
+                        <i class="fas fa-user-plus me-2"></i>Join KoachSmart
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Footer -->
+    <footer class="bg-dark border-top py-4">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <p class="text-muted mb-0">&copy; 2024 KoachSmart. All rights reserved.</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <a href="/" class="text-muted me-3">Home</a>
+                    <a href="/about" class="text-muted me-3">About</a>
+                    <a href="/contact" class="text-muted">Contact</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

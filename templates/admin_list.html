@@ -1,0 +1,229 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold text-primary mb-1">
+                <i class="fas fa-users me-2"></i>Admin Management
+            </h2>
+            <p class="text-muted mb-0">Manage regional admins and their permissions</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('admin_mgmt.create_admin') }}" class="btn btn-primary">
+                <i class="fas fa-user-plus me-2"></i>Create Admin
+            </a>
+            <a href="{{ url_for('admin_mgmt.dashboard') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Status</label>
+                    <select class="form-select" name="status" onchange="this.form.submit()">
+                        <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All Admins</option>
+                        <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active Only</option>
+                        <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive Only</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">City</label>
+                    <select class="form-select" name="city" onchange="this.form.submit()">
+                        <option value="">All Cities</option>
+                        {% for city in cities %}
+                        <option value="{{ city }}" {% if city_filter == city %}selected{% endif %}>{{ city }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <a href="{{ url_for('admin_mgmt.list_admins') }}" class="btn btn-outline-secondary w-100">
+                        <i class="fas fa-redo me-2"></i>Reset Filters
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Admin Table -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-0 py-3">
+            <h4 class="fw-bold mb-0">
+                <i class="fas fa-list me-2"></i>All Admins ({{ admins|length }})
+            </h4>
+        </div>
+        <div class="card-body p-0">
+            {% if admins %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="border-0">Admin</th>
+                            <th class="border-0">Role</th>
+                            <th class="border-0">Assigned Cities</th>
+                            <th class="border-0">Performance</th>
+                            <th class="border-0">Status</th>
+                            <th class="border-0">Last Login</th>
+                            <th class="border-0">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for admin in admins %}
+                        <tr>
+                            <td class="py-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-md bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3">
+                                        <i class="fas fa-user text-primary"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-semibold">{{ admin.user.username }}</div>
+                                        <small class="text-muted">{{ admin.user.email }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="py-3">
+                                {% if admin.role == 'super_admin' %}
+                                    <span class="badge bg-danger">Super Admin</span>
+                                {% else %}
+                                    <span class="badge bg-primary">Regional Admin</span>
+                                {% endif %}
+                            </td>
+                            <td class="py-3">
+                                {% if admin.assigned_cities %}
+                                    <div class="d-flex flex-wrap gap-1">
+                                        {% for city in admin.assigned_cities %}
+                                            <span class="badge bg-secondary">{{ city }}</span>
+                                        {% endfor %}
+                                    </div>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td class="py-3">
+                                <div>
+                                    <small class="text-muted">Verifications: {{ admin.total_verifications }}</small>
+                                </div>
+                                <div class="progress" style="height: 6px; width: 80px;">
+                                    <div class="progress-bar bg-success" style="width: {{ admin.get_approval_rate() }}%"></div>
+                                </div>
+                                <small class="text-muted">{{ admin.get_approval_rate()|round|int }}% approval</small>
+                            </td>
+                            <td class="py-3">
+                                {% if admin.is_active %}
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-circle me-1"></i>Active
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-danger">
+                                        <i class="fas fa-circle me-1"></i>Inactive
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td class="py-3">
+                                {% if admin.last_login %}
+                                    <small class="text-muted">{{ admin.last_login.strftime('%d %b %Y') }}</small>
+                                    <div><small class="text-muted">{{ admin.last_login.strftime('%I:%M %p') }}</small></div>
+                                {% else %}
+                                    <span class="text-muted">Never</span>
+                                {% endif %}
+                            </td>
+                            <td class="py-3">
+                                <div class="btn-group" role="group">
+                                    <a href="{{ url_for('admin_mgmt.edit_admin', admin_id=admin.id) }}" class="btn btn-sm btn-outline-primary" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="{{ url_for('admin_mgmt.admin_performance', admin_id=admin.id) }}" class="btn btn-sm btn-outline-info" title="Performance">
+                                        <i class="fas fa-chart-line"></i>
+                                    </a>
+                                    <a href="{{ url_for('admin_mgmt.admin_activity', admin_id=admin.id) }}" class="btn btn-sm btn-outline-secondary" title="Activity">
+                                        <i class="fas fa-history"></i>
+                                    </a>
+                                    <a href="{{ url_for('admin_mgmt.view_credentials', admin_id=admin.id) }}" class="btn btn-sm btn-outline-warning" title="Credentials">
+                                        <i class="fas fa-key"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="toggleAdminStatus({{ admin.id }})" title="Toggle Status">
+                                        <i class="fas fa-power-off"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-inbox fs-1 text-muted mb-3"></i>
+                <h5 class="text-muted">No admins found</h5>
+                <p class="text-muted">Create your first admin to get started</p>
+                <a href="{{ url_for('admin_mgmt.create_admin') }}" class="btn btn-primary">
+                    <i class="fas fa-user-plus me-2"></i>Create Admin
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.avatar-md {
+    width: 45px;
+    height: 45px;
+}
+
+.card {
+    transition: all 0.3s ease;
+}
+
+.table th {
+    font-weight: 600;
+    color: #6c757d;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.badge {
+    font-weight: 500;
+}
+
+.btn-group .btn {
+    border-radius: 6px !important;
+    margin-right: 4px;
+}
+
+.progress {
+    border-radius: 10px;
+}
+</style>
+
+<script>
+function toggleAdminStatus(adminId) {
+    if (confirm('Are you sure you want to toggle this admin status?')) {
+        fetch(`/admin-management/admin/${adminId}/toggle`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred');
+        });
+    }
+}
+</script>
+{% endblock %}

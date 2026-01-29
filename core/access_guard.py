@@ -10,6 +10,7 @@ def unified_access_guard():
     - Login protection
     - Coach onboarding completion
     - Employer onboarding completion
+    - Admin access
     """
 
     # Skip if not logged in
@@ -25,6 +26,12 @@ def unified_access_guard():
     # Public routes always allowed
     if endpoint in PUBLIC_ENDPOINTS:
         return
+
+    # -------------------------
+    # Admin users - allow all access
+    # -------------------------
+    if current_user.role == "admin":
+        return  # Admins can access everything
 
     # -------------------------
     # Coach enforcement

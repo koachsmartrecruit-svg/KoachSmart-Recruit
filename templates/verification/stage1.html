@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="glass-card p-4">
+                <div class="d-flex align-items-center mb-4">
+                    <div class="me-3">
+                        <div class="bg-warning bg-opacity-20 p-3 rounded-circle">
+                            <i class="fas fa-user-check text-warning fs-3"></i>
+                        </div>
+                    </div>
+                    <div>
+                        <h2 class="fw-bold mb-1">Stage 1: Basic Verification</h2>
+                        <p class="text-muted mb-0">Complete your basic information to earn the Orange Badge</p>
+                    </div>
+                </div>
+                
+                <!-- Progress Bar -->
+                <div class="progress mb-4" style="height: 8px;">
+                    <div class="progress-bar bg-warning" style="width: {{ (stage.calculate_stage_1_score() / 7 * 100) }}%"></div>
+                </div>
+                <p class="text-center text-muted mb-4">{{ stage.calculate_stage_1_score() }}/7 completed</p>
+                
+                <!-- Verification Items -->
+                <div class="row g-4">
+                    <!-- Name Verification -->
+                    <div class="col-md-6">
+                        <div class="border rounded p-3 {{ 'border-success bg-success bg-opacity-10' if stage.name_verified else 'border-secondary' }}">
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="fas {{ 'fa-check-circle text-success' if stage.name_verified else 'fa-circle text-muted' }} me-2"></i>
+                                <h6 class="mb-0">Full Name</h6>
+                            </div>
+                            {% if stage.name_verified %}
+                                <p class="text-success mb-0">✅ Verified</p>
+                            {% else %}
+                                <form method="post" action="{{ url_for('verification.stage1') }}">
+                                    <input type="text" class="form-control form-control-sm mb-2" 
+                                           name="full_name" placeholder="Enter your full name" required>
+                                    <button type="submit" class="btn btn-warning btn-sm">Verify Name</button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Phone Verification -->
+                    <div class="col-md-6">
+                        <div class="border rounded p-3 {{ 'border-success bg-success bg-opacity-10' if stage.phone_verified else 'border-secondary' }}">
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="fas {{ 'fa-check-circle text-success' if stage.phone_verified else 'fa-circle text-muted' }} me-2"></i>
+                                <h6 class="mb-0">Phone Number</h6>
+                            </div>
+                            {% if stage.phone_verified %}
+                                <p class="text-success mb-0">✅ Verified (+50 coins)</p>
+                            {% else %}
+                                <form method="post" action="{{ url_for('verification.verify_phone') }}">
+                                    <input type="tel" class="form-control form-control-sm mb-2" 
+                                           name="phone" placeholder="+91 9876543210" required>
+                                    <button type="submit" class="btn btn-warning btn-sm">Send OTP</button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Email Verification -->
+                    <div class="col-md-6">
+                        <div class="border rounded p-3 {{ 'border-success bg-success bg-opacity-10' if stage.email_verified else 'border-secondary' }}">
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="fas {{ 'fa-check-circle text-success' if stage.email_verified else 'fa-circle text-muted' }} me-2"></i>
+                                <h6 class="mb-0">Email Address</h6>
+                            </div>
+                            {% if stage.email_verified %}
+                                <p class="text-success mb-0">✅ Verified (+50 coins)</p>
+                            {% else %}
+                                <p class="text-muted mb-2">{{ current_user.email }}</p>
+                                <form method="post" action="{{ url_for('verification.verify_email') }}">
+                                    <button type="submit" class="btn btn-warning btn-sm">Send Verification Email</button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Aadhar Verification -->
+                    <div class="col-md-6">
+                        <div class="border rounded p-3 {{ 'border-success bg-success bg-opacity-10' if stage.aadhar_verified else 'border-secondary' }}">
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="fas {{ 'fa-check-circle text-success' if stage.aadhar_verified else 'fa-circle text-muted' }} me-2"></i>
+                                <h6 class="mb-0">Aadhar Number</h6>
+                            </div>
+                            {% if stage.aadhar_verified %}
+                                <p class="text-success mb-0">✅ Verified (+50 coins)</p>
+                            {% else %}
+                                <form method="post" action="{{ url_for('verification.verify_aadhar') }}">
+                                    <input type="text" class="form-control form-control-sm mb-2" 
+                                           name="aadhar" placeholder="1234 5678 9012" maxlength="12" required>
+                                    <button type="submit" class="btn btn-warning btn-sm">Verify Aadhar</button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Username Creation -->
+                    <div class="col-md-6">
+                        <div class="border rounded p-3 {{ 'border-success bg-success bg-opacity-10' if stage.username_created else 'border-secondary' }}">
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="fas {{ 'fa-check-circle text-success' if stage.username_created else 'fa-circle text-muted' }} me-2"></i>
+                                <h6 class="mb-0">Username</h6>
+                            </div>
+                            {% if stage.username_created %}
+                                <p class="text-success mb-0">✅ Created: {{ current_user.username }}</p>
+                            {% else %}
+                                <form method="post" action="{{ url_for('verification.create_username') }}">
+                                    <input type="text" class="form-control form-control-sm mb-2" 
+                                           name="username" placeholder="Choose username" required>
+                                    <button type="submit" class="btn btn-warning btn-sm">Create Username</button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Password Set -->
+                    <div class="col-md-6">
+                        <div class="border rounded p-3 border-success bg-success bg-opacity-10">
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="fas fa-check-circle text-success me-2"></i>
+                                <h6 class="mb-0">Password</h6>
+                            </div>
+                            <p class="text-success mb-0">✅ Already set during registration</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Stage Completion -->
+                {% if stage.stage_1_completed %}
+                    <div class="alert alert-success mt-4">
+                        <h5>🎉 Stage 1 Completed!</h5>
+                        <p>Orange Badge earned! You've received +100 bonus coins.</p>
+                        <p>Your coach profile is now live at: <strong>koachsmart.com/coach/{{ current_user.username }}</strong></p>
+                        <a href="{{ url_for('verification.stage2') }}" class="btn btn-primary">Continue to Stage 2</a>
+                    </div>
+                {% endif %}
+                
+                <!-- Navigation -->
+                <div class="d-flex justify-content-between mt-4">
+                    <a href="{{ url_for('verification.verification_dashboard') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                    </a>
+                    {% if stage.stage_1_completed %}
+                        <a href="{{ url_for('verification.stage2') }}" class="btn btn-primary">
+                            Next Stage <i class="fas fa-arrow-right ms-2"></i>
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

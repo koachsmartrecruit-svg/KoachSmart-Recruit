@@ -217,6 +217,9 @@
             <div class="glass-card p-4">
                 <h5 class="fw-bold mb-3">Quick Actions</h5>
                 <div class="d-grid gap-2">
+                    <a href="{{ url_for('verification.verification_dashboard') }}" class="btn btn-outline-light text-start">
+                        <i class="fas fa-certificate me-2 text-success"></i> Verification Center
+                    </a>
                     <a href="{{ url_for('coach.resume_builder') }}" class="btn btn-outline-light text-start"><i class="fas fa-magic me-2 text-info"></i> AI Resume Builder</a>
                     <button class="btn btn-outline-light text-start" onclick="getLocation()"><i class="fas fa-map-marker-alt me-2 text-danger"></i> Find Jobs Near Me</button>
                 </div>

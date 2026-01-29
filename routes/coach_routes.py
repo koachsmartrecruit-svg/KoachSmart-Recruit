@@ -196,7 +196,7 @@ def edit_profile():
         return redirect(url_for("employer.dashboard"))
     
     # For now, redirect to onboarding - you may want to create a separate edit template
-    return redirect(url_for("onboarding.unified"))
+    return redirect(url_for("onboarding.onboarding_unified"))
 
 
 # ---------------------------

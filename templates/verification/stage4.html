@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <!-- Progress Header -->
+            <div class="glass-card p-3 mb-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h2 class="fw-bold mb-0">🟢 Stage 4: Certified Coach</h2>
+                    <span class="badge bg-success fs-6">Green Badge</span>
+                </div>
+                <p class="text-muted mb-0">Complete advanced certifications to become a Certified Coach</p>
+            </div>
+            
+            <!-- Advanced Certifications -->
+            <div class="glass-card p-4 mb-4">
+                <h4 class="fw-bold mb-3">
+                    <i class="fas fa-award me-2"></i>Advanced Certifications
+                </h4>
+                
+                <form method="POST" action="{{ url_for('verification.add_certifications') }}">
+                    <div class="row g-4">
+                        <!-- First Aid Certification -->
+                        <div class="col-12">
+                            <div class="card bg-dark border-secondary">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h5 class="card-title mb-1">
+                                                <i class="fas fa-heart text-danger me-2"></i>First Aid Certification
+                                            </h5>
+                                            <p class="card-text text-muted mb-0">
+                                                Basic first aid and emergency response training
+                                            </p>
+                                            <small class="text-success">+550 coins</small>
+                                        </div>
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" 
+                                                   id="first_aid" name="first_aid" value="1"
+                                                   {% if stage.first_aid_certified %}checked{% endif %}>
+                                            <label class="form-check-label" for="first_aid">
+                                                Certified
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Coaching Principles -->
+                        <div class="col-12">
+                            <div class="card bg-dark border-secondary">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h5 class="card-title mb-1">
+                                                <i class="fas fa-chalkboard-teacher text-primary me-2"></i>Coaching Principles
+                                            </h5>
+                                            <p class="card-text text-muted mb-0">
+                                                Advanced coaching methodologies and sports psychology
+                                            </p>
+                                            <small class="text-success">+500 coins</small>
+                                        </div>
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" 
+                                                   id="coaching_principles" name="coaching_principles" value="1"
+                                                   {% if stage.coaching_principles_certified %}checked{% endif %}>
+                                            <label class="form-check-label" for="coaching_principles">
+                                                Certified
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Soft Skills -->
+                        <div class="col-12">
+                            <div class="card bg-dark border-secondary">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h5 class="card-title mb-1">
+                                                <i class="fas fa-users text-info me-2"></i>Soft Skills Training
+                                            </h5>
+                                            <p class="card-text text-muted mb-0">
+                                                Communication, leadership, and team management skills
+                                            </p>
+                                            <small class="text-success">+500 coins</small>
+                                        </div>
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" 
+                                                   id="soft_skills" name="soft_skills" value="1"
+                                                   {% if stage.soft_skills_certified %}checked{% endif %}>
+                                            <label class="form-check-label" for="soft_skills">
+                                                Certified
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid mt-4">
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="fas fa-certificate me-2"></i>Update Certifications
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- CV Upload -->
+            <div class="glass-card p-4 mb-4">
+                <h4 class="fw-bold mb-3">
+                    <i class="fas fa-file-pdf me-2"></i>Professional CV
+                </h4>
+                
+                <form method="POST" action="{{ url_for('verification.upload_document') }}" enctype="multipart/form-data">
+                    <input type="hidden" name="document_type" value="cv">
+                    
+                    <div class="mb-3">
+                        <label for="cv_file" class="form-label">Upload Professional CV</label>
+                        <input type="file" class="form-control" id="cv_file" name="document" 
+                               accept=".pdf,.doc,.docx" required>
+                        <div class="form-text">Upload your professional CV (PDF, DOC, DOCX - Max 10MB)</div>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-upload me-2"></i>Upload CV
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Certification Progress -->
+            <div class="glass-card p-4 mb-4">
+                <h4 class="fw-bold mb-3">
+                    <i class="fas fa-chart-line me-2"></i>Certification Progress
+                </h4>
+                
+                <div class="row g-3">
+                    <div class="col-6 col-md-3">
+                        <div class="text-center">
+                            <i class="fas fa-heart fs-3 {% if stage.first_aid_certified %}text-success{% else %}text-muted{% endif %}"></i>
+                            <div class="small mt-1">First Aid</div>
+                            {% if stage.first_aid_certified %}
+                                <small class="text-success">✓ Certified</small>
+                            {% else %}
+                                <small class="text-muted">Pending</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="col-6 col-md-3">
+                        <div class="text-center">
+                            <i class="fas fa-chalkboard-teacher fs-3 {% if stage.coaching_principles_certified %}text-success{% else %}text-muted{% endif %}"></i>
+                            <div class="small mt-1">Coaching</div>
+                            {% if stage.coaching_principles_certified %}
+                                <small class="text-success">✓ Certified</small>
+                            {% else %}
+                                <small class="text-muted">Pending</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="col-6 col-md-3">
+                        <div class="text-center">
+                            <i class="fas fa-users fs-3 {% if stage.soft_skills_certified %}text-success{% else %}text-muted{% endif %}"></i>
+                            <div class="small mt-1">Soft Skills</div>
+                            {% if stage.soft_skills_certified %}
+                                <small class="text-success">✓ Certified</small>
+                            {% else %}
+                                <small class="text-muted">Pending</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="col-6 col-md-3">
+                        <div class="text-center">
+                            <i class="fas fa-file-pdf fs-3 {% if stage.cv_uploaded %}text-success{% else %}text-muted{% endif %}"></i>
+                            <div class="small mt-1">CV</div>
+                            {% if stage.cv_uploaded %}
+                                <small class="text-success">✓ Uploaded</small>
+                            {% else %}
+                                <small class="text-muted">Pending</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Completion Status -->
+            {% if stage.stage_4_completed %}
+            <div class="glass-card p-4 mb-4 border border-success">
+                <div class="text-center">
+                    <i class="fas fa-trophy fs-1 text-success mb-3"></i>
+                    <h3 class="fw-bold text-success">🎉 Congratulations!</h3>
+                    <p class="text-muted mb-3">
+                        You are now a <strong>Certified Coach</strong> with the Green Badge!
+                    </p>
+                    <div class="d-flex justify-content-center gap-3">
+                        <span class="badge bg-success fs-6">Green Badge Earned</span>
+                        <span class="badge bg-warning fs-6">+2000 Bonus Coins</span>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <div class="text-center">
+                <a href="{{ url_for('verification.verification_dashboard') }}" 
+                   class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

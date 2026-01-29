@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <!-- Header -->
+            <div class="mb-4">
+                <h2 class="fw-bold text-primary mb-1">
+                    <i class="fas fa-user-plus me-2"></i>Create New Admin
+                </h2>
+                <p class="text-muted">Add a new regional admin to manage coaches in specific cities</p>
+            </div>
+
+            <!-- Form Card -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <form method="POST">
+                        <!-- Email -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Email Address</label>
+                            <input type="email" class="form-control form-control-lg" name="email" placeholder="admin@example.com" required>
+                            <small class="text-muted">The admin will receive login credentials at this email</small>
+                        </div>
+
+                        <!-- Name -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Full Name</label>
+                            <input type="text" class="form-control form-control-lg" name="name" placeholder="John Doe" required>
+                            <small class="text-muted">Admin's full name for identification</small>
+                        </div>
+
+                        <!-- Cities -->
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Assign Cities</label>
+                            <div class="border rounded p-3" style="max-height: 300px; overflow-y: auto;">
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" name="cities" value="Mumbai" id="city_mumbai">
+                                    <label class="form-check-label" for="city_mumbai">
+                                        <strong>Mumbai</strong>
+                                        <small class="text-muted d-block">Maharashtra</small>
+                                    </label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" name="cities" value="Pune" id="city_pune">
+                                    <label class="form-check-label" for="city_pune">
+                                        <strong>Pune</strong>
+                                        <small class="text-muted d-block">Maharashtra</small>
+                                    </label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" name="cities" value="Bangalore" id="city_bangalore">
+                                    <label class="form-check-label" for="city_bangalore">
+                                        <strong>Bangalore</strong>
+                                        <small class="text-muted d-block">Karnataka</small>
+                                    </label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" name="cities" value="Delhi" id="city_delhi">
+                                    <label class="form-check-label" for="city_delhi">
+                                        <strong>Delhi</strong>
+                                        <small class="text-muted d-block">National Capital</small>
+                                    </label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" name="cities" value="Hyderabad" id="city_hyderabad">
+                                    <label class="form-check-label" for="city_hyderabad">
+                                        <strong>Hyderabad</strong>
+                                        <small class="text-muted d-block">Telangana</small>
+                                    </label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" name="cities" value="Chennai" id="city_chennai">
+                                    <label class="form-check-label" for="city_chennai">
+                                        <strong>Chennai</strong>
+                                        <small class="text-muted d-block">Tamil Nadu</small>
+                                    </label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" name="cities" value="Kolkata" id="city_kolkata">
+                                    <label class="form-check-label" for="city_kolkata">
+                                        <strong>Kolkata</strong>
+                                        <small class="text-muted d-block">West Bengal</small>
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="cities" value="Ahmedabad" id="city_ahmedabad">
+                                    <label class="form-check-label" for="city_ahmedabad">
+                                        <strong>Ahmedabad</strong>
+                                        <small class="text-muted d-block">Gujarat</small>
+                                    </label>
+                                </div>
+                            </div>
+                            <small class="text-muted d-block mt-2">Select at least one city for this admin to manage</small>
+                        </div>
+
+                        <!-- Info Box -->
+                        <div class="alert alert-info border-0" role="alert">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>What happens next:</strong>
+                            <ul class="mb-0 mt-2">
+                                <li>Admin account will be created with temporary password</li>
+                                <li>Login credentials will be sent to the email address</li>
+                                <li>Admin can change password on first login</li>
+                                <li>API credentials will be generated automatically</li>
+                            </ul>
+                        </div>
+
+                        <!-- Buttons -->
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg flex-grow-1">
+                                <i class="fas fa-check me-2"></i>Create Admin
+                            </button>
+                            <a href="{{ url_for('admin_mgmt.list_admins') }}" class="btn btn-outline-secondary btn-lg">
+                                <i class="fas fa-times me-2"></i>Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Help Section -->
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="fw-bold mb-0">
+                        <i class="fas fa-question-circle me-2"></i>Admin Roles & Permissions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <h6 class="fw-bold">Regional Admin Permissions</h6>
+                            <ul class="small text-muted">
+                                <li>✓ Verify coaches in assigned cities</li>
+                                <li>✓ Approve/reject documents</li>
+                                <li>✓ Handle coach appeals</li>
+                                <li>✓ View local analytics</li>
+                                <li>✓ Generate local reports</li>
+                                <li>✗ Cannot manage other admins</li>
+                                <li>✗ Cannot access other cities</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="fw-bold">What They Can Access</h6>
+                            <ul class="small text-muted">
+                                <li>✓ Coach verification dashboard</li>
+                                <li>✓ Document review interface</li>
+                                <li>✓ Local performance metrics</li>
+                                <li>✓ Activity logs (their own)</li>
+                                <li>✓ API credentials</li>
+                                <li>✓ Local reports & exports</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.form-check {
+    padding-left: 0;
+}
+
+.form-check-input {
+    margin-left: 0;
+    margin-right: 0.75rem;
+}
+
+.form-check-label {
+    margin-bottom: 0;
+    cursor: pointer;
+}
+
+.alert {
+    background-color: #e7f3ff;
+    border-color: #b3d9ff;
+    color: #004085;
+}
+
+.alert ul {
+    padding-left: 1.5rem;
+}
+
+.alert li {
+    margin-bottom: 0.5rem;
+}
+</style>
+{% endblock %}

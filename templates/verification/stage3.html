@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <!-- Progress Header -->
+            <div class="glass-card p-3 mb-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h2 class="fw-bold mb-0">🔵 Stage 3: Education & Experience</h2>
+                    <span class="badge bg-info fs-6">Blue Badge</span>
+                </div>
+                <p class="text-muted mb-0">Add your qualifications and coaching experience</p>
+            </div>
+            
+            <!-- Education Form -->
+            <div class="glass-card p-4 mb-4">
+                <h4 class="fw-bold mb-3">
+                    <i class="fas fa-graduation-cap me-2"></i>Education Details
+                </h4>
+                
+                <form method="POST" action="{{ url_for('verification.add_education') }}">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="qualification" class="form-label">Highest Qualification</label>
+                            <select class="form-select" id="qualification" name="qualification" required>
+                                <option value="">Select Qualification</option>
+                                <option value="High School">High School</option>
+                                <option value="Diploma">Diploma</option>
+                                <option value="Bachelor's Degree">Bachelor's Degree</option>
+                                <option value="Master's Degree">Master's Degree</option>
+                                <option value="PhD">PhD</option>
+                                <option value="Professional Certificate">Professional Certificate</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="specialization" class="form-label">Specialization</label>
+                            <input type="text" class="form-control" id="specialization" name="specialization" 
+                                   placeholder="e.g., Sports Science, Physical Education">
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid mt-3">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Save Education Details
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Experience Form -->
+            <div class="glass-card p-4 mb-4">
+                <h4 class="fw-bold mb-3">
+                    <i class="fas fa-trophy me-2"></i>Coaching Experience
+                </h4>
+                
+                <form method="POST" action="{{ url_for('verification.add_experience') }}">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="experience_years" class="form-label">Years of Experience</label>
+                            <select class="form-select" id="experience_years" name="experience_years" required>
+                                <option value="">Select Experience</option>
+                                <option value="0">Less than 1 year</option>
+                                <option value="1">1 year</option>
+                                <option value="2">2 years</option>
+                                <option value="3">3 years</option>
+                                <option value="4">4 years</option>
+                                <option value="5">5+ years</option>
+                                <option value="10">10+ years</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-12">
+                            <label for="experience_details" class="form-label">Experience Details</label>
+                            <textarea class="form-control" id="experience_details" name="experience_details" 
+                                      rows="4" placeholder="Describe your coaching experience, achievements, and specialties..."></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid mt-3">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Save Experience Details
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Document Upload -->
+            <div class="glass-card p-4 mb-4">
+                <h4 class="fw-bold mb-3">
+                    <i class="fas fa-file-upload me-2"></i>Upload Documents
+                </h4>
+                
+                <form method="POST" action="{{ url_for('verification.upload_document') }}" enctype="multipart/form-data">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="document_type" class="form-label">Document Type</label>
+                            <select class="form-select" id="document_type" name="document_type" required>
+                                <option value="">Select Type</option>
+                                <option value="education">Education Certificate</option>
+                                <option value="certification">Coaching Certification</option>
+                                <option value="experience">Experience Proof</option>
+                                <option value="id_proof">ID Proof</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="document" class="form-label">Choose File</label>
+                            <input type="file" class="form-control" id="document" name="document" 
+                                   accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" required>
+                            <div class="form-text">Supported: PDF, DOC, DOCX, JPG, PNG (Max 10MB)</div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid mt-3">
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-upload me-2"></i>Upload Document
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Uploaded Documents -->
+            {% if documents %}
+            <div class="glass-card p-4 mb-4">
+                <h4 class="fw-bold mb-3">
+                    <i class="fas fa-folder me-2"></i>Uploaded Documents
+                </h4>
+                
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover">
+                        <thead>
+                            <tr>
+                                <th>Document Type</th>
+                                <th>File Name</th>
+                                <th>Status</th>
+                                <th>Uploaded</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for doc in documents %}
+                            <tr>
+                                <td>
+                                    <span class="badge bg-secondary">{{ doc.document_type.title() }}</span>
+                                </td>
+                                <td>{{ doc.original_filename }}</td>
+                                <td>
+                                    {% if doc.verification_status == 'verified' %}
+                                        <span class="badge bg-success">Verified</span>
+                                    {% elif doc.verification_status == 'rejected' %}
+                                        <span class="badge bg-danger">Rejected</span>
+                                    {% else %}
+                                        <span class="badge bg-warning">Pending</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ doc.uploaded_at.strftime('%d %b %Y') }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Progress Indicators -->
+            <div class="glass-card p-3">
+                <h5 class="fw-bold mb-3">Stage 3 Progress</h5>
+                <div class="row g-2">
+                    <div class="col-6 col-md-3">
+                        <div class="text-center">
+                            <i class="fas fa-graduation-cap fs-4 {% if stage.education_qualification_added %}text-success{% else %}text-muted{% endif %}"></i>
+                            <div class="small">Education</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="text-center">
+                            <i class="fas fa-trophy fs-4 {% if stage.experience_added %}text-success{% else %}text-muted{% endif %}"></i>
+                            <div class="small">Experience</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="text-center">
+                            <i class="fas fa-file-upload fs-4 {% if stage.education_document_uploaded %}text-success{% else %}text-muted{% endif %}"></i>
+                            <div class="small">Documents</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="text-center">
+                            <i class="fas fa-certificate fs-4 {% if stage.certification_document_uploaded %}text-success{% else %}text-muted{% endif %}"></i>
+                            <div class="small">Certificates</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="text-center mt-4">
+                <a href="{{ url_for('verification.verification_dashboard') }}" 
+                   class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

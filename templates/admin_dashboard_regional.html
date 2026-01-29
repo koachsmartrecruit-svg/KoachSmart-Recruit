@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+
+{% block title %}Regional Admin Dashboard - KoachSmart{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-12">
+            <h2 class="mb-4">Regional Admin Dashboard</h2>
+            
+            <!-- Admin Info -->
+            <div class="alert alert-info">
+                <strong>Welcome, {{ admin.user.username }}!</strong><br>
+                Assigned Cities: <strong>{{ cities | join(', ') }}</strong>
+            </div>
+
+            <!-- Statistics Cards -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card text-center border-0 bg-light">
+                        <div class="card-body">
+                            <h2 class="text-primary">{{ total_verifications }}</h2>
+                            <p class="card-text">Total Verifications</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center border-0 bg-light">
+                        <div class="card-body">
+                            <h2 class="text-success">{{ total_approvals }}</h2>
+                            <p class="card-text">Approvals</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center border-0 bg-light">
+                        <div class="card-body">
+                            <h2 class="text-danger">{{ total_rejections }}</h2>
+                            <p class="card-text">Rejections</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center border-0 bg-light">
+                        <div class="card-body">
+                            <h2 class="text-warning">{{ "%.1f"|format(approval_rate) }}%</h2>
+                            <p class="card-text">Approval Rate</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <div class="card border-0">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">Quick Actions</h5>
+                        </div>
+                        <div class="card-body">
+                            <a href="{{ url_for('admin_mgmt.admin_activity', admin_id=admin.id) }}" class="btn btn-outline-primary">
+                                <i class="fas fa-history"></i> View Activity Log
+                            </a>
+                            <a href="{{ url_for('admin_mgmt.admin_performance', admin_id=admin.id) }}" class="btn btn-outline-primary">
+                                <i class="fas fa-chart-bar"></i> View Performance
+                            </a>
+                            <a href="{{ url_for('admin_mgmt.view_credentials', admin_id=admin.id) }}" class="btn btn-outline-primary">
+                                <i class="fas fa-key"></i> View Credentials
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activities -->
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="card border-0">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0">Recent Activities</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if recent_activities %}
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Date & Time</th>
+                                            <th>Action</th>
+                                            <th>Entity Type</th>
+                                            <th>Entity ID</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for log in recent_activities %}
+                                        <tr>
+                                            <td><small>{{ log.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</small></td>
+                                            <td><span class="badge bg-info">{{ log.action.replace('_', ' ').title() }}</span></td>
+                                            <td><span class="badge bg-secondary">{{ log.entity_type.title() }}</span></td>
+                                            <td><code>{{ log.entity_id }}</code></td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <p class="text-muted">No recent activities</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Permissions Info -->
+            <div class="row mt-4">
+                <div class="col-md-12">
+                    <div class="alert alert-secondary">
+                        <h6>Your Permissions:</h6>
+                        <ul class="mb-0">
+                            {% if admin.permissions.get('verify_coaches') %}<li>✓ Verify Coaches</li>{% endif %}
+                            {% if admin.permissions.get('approve_documents') %}<li>✓ Approve Documents</li>{% endif %}
+                            {% if admin.permissions.get('view_analytics') %}<li>✓ View Analytics</li>{% endif %}
+                            {% if admin.permissions.get('handle_appeals') %}<li>✓ Handle Appeals</li>{% endif %}
+                            {% if admin.permissions.get('send_notifications') %}<li>✓ Send Notifications</li>{% endif %}
+                            {% if admin.permissions.get('export_reports') %}<li>✓ Export Reports</li>{% endif %}
+                            {% if not admin.permissions.get('manage_admins') %}<li>✗ Cannot Manage Admins</li>{% endif %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        border-radius: 8px;
+    }
+    .card-header {
+        border-radius: 8px 8px 0 0;
+    }
+    code {
+        background-color: #f5f5f5;
+        padding: 2px 6px;
+        border-radius: 3px;
+        color: #d63384;
+    }
+</style>
+{% endblock %}

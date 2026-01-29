@@ -32,10 +32,15 @@ class User(UserMixin, db.Model):
     # Coach onboarding
     onboarding_step = db.Column(db.Integer, default=1)
     onboarding_completed = db.Column(db.Boolean, default=False)
+    onboarding_completed_at = db.Column(db.DateTime, nullable=True)
 
     # Employer onboarding
     employer_onboarding_step = db.Column(db.Integer, default=1)
     employer_onboarding_completed = db.Column(db.Boolean, default=False)
+    
+    # Membership
+    membership_status = db.Column(db.String(50), default='free')
+    membership_expires_at = db.Column(db.DateTime, nullable=True)
 
     # Referral
     referral_code = db.Column(db.String(20), unique=True)

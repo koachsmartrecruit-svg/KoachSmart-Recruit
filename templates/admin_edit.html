@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Admin - KoachSmart{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Edit Admin: {{ admin.user.email }}</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" class="needs-validation" novalidate>
+                        <!-- Admin Info (Read-only) -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label">Email</label>
+                                <input type="email" class="form-control" value="{{ admin.user.email }}" readonly>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Name</label>
+                                <input type="text" class="form-control" value="{{ admin.user.username }}" readonly>
+                            </div>
+                        </div>
+
+                        <!-- Role Info -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label">Role</label>
+                                <input type="text" class="form-control" value="{{ admin.role.replace('_', ' ').title() }}" readonly>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Status</label>
+                                <span class="badge {% if admin.is_active %}bg-success{% else %}bg-danger{% endif %}">
+                                    {% if admin.is_active %}Active{% else %}Inactive{% endif %}
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- City Assignment -->
+                        <div class="mb-4">
+                            <label class="form-label">Assigned Cities</label>
+                            <div class="card bg-light p-3">
+                                {% set cities = ['Mumbai', 'Pune', 'Nagpur', 'Aurangabad', 'Nashik', 'Kolhapur', 'Solapur', 'Amravati'] %}
+                                {% for city in cities %}
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="cities" value="{{ city }}" 
+                                        id="city_{{ loop.index }}" {% if city in admin.assigned_cities %}checked{% endif %}>
+                                    <label class="form-check-label" for="city_{{ loop.index }}">
+                                        {{ city }}
+                                    </label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <small class="text-muted">Select cities this admin can manage</small>
+                        </div>
+
+                        <!-- Permissions -->
+                        <div class="mb-4">
+                            <label class="form-label">Permissions</label>
+                            <div class="card bg-light p-3">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="verify_coaches" 
+                                                id="verify_coaches" {% if admin.permissions.get('verify_coaches') %}checked{% endif %}>
+                                            <label class="form-check-label" for="verify_coaches">
+                                                Verify Coaches
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="approve_documents" 
+                                                id="approve_documents" {% if admin.permissions.get('approve_documents') %}checked{% endif %}>
+                                            <label class="form-check-label" for="approve_documents">
+                                                Approve Documents
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="manage_admins" 
+                                                id="manage_admins" {% if admin.permissions.get('manage_admins') %}checked{% endif %}>
+                                            <label class="form-check-label" for="manage_admins">
+                                                Manage Admins
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="view_analytics" 
+                                                id="view_analytics" {% if admin.permissions.get('view_analytics') %}checked{% endif %}>
+                                            <label class="form-check-label" for="view_analytics">
+                                                View Analytics
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="handle_appeals" 
+                                                id="handle_appeals" {% if admin.permissions.get('handle_appeals') %}checked{% endif %}>
+                                            <label class="form-check-label" for="handle_appeals">
+                                                Handle Appeals
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="send_notifications" 
+                                                id="send_notifications" {% if admin.permissions.get('send_notifications') %}checked{% endif %}>
+                                            <label class="form-check-label" for="send_notifications">
+                                                Send Notifications
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="export_reports" 
+                                                id="export_reports" {% if admin.permissions.get('export_reports') %}checked{% endif %}>
+                                            <label class="form-check-label" for="export_reports">
+                                                Export Reports
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Activity Stats -->
+                        <div class="row mb-4">
+                            <div class="col-md-3">
+                                <div class="card text-center">
+                                    <div class="card-body">
+                                        <h5 class="card-title">{{ admin.total_verifications }}</h5>
+                                        <p class="card-text small">Verifications</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card text-center">
+                                    <div class="card-body">
+                                        <h5 class="card-title">{{ admin.total_approvals }}</h5>
+                                        <p class="card-text small">Approvals</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card text-center">
+                                    <div class="card-body">
+                                        <h5 class="card-title">{{ admin.total_rejections }}</h5>
+                                        <p class="card-text small">Rejections</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card text-center">
+                                    <div class="card-body">
+                                        <h5 class="card-title">{{ "%.1f"|format(admin.get_approval_rate()) }}%</h5>
+                                        <p class="card-text small">Approval Rate</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Buttons -->
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Save Changes
+                            </button>
+                            <a href="{{ url_for('admin_mgmt.list_admins') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Back
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        border: none;
+        border-radius: 8px;
+    }
+    .card-header {
+        border-radius: 8px 8px 0 0;
+    }
+    .form-check {
+        margin-bottom: 0.75rem;
+    }
+</style>
+{% endblock %}

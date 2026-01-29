@@ -90,6 +90,80 @@ def new_job():
 
     return render_template("job_new.html")
 
+@employer_bp.route("/job/<int:job_id>/edit", methods=["GET", "POST"])
+@login_required
+def edit_job(job_id):
+    """Edit job posting"""
+    if current_user.role != "employer":
+        return redirect(url_for("employer.dashboard"))
+    
+    job = Job.query.get_or_404(job_id)
+    
+    # Ensure only job owner can edit
+    if job.employer_id != current_user.id:
+        flash("You can only edit your own jobs", "error")
+        return redirect(url_for("employer.dashboard"))
+    
+    if request.method == "POST":
+        job.title = request.form.get("title")
+        job.sport = request.form.get("sport")
+        job.description = request.form.get("description")
+        job.city = request.form.get("city")
+        
+        db.session.commit()
+        flash("Job updated successfully", "success")
+        return redirect(url_for("employer.dashboard"))
+    
+    return render_template("job_edit.html", job=job)
+
+@employer_bp.route("/job/<int:job_id>/toggle", methods=["POST"])
+@login_required
+def toggle_job_status(job_id):
+    """Toggle job active/inactive status"""
+    if current_user.role != "employer":
+        return redirect(url_for("employer.dashboard"))
+    
+    job = Job.query.get_or_404(job_id)
+    
+    # Ensure only job owner can toggle
+    if job.employer_id != current_user.id:
+        flash("You can only manage your own jobs", "error")
+        return redirect(url_for("employer.dashboard"))
+    
+    job.is_active = not job.is_active
+    db.session.commit()
+    
+    status = "activated" if job.is_active else "deactivated"
+    flash(f"Job {status} successfully", "success")
+    return redirect(url_for("employer.dashboard"))
+
+@employer_bp.route("/application/<int:app_id>/status/<new_status>", methods=["GET", "POST"])
+@login_required
+def update_status(app_id, new_status):
+    """Update application status"""
+    if current_user.role != "employer":
+        return redirect(url_for("employer.dashboard"))
+    
+    app = Application.query.get_or_404(app_id)
+    
+    # Ensure only job owner can update status
+    if app.job.employer_id != current_user.id:
+        flash("You can only manage applications for your jobs", "error")
+        return redirect(url_for("employer.dashboard"))
+    
+    app.status = new_status
+    
+    # Handle interview scheduling
+    if new_status == "Interview" and request.method == "POST":
+        meeting_link = request.form.get("meeting_link")
+        if meeting_link:
+            # You could store this in a separate table or add a field to Application
+            flash(f"Interview scheduled. Meeting link: {meeting_link}", "success")
+    
+    db.session.commit()
+    flash(f"Application status updated to {new_status}", "success")
+    return redirect(url_for("employer.dashboard"))
+
 @employer_bp.route("/dashboard")
 @login_required
 def dashboard():

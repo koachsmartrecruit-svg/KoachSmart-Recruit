@@ -105,8 +105,10 @@ def create_app():
     from routes.employer_routes import employer_bp
     from routes.onboarding_routes import onboarding_bp
     from routes.admin_routes import admin_bp
+    from routes.admin_management_routes import admin_mgmt_bp
     from routes.payment_routes import payment_bp
     from routes.chat_routes import chat_bp
+    from routes.verification_routes import verification_bp
 
     app.register_blueprint(public_bp)
     app.register_blueprint(auth_bp)
@@ -114,7 +116,9 @@ def create_app():
     app.register_blueprint(employer_bp, url_prefix='/employer')
     app.register_blueprint(onboarding_bp)
     app.register_blueprint(admin_bp)
+    app.register_blueprint(admin_mgmt_bp)
     app.register_blueprint(payment_bp)
     app.register_blueprint(chat_bp)
+    app.register_blueprint(verification_bp)
 
     return app

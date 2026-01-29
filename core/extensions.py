@@ -12,7 +12,7 @@ db = SQLAlchemy()
 # Authentication
 # -----------------------------
 login_manager = LoginManager()
-login_manager.login_view = "login"
+login_manager.login_view = "auth.login"
 
 # -----------------------------
 # Mail
@@ -23,13 +23,9 @@ mail = Mail()
 # Realtime / SocketIO
 # -----------------------------
 socketio = SocketIO(cors_allowed_origins="*")
-from flask_login import LoginManager
-from models.user import User
-
-login_manager = LoginManager()
-login_manager.login_view = "auth.login"
 
 
 @login_manager.user_loader
 def load_user(user_id):
+    from models.user import User
     return User.query.get(int(user_id))
