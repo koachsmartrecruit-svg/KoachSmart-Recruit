@@ -84,14 +84,8 @@ def login():
             
             # Redirect based on user role
             if user.role == "admin":
-                # Check if super admin or regional admin
-                from models.admin import Admin
-                admin = Admin.query.filter_by(user_id=user.id).first()
-                if admin and admin.role == "super_admin":
-                    return redirect(url_for("admin.super_admin"))
-                else:
-                    # Regional admin - go to admin dashboard
-                    return redirect(url_for("admin_mgmt.dashboard"))
+                # All admins go to the new admin management dashboard
+                return redirect(url_for("admin_mgmt.dashboard"))
             elif user.role == "employer":
                 return redirect(url_for("employer.dashboard"))
             else:  # coach or default
@@ -177,7 +171,7 @@ def process_google_user(google_id, email, name, picture):
         
         # Redirect based on role
         if user.role == "admin":
-            return redirect(url_for("admin.super_admin"))
+            return redirect(url_for("admin_mgmt.dashboard"))
         elif user.role == "employer":
             return redirect(url_for("employer.dashboard"))
         else:
@@ -335,7 +329,7 @@ def select_role():
         
         # Redirect based on selected role
         if role == "admin":
-            return redirect(url_for("admin.super_admin"))
+            return redirect(url_for("admin_mgmt.dashboard"))
         elif role == "employer":
             return redirect(url_for("employer.dashboard"))
         else:

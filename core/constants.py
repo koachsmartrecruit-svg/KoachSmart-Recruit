@@ -39,11 +39,11 @@ PUBLIC_ENDPOINTS = {
     # Onboarding
     "onboarding.onboarding_unified", "onboarding.hirer_onboarding",
 
-    # Admin routes (allow admin access)
-    "admin.super_admin", "admin.admin_users", "admin.admin_jobs", "admin.admin_hirers",
-    "admin.admin_coach_verification", "admin.admin_coach_verification_detail",
-    "admin.verify_coach", "admin.reject_coach", "admin.verify_document",
-    "admin.update_hirer_review", "admin.admin_change_role",
+    # Admin management routes (allow admin access)
+    "admin_mgmt.dashboard", "admin_mgmt.list_admins", "admin_mgmt.create_admin", 
+    "admin_mgmt.edit_admin", "admin_mgmt.toggle_admin_status", "admin_mgmt.delete_admin",
+    "admin_mgmt.view_credentials", "admin_mgmt.regenerate_credentials", 
+    "admin_mgmt.admin_activity", "admin_mgmt.admin_performance", "admin_mgmt.admin_reports",
 
     # Verification routes (allow access)
     "verification.verification_dashboard", "verification.stage1", "verification.stage2",
