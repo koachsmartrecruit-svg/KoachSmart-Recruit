@@ -1,0 +1,343 @@
+{% extends "base.html" %}
+
+{% block title %}Membership Plans - KoachSmart{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-5" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh;">
+    <div class="container">
+        <!-- Header -->
+        <div class="text-center text-white mb-5">
+            <h1 class="display-4 fw-bold mb-3">Choose Your Plan</h1>
+            <p class="lead">Unlock your potential with the right membership plan</p>
+        </div>
+
+        <!-- Current Membership Status -->
+        {% if current_membership %}
+        <div class="row justify-content-center mb-5">
+            <div class="col-md-8">
+                <div class="card border-0 shadow-lg">
+                    <div class="card-body text-center py-4">
+                        <h5 class="card-title text-primary mb-3">
+                            <i class="fas fa-crown me-2"></i>Current Plan: {{ current_membership.plan_name }}
+                        </h5>
+                        {% if current_membership.is_active %}
+                            <p class="text-success mb-2">
+                                <i class="fas fa-check-circle me-1"></i>Active
+                                {% if current_membership.days_remaining < 999999 %}
+                                    - {{ current_membership.days_remaining }} days remaining
+                                {% endif %}
+                            </p>
+                        {% else %}
+                            <p class="text-danger mb-2">
+                                <i class="fas fa-exclamation-circle me-1"></i>Expired
+                            </p>
+                        {% endif %}
+                        <a href="{{ url_for('membership.dashboard') }}" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-tachometer-alt me-1"></i>View Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Coach Plans -->
+        {% if not user or user.role == 'coach' %}
+        <div class="mb-5">
+            <h2 class="text-center text-white mb-4">
+                <i class="fas fa-running me-2"></i>Coach Plans
+            </h2>
+            <div class="row g-4">
+                {% for plan in coach_plans %}
+                <div class="col-lg-4 col-md-6">
+                    <div class="card h-100 border-0 shadow-lg {% if plan.name == 'Premium' %}border-warning{% elif plan.name == 'Pro' %}border-success{% endif %}">
+                        {% if plan.name == 'Premium' %}
+                        <div class="card-header bg-warning text-dark text-center py-3">
+                            <i class="fas fa-star me-1"></i>Most Popular
+                        </div>
+                        {% elif plan.name == 'Pro' %}
+                        <div class="card-header bg-success text-white text-center py-3">
+                            <i class="fas fa-crown me-1"></i>Best Value
+                        </div>
+                        {% endif %}
+                        
+                        <div class="card-body text-center p-4">
+                            <h3 class="card-title text-primary mb-3">{{ plan.name }}</h3>
+                            <div class="mb-4">
+                                {% if plan.price == 0 %}
+                                    <span class="display-4 fw-bold text-success">Free</span>
+                                {% else %}
+                                    <span class="display-4 fw-bold text-primary">₹{{ plan.price }}</span>
+                                    <span class="text-muted">/month</span>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Features -->
+                            <ul class="list-unstyled mb-4">
+                                {% if plan.features.browse_jobs %}
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Browse Jobs</li>
+                                {% endif %}
+                                
+                                {% if plan.monthly_applications == 999999 %}
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Unlimited Applications</li>
+                                {% else %}
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i>{{ plan.monthly_applications }} Applications/month</li>
+                                {% endif %}
+                                
+                                {% if plan.features.featured_profile %}
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Featured Profile</li>
+                                {% else %}
+                                <li class="mb-2"><i class="fas fa-times text-muted me-2"></i>Featured Profile</li>
+                                {% endif %}
+                                
+                                {% if plan.features.direct_messaging %}
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Direct Messaging</li>
+                                {% else %}
+                                <li class="mb-2"><i class="fas fa-times text-muted me-2"></i>Direct Messaging</li>
+                                {% endif %}
+                                
+                                {% if plan.features.analytics %}
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Analytics Dashboard</li>
+                                {% else %}
+                                <li class="mb-2"><i class="fas fa-times text-muted me-2"></i>Analytics Dashboard</li>
+                                {% endif %}
+                                
+                                {% if plan.features.coaching_tools %}
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Coaching Tools</li>
+                                {% else %}
+                                <li class="mb-2"><i class="fas fa-times text-muted me-2"></i>Coaching Tools</li>
+                                {% endif %}
+                                
+                                {% if plan.features.priority_support %}
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Priority Support</li>
+                                {% else %}
+                                <li class="mb-2"><i class="fas fa-times text-muted me-2"></i>Priority Support</li>
+                                {% endif %}
+                            </ul>
+                            
+                            <!-- Action Button -->
+                            {% if user and current_membership and current_membership.plan_name == plan.name and current_membership.is_active %}
+                                <button class="btn btn-secondary btn-lg w-100" disabled>
+                                    <i class="fas fa-check me-1"></i>Current Plan
+                                </button>
+                            {% elif user %}
+                                <a href="{{ url_for('membership.subscribe', plan_id=plan.id) }}" 
+                                   class="btn {% if plan.name == 'Premium' %}btn-warning{% elif plan.name == 'Pro' %}btn-success{% else %}btn-primary{% endif %} btn-lg w-100">
+                                    {% if plan.price == 0 %}
+                                        <i class="fas fa-gift me-1"></i>Get Started
+                                    {% else %}
+                                        <i class="fas fa-credit-card me-1"></i>Subscribe Now
+                                    {% endif %}
+                                </a>
+                            {% else %}
+                                <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-lg w-100">
+                                    <i class="fas fa-sign-in-alt me-1"></i>Login to Subscribe
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Employer Plans -->
+        {% if not user or user.role == 'employer' %}
+        <div class="mb-5">
+            <h2 class="text-center text-white mb-4">
+                <i class="fas fa-building me-2"></i>Employer Plans
+            </h2>
+            <div class="row g-4">
+                {% for plan in employer_plans %}
+                <div class="col-lg-4 col-md-6">
+                    <div class="card h-100 border-0 shadow-lg {% if plan.name == 'Premium' %}border-warning{% elif plan.name == 'Enterprise' %}border-success{% endif %}">
+                        {% if plan.name == 'Premium' %}
+                        <div class="card-header bg-warning text-dark text-center py-3">
+                            <i class="fas fa-star me-1"></i>Most Popular
+                        </div>
+                        {% elif plan.name == 'Enterprise' %}
+                        <div class="card-header bg-success text-white text-center py-3">
+                            <i class="fas fa-crown me-1"></i>Enterprise
+                        </div>
+                        {% endif %}
+                        
+                        <div class="card-body text-center p-4">
+                            <h3 class="card-title text-primary mb-3">{{ plan.name }}</h3>
+                            <div class="mb-4">
+                                {% if plan.price == 0 and plan.name == 'Free' %}
+                                    <span class="display-4 fw-bold text-success">Free</span>
+                                {% elif plan.name == 'Enterprise' %}
+                                    <span class="display-6 fw-bold text-primary">Custom</span>
+                                    <span class="text-muted d-block">Contact Sales</span>
+                                {% else %}
+                                    <span class="display-4 fw-bold text-primary">₹{{ plan.price }}</span>
+                                    <span class="text-muted">/month</span>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Features -->
+                            <ul class="list-unstyled mb-4">
+                                {% if plan.features.browse_coaches %}
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Browse Coaches</li>
+                                {% endif %}
+                                
+                                {% if plan.monthly_job_posts == 999999 %}
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Unlimited Job Posts</li>
+                                {% else %}
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i>{{ plan.monthly_job_posts }} Job Posts/month</li>
+                                {% endif %}
+                                
+                                {% if plan.features.featured_jobs %}
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Featured Job Posts</li>
+                                {% else %}
+                                <li class="mb-2"><i class="fas fa-times text-muted me-2"></i>Featured Job Posts</li>
+                                {% endif %}
+                                
+                                {% if plan.features.bulk_messaging %}
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Bulk Messaging</li>
+                                {% else %}
+                                <li class="mb-2"><i class="fas fa-times text-muted me-2"></i>Bulk Messaging</li>
+                                {% endif %}
+                                
+                                {% if plan.features.analytics %}
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Analytics Dashboard</li>
+                                {% else %}
+                                <li class="mb-2"><i class="fas fa-times text-muted me-2"></i>Analytics Dashboard</li>
+                                {% endif %}
+                                
+                                {% if plan.features.api_access %}
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i>API Access</li>
+                                {% else %}
+                                <li class="mb-2"><i class="fas fa-times text-muted me-2"></i>API Access</li>
+                                {% endif %}
+                                
+                                {% if plan.features.dedicated_manager %}
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Dedicated Manager</li>
+                                {% else %}
+                                <li class="mb-2"><i class="fas fa-times text-muted me-2"></i>Dedicated Manager</li>
+                                {% endif %}
+                            </ul>
+                            
+                            <!-- Action Button -->
+                            {% if user and current_membership and current_membership.plan_name == plan.name and current_membership.is_active %}
+                                <button class="btn btn-secondary btn-lg w-100" disabled>
+                                    <i class="fas fa-check me-1"></i>Current Plan
+                                </button>
+                            {% elif plan.name == 'Enterprise' %}
+                                <a href="mailto:sales@koachsmart.com" class="btn btn-success btn-lg w-100">
+                                    <i class="fas fa-envelope me-1"></i>Contact Sales
+                                </a>
+                            {% elif user %}
+                                <a href="{{ url_for('membership.subscribe', plan_id=plan.id) }}" 
+                                   class="btn {% if plan.name == 'Premium' %}btn-warning{% else %}btn-primary{% endif %} btn-lg w-100">
+                                    {% if plan.price == 0 %}
+                                        <i class="fas fa-gift me-1"></i>Get Started
+                                    {% else %}
+                                        <i class="fas fa-credit-card me-1"></i>Subscribe Now
+                                    {% endif %}
+                                </a>
+                            {% else %}
+                                <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-lg w-100">
+                                    <i class="fas fa-sign-in-alt me-1"></i>Login to Subscribe
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- FAQ Section -->
+        <div class="row justify-content-center mt-5">
+            <div class="col-lg-8">
+                <div class="card border-0 shadow-lg">
+                    <div class="card-body p-5">
+                        <h3 class="text-center mb-4">Frequently Asked Questions</h3>
+                        
+                        <div class="accordion" id="faqAccordion">
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+                                        Can I change my plan anytime?
+                                    </button>
+                                </h2>
+                                <div id="faq1" class="accordion-collapse collapse show" data-bs-parent="#faqAccordion">
+                                    <div class="accordion-body">
+                                        Yes! You can upgrade or downgrade your plan at any time. When upgrading, you'll be charged the prorated difference. When downgrading, the change will take effect at your next billing cycle.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+                                        What payment methods do you accept?
+                                    </button>
+                                </h2>
+                                <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                    <div class="accordion-body">
+                                        We accept all major credit/debit cards, UPI payments, net banking, and digital wallets. All payments are processed securely through our payment partners.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+                                        Is there a free trial available?
+                                    </button>
+                                </h2>
+                                <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                    <div class="accordion-body">
+                                        Our Free plan gives you access to basic features with limited usage. You can upgrade to premium plans anytime to unlock unlimited access and advanced features.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq4">
+                                        Can I cancel my subscription?
+                                    </button>
+                                </h2>
+                                <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                    <div class="accordion-body">
+                                        Yes, you can cancel your subscription at any time from your membership dashboard. Your plan will remain active until the end of your current billing period.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2) !important;
+}
+
+.btn {
+    transition: all 0.3s ease;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+}
+
+.accordion-button:not(.collapsed) {
+    background-color: #f8f9fa;
+    color: #495057;
+}
+</style>
+{% endblock %}

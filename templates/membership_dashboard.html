@@ -1,0 +1,321 @@
+{% extends "base.html" %}
+
+{% block title %}Membership Dashboard - KoachSmart{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); min-height: 100vh;">
+    <div class="container">
+        <!-- Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <h1 class="display-5 fw-bold text-primary mb-2">
+                    <i class="fas fa-tachometer-alt me-2"></i>Membership Dashboard
+                </h1>
+                <p class="lead text-muted">Manage your subscription and track your usage</p>
+            </div>
+        </div>
+
+        <!-- Current Plan Status -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card border-0 shadow-lg">
+                    <div class="card-body p-4">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <h3 class="card-title text-primary mb-3">
+                                    <i class="fas fa-crown me-2"></i>{{ membership.plan_name }} Plan
+                                </h3>
+                                <div class="row">
+                                    <div class="col-sm-6 mb-3">
+                                        <strong>Status:</strong>
+                                        {% if membership.is_active %}
+                                            <span class="badge bg-success ms-2">
+                                                <i class="fas fa-check-circle me-1"></i>Active
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-danger ms-2">
+                                                <i class="fas fa-exclamation-circle me-1"></i>Expired
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-sm-6 mb-3">
+                                        <strong>Plan Type:</strong>
+                                        <span class="text-capitalize ms-2">{{ membership.plan_type }}</span>
+                                    </div>
+                                    {% if membership.days_remaining < 999999 %}
+                                    <div class="col-sm-6 mb-3">
+                                        <strong>Days Remaining:</strong>
+                                        <span class="ms-2">{{ membership.days_remaining }} days</span>
+                                    </div>
+                                    {% endif %}
+                                    {% if membership.end_date %}
+                                    <div class="col-sm-6 mb-3">
+                                        <strong>Renewal Date:</strong>
+                                        <span class="ms-2">{{ membership.end_date.strftime('%B %d, %Y') }}</span>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4 text-center">
+                                {% if membership.can_upgrade %}
+                                    <a href="{{ url_for('membership.plans') }}" class="btn btn-primary btn-lg mb-2">
+                                        <i class="fas fa-arrow-up me-1"></i>Upgrade Plan
+                                    </a>
+                                {% endif %}
+                                {% if membership.has_subscription and membership.is_active %}
+                                    <a href="{{ url_for('membership.cancel_subscription') }}" 
+                                       class="btn btn-outline-danger btn-sm"
+                                       onclick="return confirm('Are you sure you want to cancel your subscription?')">
+                                        <i class="fas fa-times me-1"></i>Cancel Subscription
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Usage Statistics -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <h3 class="mb-3">
+                    <i class="fas fa-chart-bar me-2"></i>Usage Statistics
+                </h3>
+            </div>
+            
+            {% if user.role == 'coach' %}
+            <div class="col-md-6 mb-3">
+                <div class="card border-0 shadow">
+                    <div class="card-body text-center">
+                        <div class="display-4 text-primary mb-2">{{ usage_stats.monthly_applications }}</div>
+                        <h5 class="card-title">Applications This Month</h5>
+                        {% if membership.monthly_applications == 999999 %}
+                            <p class="text-muted">Unlimited</p>
+                        {% else %}
+                            <p class="text-muted">Limit: {{ membership.monthly_applications }}</p>
+                            <div class="progress">
+                                <div class="progress-bar" role="progressbar" 
+                                     style="width: {{ (usage_stats.monthly_applications / membership.monthly_applications * 100) if membership.monthly_applications > 0 else 0 }}%">
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-3">
+                <div class="card border-0 shadow">
+                    <div class="card-body text-center">
+                        <div class="display-4 text-success mb-2">{{ usage_stats.total_applications }}</div>
+                        <h5 class="card-title">Total Applications</h5>
+                        <p class="text-muted">All time</p>
+                    </div>
+                </div>
+            </div>
+            {% elif user.role == 'employer' %}
+            <div class="col-md-6 mb-3">
+                <div class="card border-0 shadow">
+                    <div class="card-body text-center">
+                        <div class="display-4 text-primary mb-2">{{ usage_stats.monthly_job_posts }}</div>
+                        <h5 class="card-title">Job Posts This Month</h5>
+                        {% if membership.monthly_job_posts == 999999 %}
+                            <p class="text-muted">Unlimited</p>
+                        {% else %}
+                            <p class="text-muted">Limit: {{ membership.monthly_job_posts }}</p>
+                            <div class="progress">
+                                <div class="progress-bar" role="progressbar" 
+                                     style="width: {{ (usage_stats.monthly_job_posts / membership.monthly_job_posts * 100) if membership.monthly_job_posts > 0 else 0 }}%">
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-3">
+                <div class="card border-0 shadow">
+                    <div class="card-body text-center">
+                        <div class="display-4 text-success mb-2">{{ usage_stats.total_job_posts }}</div>
+                        <h5 class="card-title">Total Job Posts</h5>
+                        <p class="text-muted">All time</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Plan Features -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card border-0 shadow">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="mb-0">
+                            <i class="fas fa-list-check me-2"></i>Your Plan Features
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            {% for feature, enabled in membership.features.items() %}
+                            <div class="col-md-6 col-lg-4 mb-3">
+                                <div class="d-flex align-items-center">
+                                    {% if enabled %}
+                                        <i class="fas fa-check-circle text-success me-2"></i>
+                                        <span>{{ feature.replace('_', ' ').title() }}</span>
+                                    {% else %}
+                                        <i class="fas fa-times-circle text-muted me-2"></i>
+                                        <span class="text-muted">{{ feature.replace('_', ' ').title() }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Subscription History -->
+        {% if history %}
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card border-0 shadow">
+                    <div class="card-header bg-secondary text-white">
+                        <h4 class="mb-0">
+                            <i class="fas fa-history me-2"></i>Subscription History
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Action</th>
+                                        <th>Plan</th>
+                                        <th>Amount</th>
+                                        <th>Status</th>
+                                        <th>Transaction ID</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for record in history %}
+                                    <tr>
+                                        <td>{{ record.created_at.strftime('%b %d, %Y') }}</td>
+                                        <td>
+                                            <span class="badge bg-info">{{ record.action.title() }}</span>
+                                        </td>
+                                        <td>{{ record.plan.name }}</td>
+                                        <td>
+                                            {% if record.amount > 0 %}
+                                                ₹{{ record.amount }}
+                                            {% else %}
+                                                Free
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if record.status == 'completed' %}
+                                                <span class="badge bg-success">Completed</span>
+                                            {% elif record.status == 'pending' %}
+                                                <span class="badge bg-warning">Pending</span>
+                                            {% elif record.status == 'failed' %}
+                                                <span class="badge bg-danger">Failed</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">{{ record.status.title() }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if record.transaction_id %}
+                                                <code>{{ record.transaction_id }}</code>
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Quick Actions -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card border-0 shadow">
+                    <div class="card-header bg-info text-white">
+                        <h4 class="mb-0">
+                            <i class="fas fa-bolt me-2"></i>Quick Actions
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3 mb-3">
+                                <a href="{{ url_for('membership.plans') }}" class="btn btn-outline-primary w-100">
+                                    <i class="fas fa-eye me-1"></i>View All Plans
+                                </a>
+                            </div>
+                            {% if user.role == 'coach' %}
+                            <div class="col-md-3 mb-3">
+                                <a href="{{ url_for('coach.jobs') }}" class="btn btn-outline-success w-100">
+                                    <i class="fas fa-briefcase me-1"></i>Browse Jobs
+                                </a>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <a href="{{ url_for('coach.profile') }}" class="btn btn-outline-info w-100">
+                                    <i class="fas fa-user me-1"></i>My Profile
+                                </a>
+                            </div>
+                            {% elif user.role == 'employer' %}
+                            <div class="col-md-3 mb-3">
+                                <a href="{{ url_for('employer.post_job') }}" class="btn btn-outline-success w-100">
+                                    <i class="fas fa-plus me-1"></i>Post Job
+                                </a>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <a href="{{ url_for('employer.dashboard') }}" class="btn btn-outline-info w-100">
+                                    <i class="fas fa-tachometer-alt me-1"></i>Dashboard
+                                </a>
+                            </div>
+                            {% endif %}
+                            <div class="col-md-3 mb-3">
+                                <a href="mailto:support@koachsmart.com" class="btn btn-outline-warning w-100">
+                                    <i class="fas fa-headset me-1"></i>Support
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+}
+
+.progress {
+    height: 8px;
+}
+
+.badge {
+    font-size: 0.8em;
+}
+
+.btn {
+    transition: all 0.3s ease;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+}
+</style>
+{% endblock %}

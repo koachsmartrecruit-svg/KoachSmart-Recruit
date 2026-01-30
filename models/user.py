@@ -1,4 +1,5 @@
 from flask_login import UserMixin
+from datetime import datetime
 from core.extensions import db
 
 
@@ -25,9 +26,14 @@ class User(UserMixin, db.Model):
 
     # Verification badges
     phone_verified = db.Column(db.Boolean, default=False)
+    email_verified = db.Column(db.Boolean, default=False)
+    aadhar_verified = db.Column(db.Boolean, default=False)
     location_verified = db.Column(db.Boolean, default=False)
     education_verified = db.Column(db.Boolean, default=False)
     professional_verified = db.Column(db.Boolean, default=False)
+    
+    # Badge system
+    badges = db.Column(db.Text, default="")  # Comma-separated badge names
 
     # Coach onboarding
     onboarding_step = db.Column(db.Integer, default=1)
@@ -42,10 +48,20 @@ class User(UserMixin, db.Model):
     membership_status = db.Column(db.String(50), default='free')
     membership_expires_at = db.Column(db.DateTime, nullable=True)
 
-    # Referral
+    # Enhanced onboarding fields
+    preferred_language = db.Column(db.String(50), default='english')
+    digital_id = db.Column(db.String(100), unique=True)
+    
+    # Enhanced referral system
     referral_code = db.Column(db.String(20), unique=True)
     referred_by = db.Column(db.String(20))
+    referred_by_code = db.Column(db.String(20))  # Enhanced referral tracking
     referral_bonus_claimed = db.Column(db.Boolean, default=False)
+    
+    # Premium features
+    premium_subscription = db.Column(db.Boolean, default=False)
+    premium_expires_at = db.Column(db.DateTime)
+    cv_builder_access = db.Column(db.Boolean, default=False)
 
     # Relationships
     profile = db.relationship(

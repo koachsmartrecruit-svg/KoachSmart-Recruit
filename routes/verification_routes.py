@@ -7,6 +7,7 @@ from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 
 from core.extensions import db
+from core.onboarding_guard import require_onboarding_completion
 from models.verification import VerificationStage, VerificationDocument, CoachSlugPage
 from models.user import User
 from models.profile import Profile
@@ -26,8 +27,9 @@ verification_bp = Blueprint("verification", __name__)
 # ---------------------------
 @verification_bp.route("/verification/dashboard")
 @login_required
+@require_onboarding_completion
 def verification_dashboard():
-    """Main verification dashboard showing all stages"""
+    """Main verification dashboard showing all stages - requires onboarding completion"""
     if current_user.role != "coach":
         flash("Only coaches can access verification system")
         return redirect(url_for("public.home"))
@@ -47,7 +49,9 @@ def verification_dashboard():
 # ---------------------------
 @verification_bp.route("/verification/stage1")
 @login_required
+@require_onboarding_completion
 def stage1():
+    """Stage 1 verification - requires onboarding completion"""
     """Stage 1: Basic personal verification"""
     if current_user.role != "coach":
         return redirect(url_for("public.home"))

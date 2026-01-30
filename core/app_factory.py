@@ -46,7 +46,6 @@ def create_app():
     app.config["PROFILE_PIC_FOLDER"] = str(BASE_DIR / "static/profile_pics")
     app.config["EXP_PROOF_FOLDER"] = str(BASE_DIR / "static/experience_proofs")
     app.config["ID_PROOF_FOLDER"] = str(BASE_DIR / "static/id_proofs")
-    app.config["TEMP_FOLDER"] = str(BASE_DIR / "static/temp_docs")
     app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024
 
     for folder in [
@@ -56,7 +55,6 @@ def create_app():
         app.config["PROFILE_PIC_FOLDER"],
         app.config["EXP_PROOF_FOLDER"],
         app.config["ID_PROOF_FOLDER"],
-        app.config["TEMP_FOLDER"],
     ]:
         os.makedirs(folder, exist_ok=True)
 
@@ -87,9 +85,17 @@ def create_app():
     socketio.init_app(app)
 
     # -----------------------------
+    # Register Template Filters
+    # -----------------------------
+    from core.template_filters import register_template_filters
+    register_template_filters(app)
+
+    # -----------------------------
     # Register Guards
     # -----------------------------
+    from core.onboarding_guard import onboarding_guard
     app.before_request(unified_access_guard)
+    app.before_request(onboarding_guard)
 
     # -----------------------------
     # Register Models (important)
@@ -108,6 +114,9 @@ def create_app():
     from routes.payment_routes import payment_bp
     from routes.chat_routes import chat_bp
     from routes.verification_routes import verification_bp
+    from routes.language_routes import language_bp
+    from routes.membership_routes import membership_bp
+    from routes.location_routes import location_bp
 
     app.register_blueprint(public_bp)
     app.register_blueprint(auth_bp)
@@ -118,5 +127,9 @@ def create_app():
     app.register_blueprint(payment_bp)
     app.register_blueprint(chat_bp)
     app.register_blueprint(verification_bp)
+    app.register_blueprint(language_bp)
+    app.register_blueprint(membership_bp)
+    app.register_blueprint(location_bp)
+
 
     return app

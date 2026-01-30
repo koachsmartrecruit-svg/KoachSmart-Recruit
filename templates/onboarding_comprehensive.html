@@ -1,0 +1,691 @@
+{% extends "base.html" %}
+{% block title %}Coach Onboarding - Step {{ current_step }}/3{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            
+            <!-- Language Selection (if not set) -->
+            {% if not user_language or user_language == 'en' %}
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body p-4 text-center">
+                    <h4 class="mb-3">
+                        <i class="fas fa-language text-primary me-2"></i>
+                        Choose Your Preferred Language / अपनी भाषा चुनें
+                    </h4>
+                    <p class="text-muted mb-4">Select your language to continue in your preferred language</p>
+                    
+                    <form method="POST" class="d-inline">
+                        <div class="row g-2 justify-content-center">
+                            {% for code, name in languages.items() %}
+                            <div class="col-md-3 col-sm-4 col-6">
+                                <button type="submit" name="language" value="{{ code }}" 
+                                        class="btn btn-outline-primary w-100 py-2">
+                                    {{ name }}
+                                </button>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Progress Header -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h4 class="mb-0">
+                            <i class="fas fa-user-graduate text-warning me-2"></i>
+                            Coach Verification Journey
+                        </h4>
+                        <div class="d-flex align-items-center gap-3">
+                            <span class="badge bg-warning fs-6">Step {{ current_step }}/3</span>
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-coins text-warning me-1"></i>
+                                <span class="fw-bold">{{ progress.coins }} Coins</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Progress Bar -->
+                    <div class="progress mb-3" style="height: 10px;">
+                        <div class="progress-bar bg-warning" 
+                             role="progressbar" 
+                             style="width: {{ progress.percentage }}%">
+                        </div>
+                    </div>
+                    
+                    <!-- Badges Display -->
+                    {% if progress.badges %}
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        {% for badge in progress.badges %}
+                        {% if badge %}
+                        <span class="badge bg-success fs-6">
+                            <i class="fas fa-medal me-1"></i>{{ badge }}
+                        </span>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Verification Status -->
+                    <div class="row g-2 text-center">
+                        <div class="col-md-3">
+                            <small class="text-muted d-block">Phone</small>
+                            {% if progress.phone_verified %}
+                                <i class="fas fa-check-circle text-success"></i>
+                            {% else %}
+                                <i class="fas fa-clock text-warning"></i>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-3">
+                            <small class="text-muted d-block">Email</small>
+                            {% if progress.email_verified %}
+                                <i class="fas fa-check-circle text-success"></i>
+                            {% else %}
+                                <i class="fas fa-clock text-warning"></i>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-3">
+                            <small class="text-muted d-block">Aadhar</small>
+                            {% if progress.aadhar_verified %}
+                                <i class="fas fa-check-circle text-success"></i>
+                            {% else %}
+                                <i class="fas fa-clock text-warning"></i>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-3">
+                            <small class="text-muted d-block">Username</small>
+                            {% if progress.username %}
+                                <i class="fas fa-check-circle text-success"></i>
+                            {% else %}
+                                <i class="fas fa-clock text-warning"></i>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Form -->
+            <div class="card border-0 shadow-lg">
+                <div class="card-body p-5">
+                    
+                    {% if current_step == 1 %}
+                    <!-- STAGE 1: Basic Information & Verification -->
+                    <div class="text-center mb-4">
+                        <i class="fas fa-user-circle fa-3x text-warning mb-3"></i>
+                        <h3>Stage 1: Basic Information & Verification</h3>
+                        <p class="text-muted">Complete your basic details and verify your contact information to earn your first coins!</p>
+                    </div>
+
+                    <form method="POST" class="row g-3">
+                        <!-- Name Fields -->
+                        <div class="col-md-6">
+                            <label for="first_name" class="form-label">First Name *</label>
+                            <input type="text" class="form-control" id="first_name" name="first_name" 
+                                   value="{{ profile.full_name.split()[0] if profile and profile.full_name else '' }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="last_name" class="form-label">Last Name *</label>
+                            <input type="text" class="form-control" id="last_name" name="last_name" 
+                                   value="{{ profile.full_name.split()[-1] if profile and profile.full_name and profile.full_name.split()|length > 1 else '' }}" required>
+                        </div>
+                        
+                        <!-- Phone Verification -->
+                        <div class="col-12">
+                            <label for="phone" class="form-label">Phone Number *</label>
+                            <div class="input-group">
+                                <span class="input-group-text">+91</span>
+                                <input type="tel" class="form-control" id="phone" name="phone" 
+                                       value="{{ profile.phone.replace('+91', '').strip() if profile and profile.phone else '' }}"
+                                       placeholder="Enter 10-digit mobile number" required>
+                                <button type="submit" name="verify_phone" class="btn btn-outline-warning">
+                                    {% if progress.phone_verified %}
+                                        <i class="fas fa-check"></i> Verified
+                                    {% else %}
+                                        Send OTP
+                                    {% endif %}
+                                </button>
+                            </div>
+                            <small class="text-muted">Demo Mode: Use <strong>123456</strong> as OTP for both phone and email</small>
+                        </div>
+                        
+                        {% if not progress.phone_verified %}
+                        <div class="col-md-6">
+                            <label for="phone_otp" class="form-label">Phone OTP</label>
+                            <input type="text" class="form-control" id="phone_otp" name="phone_otp" 
+                                   placeholder="Enter 6-digit OTP" maxlength="6">
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Email Verification -->
+                        <div class="col-12">
+                            <label for="email" class="form-label">Email Address</label>
+                            <div class="input-group">
+                                <input type="email" class="form-control" value="{{ current_user.email }}" readonly>
+                                <button type="submit" name="verify_email" class="btn btn-outline-warning">
+                                    {% if progress.email_verified %}
+                                        <i class="fas fa-check"></i> Verified
+                                    {% else %}
+                                        Send OTP
+                                    {% endif %}
+                                </button>
+                            </div>
+                        </div>
+                        
+                        {% if not progress.email_verified %}
+                        <div class="col-md-6">
+                            <label for="email_otp" class="form-label">Email OTP</label>
+                            <input type="text" class="form-control" id="email_otp" name="email_otp" 
+                                   placeholder="Enter 6-digit OTP" maxlength="6">
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Aadhar -->
+                        <div class="col-12">
+                            <label for="aadhar" class="form-label">Aadhar Number *</label>
+                            <input type="text" class="form-control" id="aadhar" name="aadhar" 
+                                   value="{{ profile.aadhar_number or '' }}"
+                                   placeholder="Enter 12-digit Aadhar number" maxlength="12">
+                            <small class="text-muted">Required for verification and digital ID creation</small>
+                        </div>
+                        
+                        <!-- Sports Selection -->
+                        <div class="col-md-6">
+                            <label for="sport1" class="form-label">Primary Sport *</label>
+                            <select class="form-select" id="sport1" name="sport1" required>
+                                <option value="">Select Primary Sport</option>
+                                {% for sport in sports_options %}
+                                <option value="{{ sport }}" {{ 'selected' if profile and profile.sport == sport else '' }}>
+                                    {{ sport }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="sport2" class="form-label">Secondary Sport (Optional)</label>
+                            <select class="form-select" id="sport2" name="sport2">
+                                <option value="">Select Secondary Sport</option>
+                                {% for sport in sports_options %}
+                                <option value="{{ sport }}" {{ 'selected' if profile and profile.sport2 == sport else '' }}>
+                                    {{ sport }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Languages -->
+                        <div class="col-12">
+                            <label class="form-label">Languages You Can Speak & Understand (Select up to 5)</label>
+                            <div class="row g-2">
+                                {% for code, name in languages.items() %}
+                                <div class="col-md-6 col-lg-4">
+                                    <div class="card border-light">
+                                        <div class="card-body p-2">
+                                            <div class="form-check mb-2">
+                                                <input class="form-check-input" type="checkbox" name="languages" 
+                                                       value="{{ name }}" id="lang_{{ code }}" onchange="toggleProficiency('{{ code }}')">
+                                                <label class="form-check-label fw-bold" for="lang_{{ code }}">
+                                                    {{ name }}
+                                                </label>
+                                            </div>
+                                            <div id="proficiency_{{ code }}" class="proficiency-section" style="display: none;">
+                                                <label class="form-label small">Proficiency Level:</label>
+                                                <select class="form-select form-select-sm" name="language_proficiency">
+                                                    <option value="basic">Basic (Understand & Speak)</option>
+                                                    <option value="intermediate">Intermediate (Read & Write)</option>
+                                                    <option value="fluent">Fluent (Native/Professional)</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <small class="text-muted">Select languages and specify your proficiency level for better job matching</small>
+                        </div>
+                        
+                        <div class="col-12 text-center mt-4">
+                            <button type="submit" class="btn btn-warning btn-lg px-5">
+                                <i class="fas fa-arrow-right me-2"></i>
+                                Complete Stage 1 & Earn Orange Badge
+                            </button>
+                        </div>
+                    </form>
+
+                    {% elif current_step == 2 %}
+                    <!-- STAGE 2: Location & Service Details -->
+                    <div class="text-center mb-4">
+                        <i class="fas fa-map-marker-alt fa-3x text-primary mb-3"></i>
+                        <h3>Stage 2: Location & Service Details</h3>
+                        <p class="text-muted">Set up your location and service preferences to earn the Purple Badge!</p>
+                    </div>
+
+                    <form method="POST" class="row g-3">
+                        <!-- Location Fields -->
+                        <div class="col-md-4">
+                            <label for="country" class="form-label">Country *</label>
+                            <select class="form-select" id="country" name="country" required>
+                                <option value="">Select Country</option>
+                                <option value="IN" selected>India</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label for="state" class="form-label">State *</label>
+                            <select class="form-select" id="state" name="state" required>
+                                <option value="">Select State</option>
+                                <!-- States will be loaded dynamically -->
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label for="city" class="form-label">City *</label>
+                            <select class="form-select" id="city" name="city" required>
+                                <option value="">Select City</option>
+                                <!-- Cities will be loaded dynamically -->
+                            </select>
+                        </div>
+                        
+                        <div class="col-12">
+                            <label for="location" class="form-label">Specific Location</label>
+                            <input type="text" class="form-control" id="location" name="location" 
+                                   value="{{ profile.location or '' }}" placeholder="e.g., South Delhi, Andheri West">
+                            <small class="text-muted">This will help match you with nearby opportunities</small>
+                        </div>
+                        
+                        <!-- Service Range (only for part-time and full-time) -->
+                        <div class="col-md-6" id="range_km_section" style="display: none;">
+                            <label for="range_km" class="form-label">Service Range (KM) *</label>
+                            <input type="number" class="form-control" id="range_km" name="range_km" 
+                                   value="{{ profile.range_km or 5 }}" min="1" max="100">
+                            <small class="text-muted">How far are you willing to travel for coaching?</small>
+                        </div>
+                        
+                        <!-- Job Type Preferences -->
+                        <div class="col-12">
+                            <label class="form-label">Job Type Preferences * (Select all that apply)</label>
+                            <div class="row g-2">
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="job_type" 
+                                               value="full_time" id="job_full_time" onchange="toggleRangeFields()">
+                                        <label class="form-check-label" for="job_full_time">
+                                            Full Time
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="job_type" 
+                                               value="part_time" id="job_part_time" onchange="toggleRangeFields()">
+                                        <label class="form-check-label" for="job_part_time">
+                                            Part Time
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="job_type" 
+                                               value="session" id="job_session" onchange="toggleRangeFields()">
+                                        <label class="form-check-label" for="job_session">
+                                            Session Based
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="job_type" 
+                                               value="flexible" id="job_flexible">
+                                        <label class="form-check-label" for="job_flexible">
+                                            Flexible
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <small class="text-muted">Choose accurately as this affects your ratings</small>
+                        </div>
+                        
+                        <div class="col-12 text-center mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg px-5">
+                                <i class="fas fa-arrow-right me-2"></i>
+                                Complete Stage 2 & Earn Purple Badge
+                            </button>
+                        </div>
+                    </form>
+
+                    {% elif current_step == 3 %}
+                    <!-- STAGE 3: Education & Professional Verification -->
+                    <div class="text-center mb-4">
+                        <i class="fas fa-graduation-cap fa-3x text-info mb-3"></i>
+                        <h3>Stage 3: Education & Professional Verification</h3>
+                        <p class="text-muted">Complete your education and professional details to earn the Blue Verified Badge!</p>
+                    </div>
+
+                    <form method="POST" enctype="multipart/form-data" class="row g-3">
+                        <!-- Education -->
+                        <div class="col-md-6">
+                            <label for="education" class="form-label">Highest Education Qualification *</label>
+                            <select class="form-select" id="education" name="education" required>
+                                <option value="">Select Education Level</option>
+                                {% for key, value in education_levels.items() %}
+                                <option value="{{ key }}">{{ value.name }} ({{ value.score }} points)</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="specialization" class="form-label">Specialization/Field</label>
+                            <input type="text" class="form-control" id="specialization" name="specialization" 
+                                   placeholder="e.g., Physical Education, Sports Science">
+                        </div>
+                        
+                        <div class="col-12">
+                            <label for="education_doc" class="form-label">Upload Education Certificate</label>
+                            <input type="file" class="form-control" id="education_doc" name="education_doc" 
+                                   accept=".pdf,.jpg,.jpeg,.png">
+                            <small class="text-muted">Upload your highest education certificate (PDF, JPG, PNG - Max 5MB)</small>
+                        </div>
+                        
+                        <!-- Professional Certification -->
+                        <div class="col-12">
+                            <label class="form-label">Do you have Professional Sports Certification?</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="has_professional_cert" 
+                                       value="yes" id="cert_yes">
+                                <label class="form-check-label" for="cert_yes">
+                                    Yes, I have certification
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="has_professional_cert" 
+                                       value="no" id="cert_no">
+                                <label class="form-check-label" for="cert_no">
+                                    No, but I want to know about courses
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6" id="cert_details" style="display: none;">
+                            <label for="cert_name" class="form-label">Certification Name</label>
+                            <input type="text" class="form-control" id="cert_name" name="cert_name" 
+                                   placeholder="e.g., SAI Coaching Certificate, NIS Diploma">
+                        </div>
+                        
+                        <div class="col-md-6" id="cert_upload" style="display: none;">
+                            <label for="cert_doc" class="form-label">Upload Certificate</label>
+                            <input type="file" class="form-control" id="cert_doc" name="cert_doc" 
+                                   accept=".pdf,.jpg,.jpeg,.png">
+                        </div>
+                        
+                        <!-- Playing Level -->
+                        <div class="col-md-6">
+                            <label for="playing_level" class="form-label">Highest Playing Level</label>
+                            <select class="form-select" id="playing_level" name="playing_level">
+                                <option value="">Select Playing Level</option>
+                                <option value="school">School Level</option>
+                                <option value="college">College Level</option>
+                                <option value="district">District Level</option>
+                                <option value="state">State Level</option>
+                                <option value="national">National Level</option>
+                                <option value="international">International Level</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="playing_doc" class="form-label">Upload Playing Certificate</label>
+                            <input type="file" class="form-control" id="playing_doc" name="playing_doc" 
+                                   accept=".pdf,.jpg,.jpeg,.png">
+                        </div>
+                        
+                        <!-- Experience -->
+                        <div class="col-12">
+                            <label for="experience" class="form-label">Coaching Experience *</label>
+                            <select class="form-select" id="experience" name="experience" required>
+                                <option value="">Select Experience</option>
+                                {% for exp in experience_levels %}
+                                <option value="{{ exp }}">{{ exp.title() }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-12 text-center mt-4">
+                            <div class="alert alert-info">
+                                <h6><i class="fas fa-trophy me-2"></i>Final Step!</h6>
+                                <p class="mb-0">Complete this to earn the <strong>Blue Verified Badge</strong> and unlock premium features!</p>
+                            </div>
+                            <button type="submit" class="btn btn-info btn-lg px-5">
+                                <i class="fas fa-check me-2"></i>
+                                Complete Verification & Earn Blue Badge
+                            </button>
+                        </div>
+                    </form>
+                    {% endif %}
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+// Show/hide certification fields
+document.addEventListener('DOMContentLoaded', function() {
+    const certYes = document.getElementById('cert_yes');
+    const certNo = document.getElementById('cert_no');
+    const certDetails = document.getElementById('cert_details');
+    const certUpload = document.getElementById('cert_upload');
+    
+    if (certYes && certNo) {
+        certYes.addEventListener('change', function() {
+            if (this.checked) {
+                certDetails.style.display = 'block';
+                certUpload.style.display = 'block';
+            }
+        });
+        
+        certNo.addEventListener('change', function() {
+            if (this.checked) {
+                certDetails.style.display = 'none';
+                certUpload.style.display = 'none';
+            }
+        });
+    }
+    
+    // Dynamic Location Loading
+    initializeLocationDropdowns();
+});
+
+function initializeLocationDropdowns() {
+    const countrySelect = document.getElementById('country');
+    const stateSelect = document.getElementById('state');
+    const citySelect = document.getElementById('city');
+    
+    if (!countrySelect || !stateSelect || !citySelect) {
+        return; // Not on stage 2
+    }
+    
+    // Load states when country changes
+    countrySelect.addEventListener('change', function() {
+        const countryCode = this.value;
+        if (countryCode) {
+            loadStates(countryCode);
+        } else {
+            clearSelect(stateSelect, 'Select State');
+            clearSelect(citySelect, 'Select City');
+        }
+    });
+    
+    // Load cities when state changes
+    stateSelect.addEventListener('change', function() {
+        const stateCode = this.value;
+        const countryCode = countrySelect.value;
+        if (stateCode && countryCode) {
+            loadCities(countryCode, stateCode);
+        } else {
+            clearSelect(citySelect, 'Select City');
+        }
+    });
+    
+    // Auto-load states for India on page load
+    if (countrySelect.value === 'IN') {
+        loadStates('IN');
+    }
+}
+
+function loadStates(countryCode) {
+    const stateSelect = document.getElementById('state');
+    const citySelect = document.getElementById('city');
+    
+    // Show loading
+    stateSelect.innerHTML = '<option value="">Loading states...</option>';
+    stateSelect.disabled = true;
+    clearSelect(citySelect, 'Select City');
+    
+    fetch(`/api/states?country=${countryCode}`)
+        .then(response => response.json())
+        .then(data => {
+            stateSelect.disabled = false;
+            
+            if (data.success && data.data) {
+                populateSelect(stateSelect, data.data, 'Select State', 'id', 'name');
+                
+                // Show fallback message if using fallback data
+                if (data.fallback) {
+                    showLocationMessage('Using offline state data', 'info');
+                }
+            } else {
+                stateSelect.innerHTML = '<option value="">Failed to load states</option>';
+                showLocationMessage('Failed to load states. Please refresh and try again.', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading states:', error);
+            stateSelect.disabled = false;
+            stateSelect.innerHTML = '<option value="">Error loading states</option>';
+            showLocationMessage('Network error loading states. Please check your connection.', 'error');
+        });
+}
+
+function loadCities(countryCode, stateCode) {
+    const citySelect = document.getElementById('city');
+    
+    // Show loading
+    citySelect.innerHTML = '<option value="">Loading cities...</option>';
+    citySelect.disabled = true;
+    
+    fetch(`/api/cities?country=${countryCode}&state=${stateCode}`)
+        .then(response => response.json())
+        .then(data => {
+            citySelect.disabled = false;
+            
+            if (data.success && data.data) {
+                populateSelect(citySelect, data.data, 'Select City', 'name', 'name');
+                
+                // Show fallback message if using fallback data
+                if (data.fallback) {
+                    showLocationMessage('Using offline city data', 'info');
+                }
+            } else {
+                citySelect.innerHTML = '<option value="">Failed to load cities</option>';
+                showLocationMessage('Failed to load cities. Please refresh and try again.', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading cities:', error);
+            citySelect.disabled = false;
+            citySelect.innerHTML = '<option value="">Error loading cities</option>';
+            showLocationMessage('Network error loading cities. Please check your connection.', 'error');
+        });
+}
+
+function populateSelect(selectElement, data, defaultText, valueField, textField) {
+    selectElement.innerHTML = `<option value="">${defaultText}</option>`;
+    
+    data.forEach(item => {
+        const option = document.createElement('option');
+        option.value = item[valueField];
+        option.textContent = item[textField];
+        selectElement.appendChild(option);
+    });
+}
+
+function clearSelect(selectElement, defaultText) {
+    selectElement.innerHTML = `<option value="">${defaultText}</option>`;
+    selectElement.disabled = false;
+}
+
+function showLocationMessage(message, type) {
+    // Create or update location message
+    let messageDiv = document.getElementById('location-message');
+    
+    if (!messageDiv) {
+        messageDiv = document.createElement('div');
+        messageDiv.id = 'location-message';
+        messageDiv.className = 'alert alert-dismissible fade show mt-2';
+        
+        // Insert after the city field
+        const cityField = document.getElementById('city').parentElement;
+        cityField.appendChild(messageDiv);
+    }
+    
+    // Set message type
+    messageDiv.className = `alert alert-${type === 'error' ? 'warning' : 'info'} alert-dismissible fade show mt-2`;
+    messageDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    // Auto-hide after 5 seconds
+    setTimeout(() => {
+        if (messageDiv && messageDiv.parentElement) {
+            messageDiv.remove();
+        }
+    }, 5000);
+}
+
+// Language proficiency toggle
+function toggleProficiency(langCode) {
+    const checkbox = document.getElementById(`lang_${langCode}`);
+    const proficiencySection = document.getElementById(`proficiency_${langCode}`);
+    
+    if (checkbox.checked) {
+        proficiencySection.style.display = 'block';
+    } else {
+        proficiencySection.style.display = 'none';
+    }
+}
+
+// Range fields toggle for job types
+function toggleRangeFields() {
+    const fullTimeChecked = document.getElementById('job_full_time')?.checked;
+    const partTimeChecked = document.getElementById('job_part_time')?.checked;
+    
+    const rangeKmSection = document.getElementById('range_km_section');
+    
+    // Show range fields only for full-time and part-time
+    if (fullTimeChecked || partTimeChecked) {
+        rangeKmSection.style.display = 'block';
+        
+        // Make range required
+        document.getElementById('range_km').required = true;
+    } else {
+        rangeKmSection.style.display = 'none';
+        
+        // Remove required attribute
+        document.getElementById('range_km').required = false;
+    }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize range fields visibility
+    toggleRangeFields();
+});
+</script>
+
+{% endblock %}

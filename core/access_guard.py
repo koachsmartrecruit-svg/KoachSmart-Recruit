@@ -17,8 +17,8 @@ def unified_access_guard():
     if not current_user.is_authenticated:
         return
 
-    # Allow static files
-    if request.path.startswith("/static"):
+    # Allow static files and API routes
+    if request.path.startswith("/static") or request.path.startswith("/api"):
         return
 
     endpoint = request.endpoint

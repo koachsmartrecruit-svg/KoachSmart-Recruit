@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Upgrade Membership{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <h3 class="mb-4">
+                        <i class="fas fa-arrow-up text-success me-2"></i>
+                        Upgrade Your Membership
+                    </h3>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h5>Current Plan</h5>
+                                    <h4 class="text-muted">{{ current_plan.name }}</h4>
+                                    <p class="mb-0">₹{{ current_plan.price }}/{{ current_plan.duration_days }} days</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card bg-success text-white">
+                                <div class="card-body">
+                                    <h5>New Plan</h5>
+                                    <h4>{{ new_plan.name }}</h4>
+                                    <p class="mb-0">₹{{ new_plan.price }}/{{ new_plan.duration_days }} days</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <h6>Upgrade Details:</h6>
+                        <ul class="mb-0">
+                            <li>Days remaining on current plan: {{ days_remaining }}</li>
+                            <li>Credit from current plan: ₹{{ "%.2f"|format(credit_amount) }}</li>
+                            <li><strong>Amount to pay: ₹{{ "%.2f"|format(upgrade_amount) }}</strong></li>
+                        </ul>
+                    </div>
+                    
+                    <div class="text-center">
+                        <form method="POST" action="{{ url_for('membership.process_upgrade') }}">
+                            <input type="hidden" name="plan_id" value="{{ new_plan.id }}">
+                            <button type="submit" class="btn btn-success btn-lg px-4">
+                                <i class="fas fa-credit-card me-2"></i>
+                                Proceed to Payment
+                            </button>
+                        </form>
+                        <a href="{{ url_for('membership.dashboard') }}" class="btn btn-outline-secondary mt-2">
+                            Cancel
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+{% block title %}Complete Your Onboarding{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            
+            <!-- Onboarding Required Card -->
+            <div class="card border-0 shadow-lg mb-4">
+                <div class="card-body p-5 text-center">
+                    <div class="mb-4">
+                        <i class="fas fa-user-check fa-4x text-warning mb-3"></i>
+                        <h2 class="h3 mb-3">Complete Your Onboarding</h2>
+                        <p class="text-muted mb-4">
+                            You need to complete your 3-step onboarding process to access job applications and all coach features.
+                        </p>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-muted">Progress</span>
+                            <span class="badge bg-warning">{{ progress.steps_completed }}/{{ progress.total_steps }} Steps</span>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-warning" 
+                                 role="progressbar" 
+                                 style="width: {{ progress.progress_percentage }}%"
+                                 aria-valuenow="{{ progress.progress_percentage }}" 
+                                 aria-valuemin="0" 
+                                 aria-valuemax="100">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Rewards Preview -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <div class="card bg-light border-0">
+                                <div class="card-body py-3">
+                                    <i class="fas fa-coins text-warning fa-2x mb-2"></i>
+                                    <h5 class="mb-1">{{ rewards.coins }} Coins</h5>
+                                    <small class="text-muted">Completion Reward</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card bg-light border-0">
+                                <div class="card-body py-3">
+                                    <i class="fas fa-medal text-warning fa-2x mb-2"></i>
+                                    <h5 class="mb-1">{{ rewards.badge }}</h5>
+                                    <small class="text-muted">Achievement Badge</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- What You'll Unlock -->
+                    <div class="mb-4">
+                        <h5 class="mb-3">What You'll Unlock:</h5>
+                        <div class="row g-2 text-start">
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fas fa-check-circle text-success me-2"></i>
+                                    <span>Apply for Jobs</span>
+                                </div>
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fas fa-check-circle text-success me-2"></i>
+                                    <span>Access Verification System</span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fas fa-check-circle text-success me-2"></i>
+                                    <span>Edit Profile</span>
+                                </div>
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fas fa-check-circle text-success me-2"></i>
+                                    <span>View Applications</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                        <a href="{{ url_for('onboarding.onboarding_unified') }}" 
+                           class="btn btn-warning btn-lg px-4">
+                            <i class="fas fa-arrow-right me-2"></i>
+                            {% if progress.steps_completed == 0 %}
+                                Start Onboarding
+                            {% else %}
+                                Continue Onboarding
+                            {% endif %}
+                        </a>
+                        <a href="{{ url_for('auth.logout') }}" 
+                           class="btn btn-outline-secondary btn-lg px-4">
+                            <i class="fas fa-sign-out-alt me-2"></i>
+                            Logout
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Steps Overview -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <h5 class="card-title mb-4">
+                        <i class="fas fa-list-ol me-2 text-warning"></i>
+                        Onboarding Steps
+                    </h5>
+                    
+                    <div class="row g-3">
+                        <!-- Step 1 -->
+                        <div class="col-md-4">
+                            <div class="d-flex align-items-start">
+                                <div class="flex-shrink-0">
+                                    {% if progress.current_step > 1 %}
+                                        <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center" 
+                                             style="width: 40px; height: 40px;">
+                                            <i class="fas fa-check"></i>
+                                        </div>
+                                    {% elif progress.current_step == 1 %}
+                                        <div class="rounded-circle bg-warning text-white d-flex align-items-center justify-content-center" 
+                                             style="width: 40px; height: 40px;">
+                                            <span class="fw-bold">1</span>
+                                        </div>
+                                    {% else %}
+                                        <div class="rounded-circle bg-light text-muted d-flex align-items-center justify-content-center" 
+                                             style="width: 40px; height: 40px;">
+                                            <span class="fw-bold">1</span>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h6 class="mb-1">Personal Info</h6>
+                                    <small class="text-muted">Name, phone & email verification</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 2 -->
+                        <div class="col-md-4">
+                            <div class="d-flex align-items-start">
+                                <div class="flex-shrink-0">
+                                    {% if progress.current_step > 2 %}
+                                        <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center" 
+                                             style="width: 40px; height: 40px;">
+                                            <i class="fas fa-check"></i>
+                                        </div>
+                                    {% elif progress.current_step == 2 %}
+                                        <div class="rounded-circle bg-warning text-white d-flex align-items-center justify-content-center" 
+                                             style="width: 40px; height: 40px;">
+                                            <span class="fw-bold">2</span>
+                                        </div>
+                                    {% else %}
+                                        <div class="rounded-circle bg-light text-muted d-flex align-items-center justify-content-center" 
+                                             style="width: 40px; height: 40px;">
+                                            <span class="fw-bold">2</span>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h6 class="mb-1">Location & Sport</h6>
+                                    <small class="text-muted">City, sport & experience</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 3 -->
+                        <div class="col-md-4">
+                            <div class="d-flex align-items-start">
+                                <div class="flex-shrink-0">
+                                    {% if progress.completed %}
+                                        <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center" 
+                                             style="width: 40px; height: 40px;">
+                                            <i class="fas fa-check"></i>
+                                        </div>
+                                    {% elif progress.current_step == 3 %}
+                                        <div class="rounded-circle bg-warning text-white d-flex align-items-center justify-content-center" 
+                                             style="width: 40px; height: 40px;">
+                                            <span class="fw-bold">3</span>
+                                        </div>
+                                    {% else %}
+                                        <div class="rounded-circle bg-light text-muted d-flex align-items-center justify-content-center" 
+                                             style="width: 40px; height: 40px;">
+                                            <span class="fw-bold">3</span>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h6 class="mb-1">Education</h6>
+                                    <small class="text-muted">Certificate upload & preferences</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<style>
+.card {
+    transition: transform 0.2s ease-in-out;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+}
+
+.progress-bar {
+    transition: width 0.6s ease;
+}
+
+.btn {
+    transition: all 0.2s ease-in-out;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+}
+</style>
+{% endblock %}

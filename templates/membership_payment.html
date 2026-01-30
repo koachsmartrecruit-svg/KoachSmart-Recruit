@@ -1,0 +1,368 @@
+{% extends "base.html" %}
+
+{% block title %}Payment - {{ plan.name }} Plan - KoachSmart{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-5" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh;">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="card border-0 shadow-lg">
+                    <div class="card-header bg-primary text-white text-center py-4">
+                        <h2 class="mb-0">
+                            <i class="fas fa-credit-card me-2"></i>Complete Your Payment
+                        </h2>
+                    </div>
+                    <div class="card-body p-5">
+                        <!-- Plan Summary -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h4 class="card-title text-primary">{{ plan.name }} Plan</h4>
+                                        <p class="card-text">{{ plan.user_type.title() }} Membership</p>
+                                        <ul class="list-unstyled">
+                                            {% if plan.user_type == 'coach' %}
+                                                {% if plan.monthly_applications == 999999 %}
+                                                <li><i class="fas fa-check text-success me-2"></i>Unlimited Applications</li>
+                                                {% else %}
+                                                <li><i class="fas fa-check text-success me-2"></i>{{ plan.monthly_applications }} Applications/month</li>
+                                                {% endif %}
+                                                {% if plan.features.featured_profile %}
+                                                <li><i class="fas fa-check text-success me-2"></i>Featured Profile</li>
+                                                {% endif %}
+                                                {% if plan.features.direct_messaging %}
+                                                <li><i class="fas fa-check text-success me-2"></i>Direct Messaging</li>
+                                                {% endif %}
+                                                {% if plan.features.analytics %}
+                                                <li><i class="fas fa-check text-success me-2"></i>Analytics Dashboard</li>
+                                                {% endif %}
+                                            {% else %}
+                                                {% if plan.monthly_job_posts == 999999 %}
+                                                <li><i class="fas fa-check text-success me-2"></i>Unlimited Job Posts</li>
+                                                {% else %}
+                                                <li><i class="fas fa-check text-success me-2"></i>{{ plan.monthly_job_posts }} Job Posts/month</li>
+                                                {% endif %}
+                                                {% if plan.features.featured_jobs %}
+                                                <li><i class="fas fa-check text-success me-2"></i>Featured Job Posts</li>
+                                                {% endif %}
+                                                {% if plan.features.bulk_messaging %}
+                                                <li><i class="fas fa-check text-success me-2"></i>Bulk Messaging</li>
+                                                {% endif %}
+                                                {% if plan.features.analytics %}
+                                                <li><i class="fas fa-check text-success me-2"></i>Analytics Dashboard</li>
+                                                {% endif %}
+                                            {% endif %}
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h4 class="card-title text-primary">Payment Summary</h4>
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <span>Plan Price:</span>
+                                            <span>₹{{ "%.2f"|format(base_amount) }}</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <span>GST (18%):</span>
+                                            <span>₹{{ "%.2f"|format(tax_amount) }}</span>
+                                        </div>
+                                        <hr>
+                                        <div class="d-flex justify-content-between fw-bold">
+                                            <span>Total Amount:</span>
+                                            <span class="text-primary">₹{{ "%.2f"|format(total_amount) }}</span>
+                                        </div>
+                                        <small class="text-muted">Billed monthly</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Payment Form -->
+                        <form id="paymentForm">
+                            <input type="hidden" id="planId" value="{{ plan.id }}">
+                            <input type="hidden" id="totalAmount" value="{{ total_amount }}">
+                            
+                            <h4 class="mb-3">
+                                <i class="fas fa-wallet me-2"></i>Payment Method
+                            </h4>
+                            
+                            <!-- Payment Method Selection -->
+                            <div class="row mb-4">
+                                <div class="col-md-6 mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="paymentMethod" id="card" value="card" checked>
+                                        <label class="form-check-label" for="card">
+                                            <i class="fas fa-credit-card me-2"></i>Credit/Debit Card
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="paymentMethod" id="upi" value="upi">
+                                        <label class="form-check-label" for="upi">
+                                            <i class="fas fa-mobile-alt me-2"></i>UPI
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="paymentMethod" id="netbanking" value="netbanking">
+                                        <label class="form-check-label" for="netbanking">
+                                            <i class="fas fa-university me-2"></i>Net Banking
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="paymentMethod" id="wallet" value="wallet">
+                                        <label class="form-check-label" for="wallet">
+                                            <i class="fas fa-wallet me-2"></i>Digital Wallet
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Card Details (shown by default) -->
+                            <div id="cardDetails" class="payment-details">
+                                <div class="row">
+                                    <div class="col-md-12 mb-3">
+                                        <label for="cardNumber" class="form-label">Card Number</label>
+                                        <input type="text" class="form-control" id="cardNumber" placeholder="1234 5678 9012 3456" maxlength="19">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="expiryDate" class="form-label">Expiry Date</label>
+                                        <input type="text" class="form-control" id="expiryDate" placeholder="MM/YY" maxlength="5">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="cvv" class="form-label">CVV</label>
+                                        <input type="text" class="form-control" id="cvv" placeholder="123" maxlength="4">
+                                    </div>
+                                    <div class="col-md-12 mb-3">
+                                        <label for="cardName" class="form-label">Cardholder Name</label>
+                                        <input type="text" class="form-control" id="cardName" placeholder="Name on card" value="{{ user.full_name }}">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- UPI Details -->
+                            <div id="upiDetails" class="payment-details" style="display: none;">
+                                <div class="mb-3">
+                                    <label for="upiId" class="form-label">UPI ID</label>
+                                    <input type="text" class="form-control" id="upiId" placeholder="yourname@upi">
+                                </div>
+                            </div>
+
+                            <!-- Net Banking Details -->
+                            <div id="netbankingDetails" class="payment-details" style="display: none;">
+                                <div class="mb-3">
+                                    <label for="bankSelect" class="form-label">Select Bank</label>
+                                    <select class="form-select" id="bankSelect">
+                                        <option value="">Choose your bank</option>
+                                        <option value="sbi">State Bank of India</option>
+                                        <option value="hdfc">HDFC Bank</option>
+                                        <option value="icici">ICICI Bank</option>
+                                        <option value="axis">Axis Bank</option>
+                                        <option value="kotak">Kotak Mahindra Bank</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Wallet Details -->
+                            <div id="walletDetails" class="payment-details" style="display: none;">
+                                <div class="mb-3">
+                                    <label for="walletSelect" class="form-label">Select Wallet</label>
+                                    <select class="form-select" id="walletSelect">
+                                        <option value="">Choose your wallet</option>
+                                        <option value="paytm">Paytm</option>
+                                        <option value="phonepe">PhonePe</option>
+                                        <option value="googlepay">Google Pay</option>
+                                        <option value="amazonpay">Amazon Pay</option>
+                                        <option value="mobikwik">MobiKwik</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Terms and Conditions -->
+                            <div class="form-check mb-4">
+                                <input class="form-check-input" type="checkbox" id="termsAccept" required>
+                                <label class="form-check-label" for="termsAccept">
+                                    I agree to the <a href="#" target="_blank">Terms of Service</a> and <a href="#" target="_blank">Privacy Policy</a>
+                                </label>
+                            </div>
+
+                            <!-- Payment Button -->
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary btn-lg" id="payButton">
+                                    <i class="fas fa-lock me-2"></i>Pay ₹{{ "%.2f"|format(total_amount) }} Securely
+                                </button>
+                                <a href="{{ url_for('membership.plans') }}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-arrow-left me-1"></i>Back to Plans
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Security Notice -->
+                <div class="text-center mt-4">
+                    <div class="card border-0 bg-transparent">
+                        <div class="card-body">
+                            <p class="text-white mb-2">
+                                <i class="fas fa-shield-alt me-2"></i>Your payment is secured with 256-bit SSL encryption
+                            </p>
+                            <div class="d-flex justify-content-center align-items-center">
+                                <span class="badge bg-light text-dark me-2">
+                                    <i class="fab fa-cc-visa"></i>
+                                </span>
+                                <span class="badge bg-light text-dark me-2">
+                                    <i class="fab fa-cc-mastercard"></i>
+                                </span>
+                                <span class="badge bg-light text-dark me-2">
+                                    <i class="fab fa-cc-amex"></i>
+                                </span>
+                                <span class="badge bg-light text-dark">
+                                    <i class="fas fa-university"></i>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Payment method switching
+    const paymentMethods = document.querySelectorAll('input[name="paymentMethod"]');
+    const paymentDetails = document.querySelectorAll('.payment-details');
+    
+    paymentMethods.forEach(method => {
+        method.addEventListener('change', function() {
+            // Hide all payment details
+            paymentDetails.forEach(detail => {
+                detail.style.display = 'none';
+            });
+            
+            // Show selected payment method details
+            const selectedDetail = document.getElementById(this.value + 'Details');
+            if (selectedDetail) {
+                selectedDetail.style.display = 'block';
+            }
+        });
+    });
+    
+    // Card number formatting
+    const cardNumberInput = document.getElementById('cardNumber');
+    if (cardNumberInput) {
+        cardNumberInput.addEventListener('input', function() {
+            let value = this.value.replace(/\s/g, '').replace(/[^0-9]/gi, '');
+            let formattedValue = value.match(/.{1,4}/g)?.join(' ') || value;
+            this.value = formattedValue;
+        });
+    }
+    
+    // Expiry date formatting
+    const expiryInput = document.getElementById('expiryDate');
+    if (expiryInput) {
+        expiryInput.addEventListener('input', function() {
+            let value = this.value.replace(/\D/g, '');
+            if (value.length >= 2) {
+                value = value.substring(0, 2) + '/' + value.substring(2, 4);
+            }
+            this.value = value;
+        });
+    }
+    
+    // CVV input restriction
+    const cvvInput = document.getElementById('cvv');
+    if (cvvInput) {
+        cvvInput.addEventListener('input', function() {
+            this.value = this.value.replace(/[^0-9]/g, '');
+        });
+    }
+    
+    // Form submission
+    const paymentForm = document.getElementById('paymentForm');
+    paymentForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const payButton = document.getElementById('payButton');
+        const originalText = payButton.innerHTML;
+        
+        // Show loading state
+        payButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
+        payButton.disabled = true;
+        
+        // Get form data
+        const formData = {
+            plan_id: parseInt(document.getElementById('planId').value),
+            payment_method: document.querySelector('input[name="paymentMethod"]:checked').value,
+            amount: parseFloat(document.getElementById('totalAmount').value)
+        };
+        
+        // Simulate payment processing
+        fetch('{{ url_for("membership.process_payment") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(formData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Show success message
+                alert('Payment successful! Redirecting to dashboard...');
+                window.location.href = data.redirect_url;
+            } else {
+                // Show error message
+                alert('Payment failed: ' + data.message);
+                payButton.innerHTML = originalText;
+                payButton.disabled = false;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Payment processing failed. Please try again.');
+            payButton.innerHTML = originalText;
+            payButton.disabled = false;
+        });
+    });
+});
+</script>
+
+<style>
+.form-check-input:checked {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.payment-details {
+    transition: all 0.3s ease;
+}
+
+.btn {
+    transition: all 0.3s ease;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+}
+
+.badge {
+    font-size: 1.2em;
+    padding: 0.5em;
+}
+</style>
+{% endblock %}

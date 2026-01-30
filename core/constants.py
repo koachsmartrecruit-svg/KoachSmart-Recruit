@@ -38,6 +38,14 @@ PUBLIC_ENDPOINTS = {
 
     # Onboarding
     "onboarding.onboarding_unified", "onboarding.hirer_onboarding",
+    "onboarding.stage1_submit", "onboarding.stage2_submit", "onboarding.stage3_submit",
+    "onboarding.verify_phone_otp", "onboarding.verify_email_otp", "onboarding.resend_otp",
+
+    # Location API endpoints
+    "location.api_countries", "location.api_states", "location.api_cities", 
+    "location.api_search_cities", "location.api_validate_location",
+    "location.api_geocode", "location.api_reverse_geocode", 
+    "location.api_demo_data", "location.api_status",
 
     # Admin management routes (allow admin access)
     "admin_mgmt.dashboard", "admin_mgmt.list_admins", "admin_mgmt.create_admin", 

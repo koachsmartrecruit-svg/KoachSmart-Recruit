@@ -5,6 +5,8 @@ from flask import (
 from flask_login import login_required, current_user
 
 from core.extensions import db
+from core.onboarding_guard import require_onboarding_completion
+from core.membership_guard import require_coach_membership, check_usage_limits
 from models.job import Job
 from models.application import Application
 from models.profile import Profile
@@ -20,7 +22,10 @@ coach_bp = Blueprint("coach", __name__)
 # ---------------------------
 @coach_bp.route("/jobs")
 @login_required
+@require_onboarding_completion
+@require_coach_membership
 def coach_jobs():
+    """Coach jobs listing - requires onboarding completion and active membership"""
     if current_user.role != "coach":
         return redirect(url_for("employer.dashboard"))
     
@@ -87,11 +92,25 @@ def coach_jobs():
 @coach_bp.route("/dashboard")
 @login_required
 def dashboard():
+    """Coach dashboard - shows onboarding progress if not completed"""
     if current_user.role != "coach":
         return redirect(url_for("employer.dashboard"))
+    
+    # Check onboarding completion
+    if not current_user.onboarding_completed:
+        from core.onboarding_guard import get_onboarding_progress, get_onboarding_rewards
+        progress = get_onboarding_progress()
+        rewards = get_onboarding_rewards()
+        
+        return render_template(
+            "coach_onboarding_prompt.html",
+            progress=progress,
+            rewards=rewards,
+            user=current_user
+        )
         
     profile = current_user.profile
-    jobs = Job.query.filter_by(is_active=True).all()
+    jobs = Job.query.filter_by(is_active=True).limit(5).all()  # Show recent jobs
     my_apps = Application.query.filter_by(user_id=current_user.id).all()
 
     # Calculate profile completion percentage
@@ -187,11 +206,118 @@ def text_to_resume():
 
 
 # ---------------------------
+# My Profile - User Journey Dashboard
+# ---------------------------
+@coach_bp.route("/profile")
+@login_required
+def my_profile():
+    """My Profile - Shows complete user journey, documents, badges, coins"""
+    if current_user.role != "coach":
+        return redirect(url_for("employer.dashboard"))
+    
+    from models.verification import VerificationStage, VerificationDocument, CoachSlugPage
+    
+    profile = current_user.profile
+    
+    # Get or create verification stage
+    verification = VerificationStage.query.filter_by(user_id=current_user.id).first()
+    if not verification:
+        verification = VerificationStage(user_id=current_user.id)
+        db.session.add(verification)
+        db.session.commit()
+    
+    # Get uploaded documents with verification status
+    documents = VerificationDocument.query.filter_by(user_id=current_user.id).all()
+    
+    # Get public slug page
+    slug_page = CoachSlugPage.query.filter_by(user_id=current_user.id).first()
+    
+    # Calculate journey progress
+    journey_data = {
+        'stage_1': {
+            'completed': current_user.onboarding_completed or verification.stage_1_completed,
+            'score': verification.calculate_stage_1_score(),
+            'max_score': 7,
+            'coins': verification.stage_1_coins or 150,
+            'badge': 'Orange Badge' if verification.orange_badge else None,
+            'checklist': [
+                {'name': 'Name Verified', 'status': verification.name_verified or bool(profile and profile.full_name)},
+                {'name': 'Phone Verified', 'status': current_user.phone_verified},
+                {'name': 'Email Verified', 'status': current_user.email_verified},
+                {'name': 'Aadhar Verified', 'status': current_user.aadhar_verified},
+                {'name': 'Username Created', 'status': bool(current_user.username)},
+                {'name': 'Password Set', 'status': bool(current_user.password)},
+                {'name': 'Digital ID Created', 'status': bool(current_user.digital_id)}
+            ]
+        },
+        'stage_2': {
+            'completed': verification.stage_2_completed,
+            'score': verification.calculate_stage_2_score(),
+            'max_score': 8,
+            'coins': verification.stage_2_coins or 200,
+            'badge': 'Purple Badge' if verification.purple_badge else None,
+            'checklist': [
+                {'name': 'Language Selected', 'status': bool(current_user.preferred_language)},
+                {'name': 'State Selected', 'status': bool(profile and profile.state)},
+                {'name': 'City Selected', 'status': bool(profile and profile.city)},
+                {'name': 'Location Mapped', 'status': bool(profile and profile.location)},
+                {'name': 'Service Area Set', 'status': bool(profile and profile.serviceable_area)},
+                {'name': 'Job Type Selected', 'status': bool(profile and profile.job_types)},
+                {'name': 'Specific Location Set', 'status': bool(profile and profile.specific_locations)},
+                {'name': 'Range Set', 'status': bool(profile and profile.range_km)}
+            ]
+        },
+        'stage_3': {
+            'completed': verification.stage_3_completed,
+            'score': verification.calculate_stage_3_score(),
+            'max_score': 8,
+            'coins': verification.stage_3_coins or 500,
+            'badge': 'Blue Verified Badge' if verification.blue_badge else None,
+            'checklist': [
+                {'name': 'Education Added', 'status': bool(profile and profile.education)},
+                {'name': 'Specialization Added', 'status': bool(profile and profile.specialization)},
+                {'name': 'Education Document', 'status': bool(profile and profile.education_doc_path)},
+                {'name': 'Professional Cert', 'status': bool(profile and profile.has_professional_cert)},
+                {'name': 'Cert Document', 'status': bool(profile and profile.cert_doc_path)},
+                {'name': 'Playing Level', 'status': bool(profile and profile.playing_level)},
+                {'name': 'Playing Document', 'status': bool(profile and profile.playing_doc_path)},
+                {'name': 'Experience Added', 'status': bool(profile and profile.experience_years)}
+            ]
+        }
+    }
+    
+    # Get badges from user
+    user_badges = current_user.badges.split(',') if current_user.badges else []
+    
+    # Document status summary
+    doc_summary = {
+        'total': len(documents),
+        'pending': len([d for d in documents if d.verification_status == 'pending']),
+        'verified': len([d for d in documents if d.verification_status == 'verified']),
+        'rejected': len([d for d in documents if d.verification_status == 'rejected'])
+    }
+    
+    return render_template(
+        "coach_profile.html",
+        profile=profile,
+        verification=verification,
+        documents=documents,
+        slug_page=slug_page,
+        journey_data=journey_data,
+        user_badges=user_badges,
+        doc_summary=doc_summary,
+        current_stage=verification.get_current_stage(),
+        badge_level=verification.get_badge_level()
+    )
+
+# ---------------------------
 # Edit Profile
 # ---------------------------
 @coach_bp.route("/profile/edit")
 @login_required
+@require_onboarding_completion
 def edit_profile():
+    """Edit profile - requires onboarding completion"""
     if current_user.role != "coach":
         return redirect(url_for("employer.dashboard"))
     
@@ -204,11 +330,35 @@ def edit_profile():
 # ---------------------------
 @coach_bp.route("/job/apply/<int:job_id>", methods=["POST"])
 @login_required
+@require_onboarding_completion
+@require_coach_membership
 def apply_job(job_id):
+    # 🔐 Onboarding check
+    if not current_user.onboarding_completed:
+        flash("Complete onboarding to apply for jobs.", "error")
+        return redirect(url_for("onboarding.onboarding_unified"))
+
+    """Apply for job - requires onboarding completion and active membership"""
     if current_user.role != "coach":
         return redirect(url_for("employer.dashboard"))
 
+    # Check usage limits before allowing application
+    if not check_usage_limits(current_user, 'job_applications'):
+        flash('You have reached your monthly application limit. Please upgrade your membership to apply for more jobs.', 'warning')
+        return redirect(url_for('membership.plans'))
+
     job = Job.query.get_or_404(job_id)
+    
+    # Check if already applied
+    existing_application = Application.query.filter_by(
+        job_id=job_id,
+        user_id=current_user.id
+    ).first()
+    
+    if existing_application:
+        flash('You have already applied for this job.', 'info')
+        return redirect(url_for("coach.coach_jobs"))
+
     profile = Profile.query.filter_by(
         user_id=current_user.id
     ).first()
@@ -225,14 +375,41 @@ def apply_job(job_id):
     db.session.add(application)
     db.session.commit()
 
-    flash(f"Applied successfully! Match: {score}%")
-    return redirect(url_for("coach.dashboard"))
+    flash(f"Applied successfully! Match: {score}%", 'success')
+    return redirect(url_for("coach.coach_jobs"))
 
 
 @coach_bp.route("/resume/<int:user_id>")
 @login_required
+@require_onboarding_completion
 def view_resume(user_id):
+    """View resume - requires onboarding completion"""
     return "Resume View Not Implemented", 501
+
+
+@coach_bp.route("/applications")
+@login_required
+@require_onboarding_completion
+def view_applications():
+    """View job applications - requires onboarding completion"""
+    if current_user.role != "coach":
+        return redirect(url_for("employer.dashboard"))
+    
+    applications = Application.query.filter_by(user_id=current_user.id).all()
+    return render_template("coach_applications.html", applications=applications)
+
+
+@coach_bp.route("/profile/update", methods=["POST"])
+@login_required
+@require_onboarding_completion
+def update_profile():
+    """Update profile - requires onboarding completion"""
+    if current_user.role != "coach":
+        return redirect(url_for("employer.dashboard"))
+    
+    # Profile update logic here
+    flash("Profile updated successfully!")
+    return redirect(url_for("coach.dashboard"))
 
 
 @coach_bp.route("/profile/delete", methods=["POST"])

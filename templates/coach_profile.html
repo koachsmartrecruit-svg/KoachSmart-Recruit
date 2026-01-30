@@ -1,123 +1,468 @@
 {% extends "base.html" %}
+{% block title %}My Profile - Coach Journey{% endblock %}
 
 {% block content %}
-<div class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-lg-8">
-            
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2 class="fw-bold text-dark m-0">Edit Profile</h2>
-                {% if profile.is_verified %}
-                    <span class="badge bg-success"><i class="fas fa-check-circle me-1"></i> Verified Coach</span>
-                {% else %}
-                    <span class="badge bg-secondary"><i class="fas fa-clock me-1"></i> Unverified</span>
-                {% endif %}
-            </div>
-
-            <form method="POST" enctype="multipart/form-data" class="mb-5">
-                
-                <div class="glass-card p-4 mb-4">
-                    <h5 class="fw-bold text-primary mb-3"><i class="fas fa-map-marker-alt me-2"></i>Identity & Location</h5>
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold small text-muted">Full Name</label>
-                            <input type="text" class="form-control" name="full_name" value="{{ profile.full_name or '' }}" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold small text-muted">Phone Number</label>
-                            <input type="tel" class="form-control" name="phone" value="{{ profile.phone or '' }}" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold small text-muted">Current City</label>
-                            <input type="text" class="form-control" name="city" value="{{ profile.city or '' }}" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold small text-muted">Travel Willingness</label>
-                            <select class="form-select" name="travel_range">
-                                <option value="Up to 5km" {% if profile.travel_range == 'Up to 5km' %}selected{% endif %}>Up to 5km</option>
-                                <option value="Within City (20km)" {% if profile.travel_range == 'Within City (20km)' %}selected{% endif %}>Within City (20km)</option>
-                                <option value="State-wide" {% if profile.travel_range == 'State-wide' %}selected{% endif %}>State-wide</option>
-                                <option value="Anywhere in India" {% if profile.travel_range == 'Anywhere in India' %}selected{% endif %}>Anywhere in India</option>
-                            </select>
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label fw-bold small text-muted">Profile Picture</label>
-                            <input type="file" class="form-control" name="profile_image" accept="image/*">
-                        </div>
-                    </div>
-                </div>
-
-                <div class="glass-card p-4 mb-4">
-                    <h5 class="fw-bold text-primary mb-3"><i class="fas fa-trophy me-2"></i>Professional Details</h5>
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold small text-muted">Primary Sport</label>
-                            <select class="form-select" name="sport">
-                                <option value="Cricket" {% if profile.sport == 'Cricket' %}selected{% endif %}>Cricket</option>
-                                <option value="Football" {% if profile.sport == 'Football' %}selected{% endif %}>Football</option>
-                                <option value="Tennis" {% if profile.sport == 'Tennis' %}selected{% endif %}>Tennis</option>
-                                <option value="Basketball" {% if profile.sport == 'Basketball' %}selected{% endif %}>Basketball</option>
-                                <option value="Badminton" {% if profile.sport == 'Badminton' %}selected{% endif %}>Badminton</option>
-                                <option value="Other" {% if profile.sport == 'Other' %}selected{% endif %}>Other</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold small text-muted">Years of Experience</label>
-                            <input type="number" class="form-control" name="experience_years" value="{{ profile.experience_years or 0 }}">
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label fw-bold small text-muted">Experience Proof (PDF/Image)</label>
-                            <input type="file" class="form-control" name="experience_proof">
-                            {% if profile.experience_proof_path %}
-                                <small class="text-success"><i class="fas fa-check me-1"></i> File Uploaded</small>
+<div class="container py-4">
+    <div class="row">
+        <!-- Profile Header -->
+        <div class="col-12">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body p-4">
+                    <div class="row align-items-center">
+                        <div class="col-md-2 text-center">
+                            {% if current_user.profile_pic %}
+                                <img src="{{ url_for('static', filename='profile_pics/' + current_user.profile_pic) }}" 
+                                     class="rounded-circle img-fluid" style="width: 100px; height: 100px; object-fit: cover;">
+                            {% else %}
+                                <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center" 
+                                     style="width: 100px; height: 100px;">
+                                    <i class="fas fa-user fa-2x text-white"></i>
+                                </div>
                             {% endif %}
                         </div>
-                        <div class="col-12">
-                            <label class="form-label fw-bold small text-muted">Certifications</label>
-                            <input type="text" class="form-control" name="certifications" placeholder="e.g. BCCI Level 1, NIS Diploma" value="{{ profile.certifications or '' }}">
+                        <div class="col-md-6">
+                            <h3 class="mb-1">{{ profile.full_name or current_user.username }}</h3>
+                            <p class="text-muted mb-2">
+                                <i class="fas fa-medal me-1"></i>
+                                {{ profile.sport or 'Sports Coach' }}
+                                {% if profile.sport2 %} & {{ profile.sport2 }}{% endif %}
+                            </p>
+                            <p class="text-muted mb-0">
+                                <i class="fas fa-map-marker-alt me-1"></i>
+                                {{ profile.city or 'Location not set' }}
+                                {% if profile.state %}, {{ profile.state }}{% endif %}
+                            </p>
                         </div>
-                        <div class="col-12">
-                            <label class="form-label fw-bold small text-muted">Certification Proof</label>
-                            <input type="file" class="form-control" name="cert_proof">
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label fw-bold small text-muted">Bio / Coaching Philosophy</label>
-                            <textarea class="form-control" name="bio" rows="4">{{ profile.bio or '' }}</textarea>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="glass-card p-4 mb-4">
-                    <h5 class="fw-bold text-primary mb-3"><i class="fas fa-file-alt me-2"></i>Documents & Media</h5>
-                    <div class="row g-3">
-                        <div class="col-12">
-                            <label class="form-label fw-bold small text-muted">Resume / CV (PDF)</label>
-                            <input type="file" class="form-control" name="resume_pdf" accept=".pdf">
-                        </div>
-                        <div class="col-12">
-                            <div class="p-3 bg-secondary bg-opacity-10 rounded border border-secondary border-opacity-25">
-                                <label class="form-label fw-bold small text-dark">Govt. ID Proof (Aadhaar/PAN)</label>
-                                <input type="file" class="form-control" name="id_proof">
-                                <small class="text-muted d-block mt-1"><i class="fas fa-lock me-1"></i> Required for Verified Badge. Encrypted & Admin-Only View.</small>
+                        <div class="col-md-4 text-end">
+                            <div class="row g-2 text-center">
+                                <div class="col-4">
+                                    <div class="bg-warning bg-opacity-10 p-2 rounded">
+                                        <div class="fw-bold text-warning">{{ current_user.coins or 0 }}</div>
+                                        <small class="text-muted">Coins</small>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="bg-info bg-opacity-10 p-2 rounded">
+                                        <div class="fw-bold text-info">{{ current_user.points or 0 }}</div>
+                                        <small class="text-muted">Points</small>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="bg-success bg-opacity-10 p-2 rounded">
+                                        <div class="fw-bold text-success">{{ profile.views or 0 }}</div>
+                                        <small class="text-muted">Views</small>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
 
-                <div class="d-grid mb-5">
-                    <button type="submit" class="btn btn-primary btn-lg fw-bold">Save Profile Changes</button>
+    <div class="row">
+        <!-- Left Column - Journey Progress -->
+        <div class="col-lg-8">
+            
+            <!-- Badges Section -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body p-4">
+                    <h5 class="card-title mb-3">
+                        <i class="fas fa-trophy text-warning me-2"></i>
+                        My Badges & Achievements
+                    </h5>
+                    
+                    {% if user_badges %}
+                    <div class="row g-3 mb-3">
+                        {% for badge in user_badges %}
+                        {% if badge.strip() %}
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center p-3 bg-light rounded">
+                                {% if 'Orange' in badge %}
+                                    <i class="fas fa-medal text-warning fa-2x me-3"></i>
+                                {% elif 'Purple' in badge %}
+                                    <i class="fas fa-medal text-purple fa-2x me-3" style="color: #6f42c1;"></i>
+                                {% elif 'Blue' in badge %}
+                                    <i class="fas fa-medal text-primary fa-2x me-3"></i>
+                                {% elif 'Green' in badge %}
+                                    <i class="fas fa-medal text-success fa-2x me-3"></i>
+                                {% else %}
+                                    <i class="fas fa-award text-secondary fa-2x me-3"></i>
+                                {% endif %}
+                                <div>
+                                    <div class="fw-bold">{{ badge.strip() }}</div>
+                                    <small class="text-muted">Earned</small>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-3">
+                        <i class="fas fa-trophy fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No badges earned yet. Complete your verification journey to earn badges!</p>
+                    </div>
+                    {% endif %}
                 </div>
-            </form>
-
-            <div class="glass-card p-4 border border-danger">
-                <h5 class="fw-bold text-danger mb-3"><i class="fas fa-exclamation-triangle me-2"></i>Danger Zone</h5>
-                <p class="text-muted small">Deleting your account is irreversible. All your data, applications, and history will be lost.</p>
-                <form action="{{ url_for('coach.delete_profile') }}" method="POST" onsubmit="return confirm('Are you strictly sure? This cannot be undone.');">
-                    <button type="submit" class="btn btn-outline-danger">Delete My Account</button>
-                </form>
             </div>
 
+            <!-- Verification Journey -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body p-4">
+                    <h5 class="card-title mb-4">
+                        <i class="fas fa-route text-primary me-2"></i>
+                        My Verification Journey
+                    </h5>
+
+                    <!-- Stage 1: Orange Badge -->
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center mb-3">
+                            {% if journey_data.stage_1.completed %}
+                                <i class="fas fa-check-circle text-success fa-lg me-3"></i>
+                            {% else %}
+                                <i class="fas fa-clock text-warning fa-lg me-3"></i>
+                            {% endif %}
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">Stage 1: Basic Verification 
+                                    {% if journey_data.stage_1.badge %}
+                                        <span class="badge bg-warning ms-2">{{ journey_data.stage_1.badge }}</span>
+                                    {% endif %}
+                                </h6>
+                                <div class="progress mb-2" style="height: 8px;">
+                                    <div class="progress-bar bg-warning" 
+                                         style="width: {{ (journey_data.stage_1.score / journey_data.stage_1.max_score * 100) }}%"></div>
+                                </div>
+                                <small class="text-muted">
+                                    {{ journey_data.stage_1.score }}/{{ journey_data.stage_1.max_score }} completed
+                                    • {{ journey_data.stage_1.coins }} coins earned
+                                </small>
+                            </div>
+                        </div>
+                        
+                        <div class="row g-2 ms-4">
+                            {% for item in journey_data.stage_1.checklist %}
+                            <div class="col-md-6">
+                                <small class="d-flex align-items-center">
+                                    {% if item.status %}
+                                        <i class="fas fa-check text-success me-2"></i>
+                                    {% else %}
+                                        <i class="fas fa-times text-danger me-2"></i>
+                                    {% endif %}
+                                    {{ item.name }}
+                                </small>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Stage 2: Purple Badge -->
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center mb-3">
+                            {% if journey_data.stage_2.completed %}
+                                <i class="fas fa-check-circle text-success fa-lg me-3"></i>
+                            {% else %}
+                                <i class="fas fa-clock text-warning fa-lg me-3"></i>
+                            {% endif %}
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">Stage 2: Location & Service Setup
+                                    {% if journey_data.stage_2.badge %}
+                                        <span class="badge ms-2" style="background-color: #6f42c1;">{{ journey_data.stage_2.badge }}</span>
+                                    {% endif %}
+                                </h6>
+                                <div class="progress mb-2" style="height: 8px;">
+                                    <div class="progress-bar" style="background-color: #6f42c1; width: {{ (journey_data.stage_2.score / journey_data.stage_2.max_score * 100) }}%"></div>
+                                </div>
+                                <small class="text-muted">
+                                    {{ journey_data.stage_2.score }}/{{ journey_data.stage_2.max_score }} completed
+                                    • {{ journey_data.stage_2.coins }} coins earned
+                                </small>
+                            </div>
+                        </div>
+                        
+                        <div class="row g-2 ms-4">
+                            {% for item in journey_data.stage_2.checklist %}
+                            <div class="col-md-6">
+                                <small class="d-flex align-items-center">
+                                    {% if item.status %}
+                                        <i class="fas fa-check text-success me-2"></i>
+                                    {% else %}
+                                        <i class="fas fa-times text-danger me-2"></i>
+                                    {% endif %}
+                                    {{ item.name }}
+                                </small>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Stage 3: Blue Badge -->
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center mb-3">
+                            {% if journey_data.stage_3.completed %}
+                                <i class="fas fa-check-circle text-success fa-lg me-3"></i>
+                            {% else %}
+                                <i class="fas fa-clock text-warning fa-lg me-3"></i>
+                            {% endif %}
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">Stage 3: Education & Professional
+                                    {% if journey_data.stage_3.badge %}
+                                        <span class="badge bg-primary ms-2">{{ journey_data.stage_3.badge }}</span>
+                                    {% endif %}
+                                </h6>
+                                <div class="progress mb-2" style="height: 8px;">
+                                    <div class="progress-bar bg-primary" 
+                                         style="width: {{ (journey_data.stage_3.score / journey_data.stage_3.max_score * 100) }}%"></div>
+                                </div>
+                                <small class="text-muted">
+                                    {{ journey_data.stage_3.score }}/{{ journey_data.stage_3.max_score }} completed
+                                    • {{ journey_data.stage_3.coins }} coins earned
+                                </small>
+                            </div>
+                        </div>
+                        
+                        <div class="row g-2 ms-4">
+                            {% for item in journey_data.stage_3.checklist %}
+                            <div class="col-md-6">
+                                <small class="d-flex align-items-center">
+                                    {% if item.status %}
+                                        <i class="fas fa-check text-success me-2"></i>
+                                    {% else %}
+                                        <i class="fas fa-times text-danger me-2"></i>
+                                    {% endif %}
+                                    {{ item.name }}
+                                </small>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Continue Journey Button -->
+                    {% if not current_user.onboarding_completed %}
+                    <div class="text-center mt-4">
+                        <a href="{{ url_for('onboarding.onboarding_unified') }}" class="btn btn-primary">
+                            <i class="fas fa-arrow-right me-2"></i>
+                            Continue My Journey
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Documents Section -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body p-4">
+                    <h5 class="card-title mb-3">
+                        <i class="fas fa-file-alt text-info me-2"></i>
+                        My Documents
+                    </h5>
+                    
+                    {% if documents %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Document Type</th>
+                                    <th>Uploaded</th>
+                                    <th>Status</th>
+                                    <th>Admin Comments</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for doc in documents %}
+                                <tr>
+                                    <td>
+                                        <i class="fas fa-file-pdf text-danger me-2"></i>
+                                        {{ doc.document_type.title() }}
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">
+                                            {{ doc.uploaded_at.strftime('%d %b %Y') }}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        {% if doc.verification_status == 'verified' %}
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check me-1"></i>Verified
+                                            </span>
+                                        {% elif doc.verification_status == 'rejected' %}
+                                            <span class="badge bg-danger">
+                                                <i class="fas fa-times me-1"></i>Rejected
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-warning">
+                                                <i class="fas fa-clock me-1"></i>Pending
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if doc.verification_notes %}
+                                            <small class="text-muted">{{ doc.verification_notes[:50] }}...</small>
+                                        {% else %}
+                                            <small class="text-muted">No comments</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('static', filename=doc.file_path) }}" 
+                                           target="_blank" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-3">
+                        <i class="fas fa-file-upload fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No documents uploaded yet.</p>
+                        <a href="{{ url_for('onboarding.onboarding_unified') }}" class="btn btn-outline-primary">
+                            Upload Documents
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column - Quick Stats & Actions -->
+        <div class="col-lg-4">
+            
+            <!-- Quick Stats -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body p-4">
+                    <h6 class="card-title mb-3">Quick Stats</h6>
+                    
+                    <div class="row g-3 text-center">
+                        <div class="col-6">
+                            <div class="bg-primary bg-opacity-10 p-3 rounded">
+                                <div class="fs-4 fw-bold text-primary">{{ current_stage }}</div>
+                                <small class="text-muted">Current Stage</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="bg-success bg-opacity-10 p-3 rounded">
+                                <div class="fs-4 fw-bold text-success">{{ user_badges|length }}</div>
+                                <small class="text-muted">Badges Earned</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="bg-info bg-opacity-10 p-3 rounded">
+                                <div class="fs-4 fw-bold text-info">{{ doc_summary.total }}</div>
+                                <small class="text-muted">Documents</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="bg-warning bg-opacity-10 p-3 rounded">
+                                <div class="fs-4 fw-bold text-warning">{{ doc_summary.pending }}</div>
+                                <small class="text-muted">Pending Review</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Public Profile -->
+            {% if slug_page and slug_page.is_active %}
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body p-4">
+                    <h6 class="card-title mb-3">
+                        <i class="fas fa-globe text-success me-2"></i>
+                        Public Profile
+                    </h6>
+                    <p class="text-muted small mb-3">Your profile is live and visible to employers!</p>
+                    <div class="d-grid">
+                        <a href="{{ url_for('onboarding.public_coach_profile', slug=slug_page.slug) }}" 
+                           target="_blank" class="btn btn-outline-success">
+                            <i class="fas fa-external-link-alt me-2"></i>
+                            View Public Profile
+                        </a>
+                    </div>
+                    <div class="mt-3 text-center">
+                        <small class="text-muted">{{ slug_page.page_views }} profile views</small>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Quick Actions -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body p-4">
+                    <h6 class="card-title mb-3">Quick Actions</h6>
+                    
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('onboarding.onboarding_unified') }}" class="btn btn-primary">
+                            <i class="fas fa-edit me-2"></i>
+                            Update Profile
+                        </a>
+                        <a href="{{ url_for('coach.coach_jobs') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-briefcase me-2"></i>
+                            Browse Jobs
+                        </a>
+                        <a href="{{ url_for('coach.view_applications') }}" class="btn btn-outline-info">
+                            <i class="fas fa-file-alt me-2"></i>
+                            My Applications
+                        </a>
+                        {% if current_user.onboarding_completed %}
+                        <a href="{{ url_for('membership.plans') }}" class="btn btn-outline-warning">
+                            <i class="fas fa-crown me-2"></i>
+                            Upgrade Membership
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Referral Section -->
+            {% if current_user.referral_code %}
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <h6 class="card-title mb-3">
+                        <i class="fas fa-users text-warning me-2"></i>
+                        Refer & Earn
+                    </h6>
+                    <p class="text-muted small mb-3">Share your referral code and earn 1000 coins for each successful referral!</p>
+                    
+                    <div class="input-group mb-3">
+                        <input type="text" class="form-control" value="{{ current_user.referral_code }}" readonly>
+                        <button class="btn btn-outline-secondary" type="button" onclick="copyReferralCode()">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                    
+                    <small class="text-muted">
+                        Referrals: {{ current_user.referred_by_code or 0 }} coaches joined
+                    </small>
+                </div>
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>
+
+<script>
+function copyReferralCode() {
+    const input = document.querySelector('input[value="{{ current_user.referral_code }}"]');
+    input.select();
+    document.execCommand('copy');
+    
+    // Show feedback
+    const button = event.target.closest('button');
+    const originalHTML = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-check"></i>';
+    button.classList.add('btn-success');
+    button.classList.remove('btn-outline-secondary');
+    
+    setTimeout(() => {
+        button.innerHTML = originalHTML;
+        button.classList.remove('btn-success');
+        button.classList.add('btn-outline-secondary');
+    }, 2000);
+}
+</script>
+
 {% endblock %}
+</content>

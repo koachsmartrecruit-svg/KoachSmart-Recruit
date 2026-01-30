@@ -3,6 +3,7 @@ from flask_login import login_required, current_user, login_user
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from core.extensions import db
+from core.membership_guard import require_employer_membership, check_usage_limits
 from models.job import Job
 from models.user import User
 from models.application import Application # Added import
@@ -68,9 +69,16 @@ def register():
 
 @employer_bp.route("/job/new", methods=["GET", "POST"])
 @login_required
+@require_employer_membership
 def new_job():
+    """Create new job posting - requires active membership"""
     if current_user.role != "employer":
         return redirect(url_for("employer.dashboard"))
+
+    # Check usage limits before allowing job posting
+    if not check_usage_limits(current_user, 'job_posting'):
+        flash('You have reached your monthly job posting limit. Please upgrade your membership to post more jobs.', 'warning')
+        return redirect(url_for('membership.plans'))
 
     if request.method == "POST":
         job = Job(
@@ -84,7 +92,7 @@ def new_job():
 
         db.session.add(job)
         db.session.commit()
-        flash("Job posted successfully")
+        flash("Job posted successfully", "success")
 
         return redirect(url_for("employer.dashboard"))
 
@@ -92,8 +100,9 @@ def new_job():
 
 @employer_bp.route("/job/<int:job_id>/edit", methods=["GET", "POST"])
 @login_required
+@require_employer_membership
 def edit_job(job_id):
-    """Edit job posting"""
+    """Edit job posting - requires active membership"""
     if current_user.role != "employer":
         return redirect(url_for("employer.dashboard"))
     
