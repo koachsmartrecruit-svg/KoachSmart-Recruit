@@ -141,15 +141,20 @@
               </div>
               <div class="col-md-6 d-flex align-items-end">
                 <button type="submit" name="predict" class="btn btn-outline-primary w-100">
-                  Get AI Salary Suggestion
+                  <i class="fas fa-magic me-2"></i>Get AI Salary Suggestion
                 </button>
               </div>
             </div>
 
             {% if predicted_salary %}
-            <div class="alert alert-info mt-3">
-              <strong>AI Suggested:</strong> ₹{{ predicted_salary }}/month<br>
-              <small class="text-muted">{{ ai_reason }}</small>
+            <div class="alert alert-success mt-3 border-0 shadow-sm">
+              <div class="d-flex align-items-center">
+                <i class="fas fa-robot me-2 text-success"></i>
+                <div>
+                  <strong>🤖 AI Suggested Salary:</strong> ₹{{ predicted_salary }}/month<br>
+                  <small class="text-muted">{{ ai_reason }}</small>
+                </div>
+              </div>
             </div>
             {% endif %}
 

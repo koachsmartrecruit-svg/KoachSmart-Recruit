@@ -117,6 +117,7 @@ def create_app():
     from routes.language_routes import language_bp
     from routes.membership_routes import membership_bp
     from routes.location_routes import location_bp
+    from routes.api_routes import api_bp
 
     app.register_blueprint(public_bp)
     app.register_blueprint(auth_bp)
@@ -130,6 +131,7 @@ def create_app():
     app.register_blueprint(language_bp)
     app.register_blueprint(membership_bp)
     app.register_blueprint(location_bp)
+    app.register_blueprint(api_bp)
 
 
     return app

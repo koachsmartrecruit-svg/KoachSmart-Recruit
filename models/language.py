@@ -41,23 +41,23 @@ class ReferralSystem(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     referrer_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    referred_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    referred_user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     
     # Referral details
     referral_code = db.Column(db.String(20), nullable=False)
-    status = db.Column(db.String(50), default='pending')  # pending, orange_completed, premium_completed
+    status = db.Column(db.String(50), default='active')  # active, completed
     
     # Rewards tracking
-    coins_awarded = db.Column(db.Integer, default=0)
     milestone_reached = db.Column(db.String(50))
+    reward_awarded = db.Column(db.Boolean, default=False)
+    reward_date = db.Column(db.DateTime)
     
     # Timestamps
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    completed_at = db.Column(db.DateTime)
     
     # Relationships
     referrer = db.relationship("User", foreign_keys=[referrer_id], backref="referrals_made")
-    referred = db.relationship("User", foreign_keys=[referred_id], backref="referral_received")
+    referred_user = db.relationship("User", foreign_keys=[referred_user_id], backref="referral_received")
     
     def __repr__(self):
         return f'<ReferralSystem {self.referral_code}: {self.status}>'

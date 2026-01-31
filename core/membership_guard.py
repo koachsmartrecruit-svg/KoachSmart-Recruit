@@ -5,6 +5,7 @@ Enforces membership requirements for job applications and postings
 
 from functools import wraps
 from flask import session, redirect, url_for, flash, request, current_app
+from flask_login import current_user
 from models.user import User
 from models.membership import UserSubscription, MembershipPlan
 from datetime import datetime
@@ -21,25 +22,20 @@ def require_membership(required_feature=None, user_type=None):
     def decorator(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
-            # Check if user is logged in
-            if 'user_id' not in session:
+            # Check if user is logged in (Flask-Login)
+            if not current_user.is_authenticated:
                 flash('Please log in to access this feature.', 'warning')
                 return redirect(url_for('auth.login'))
             
-            user = User.query.get(session['user_id'])
-            if not user:
-                flash('User not found. Please log in again.', 'error')
-                return redirect(url_for('auth.login'))
-            
             # Check membership status
-            membership_status = check_membership_access(user, required_feature, user_type)
+            membership_status = check_membership_access(current_user, required_feature, user_type)
             
             if not membership_status['has_access']:
                 flash(membership_status['message'], 'warning')
                 return redirect(url_for('membership.plans'))
             
             # Check usage limits if applicable
-            if required_feature and not check_usage_limits(user, required_feature):
+            if required_feature and not check_usage_limits(current_user, required_feature):
                 flash('You have reached your monthly limit for this feature. Please upgrade your membership.', 'warning')
                 return redirect(url_for('membership.plans'))
             
@@ -191,7 +187,7 @@ def check_usage_limits(user, feature):
             from models.application import Application
             monthly_applications = Application.query.filter(
                 Application.user_id == user.id,
-                Application.created_at >= current_month
+                Application.applied_date >= current_month
             ).count()
             
             return monthly_applications < subscription.plan.monthly_applications
@@ -204,8 +200,8 @@ def check_usage_limits(user, feature):
             # Count job posts this month
             from models.job import Job
             monthly_posts = Job.query.filter(
-                Job.hirer_id == user.id,
-                Job.created_at >= current_month
+                Job.employer_id == user.id,
+                Job.posted_date >= current_month
             ).count()
             
             return monthly_posts < subscription.plan.monthly_job_posts

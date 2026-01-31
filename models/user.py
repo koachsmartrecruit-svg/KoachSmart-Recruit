@@ -27,13 +27,10 @@ class User(UserMixin, db.Model):
     # Verification badges
     phone_verified = db.Column(db.Boolean, default=False)
     email_verified = db.Column(db.Boolean, default=False)
-    aadhar_verified = db.Column(db.Boolean, default=False)
     location_verified = db.Column(db.Boolean, default=False)
     education_verified = db.Column(db.Boolean, default=False)
     professional_verified = db.Column(db.Boolean, default=False)
-    
-    # Badge system
-    badges = db.Column(db.Text, default="")  # Comma-separated badge names
+    aadhar_verified = db.Column(db.Boolean, default=False)
 
     # Coach onboarding
     onboarding_step = db.Column(db.Integer, default=1)
@@ -48,7 +45,7 @@ class User(UserMixin, db.Model):
     membership_status = db.Column(db.String(50), default='free')
     membership_expires_at = db.Column(db.DateTime, nullable=True)
 
-    # Enhanced onboarding fields
+    # Enhanced onboarding sfields
     preferred_language = db.Column(db.String(50), default='english')
     digital_id = db.Column(db.String(100), unique=True)
     

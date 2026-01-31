@@ -3,7 +3,8 @@ Membership Routes
 Handles membership plans, subscriptions, and billing
 """
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify, current_app
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app
+from flask_login import login_required, current_user
 from models.user import User
 from models.membership import MembershipPlan, UserSubscription, SubscriptionHistory
 from core.membership_guard import get_user_membership_info, check_membership_access
@@ -22,10 +23,9 @@ def plans():
         user = None
         current_membership = None
         
-        if 'user_id' in session:
-            user = User.query.get(session['user_id'])
-            if user:
-                current_membership = get_user_membership_info(user)
+        if current_user.is_authenticated:
+            user = current_user
+            current_membership = get_user_membership_info(user)
         
         # Get all active plans
         coach_plans = MembershipPlan.query.filter_by(
@@ -64,14 +64,11 @@ def plans():
 
 
 @membership_bp.route('/subscribe/<int:plan_id>')
+@login_required
 def subscribe(plan_id):
     """Subscribe to a membership plan"""
-    if 'user_id' not in session:
-        flash('Please log in to subscribe to a membership plan.', 'warning')
-        return redirect(url_for('auth.login'))
-    
     try:
-        user = User.query.get(session['user_id'])
+        user = current_user
         plan = MembershipPlan.query.get_or_404(plan_id)
         
         # Check if plan matches user type
@@ -105,14 +102,11 @@ def subscribe(plan_id):
 
 
 @membership_bp.route('/payment/<int:plan_id>')
+@login_required
 def payment(plan_id):
     """Payment page for membership subscription"""
-    if 'user_id' not in session:
-        flash('Please log in to continue.', 'warning')
-        return redirect(url_for('auth.login'))
-    
     try:
-        user = User.query.get(session['user_id'])
+        user = current_user
         plan = MembershipPlan.query.get_or_404(plan_id)
         
         # Check if plan matches user type
@@ -139,14 +133,12 @@ def payment(plan_id):
 
 
 @membership_bp.route('/process-payment', methods=['POST'])
+@login_required
 def process_payment():
     """Process membership payment"""
-    if 'user_id' not in session:
-        return jsonify({'success': False, 'message': 'Please log in to continue.'})
-    
     try:
         data = request.get_json()
-        user = User.query.get(session['user_id'])
+        user = current_user
         plan = MembershipPlan.query.get(data.get('plan_id'))
         
         if not plan:
@@ -189,14 +181,11 @@ def process_payment():
 
 
 @membership_bp.route('/dashboard')
+@login_required
 def dashboard():
     """Membership dashboard"""
-    if 'user_id' not in session:
-        flash('Please log in to view your membership dashboard.', 'warning')
-        return redirect(url_for('auth.login'))
-    
     try:
-        user = User.query.get(session['user_id'])
+        user = current_user
         membership_info = get_user_membership_info(user)
         
         # Get subscription history
@@ -220,14 +209,11 @@ def dashboard():
 
 
 @membership_bp.route('/cancel')
+@login_required
 def cancel_subscription():
     """Cancel current subscription"""
-    if 'user_id' not in session:
-        flash('Please log in to continue.', 'warning')
-        return redirect(url_for('auth.login'))
-    
     try:
-        user = User.query.get(session['user_id'])
+        user = current_user
         subscription = UserSubscription.query.filter_by(user_id=user.id).first()
         
         if not subscription or not subscription.is_active():
@@ -258,14 +244,11 @@ def cancel_subscription():
 
 
 @membership_bp.route('/upgrade/<int:plan_id>')
+@login_required
 def upgrade(plan_id):
     """Upgrade to a higher plan"""
-    if 'user_id' not in session:
-        flash('Please log in to continue.', 'warning')
-        return redirect(url_for('auth.login'))
-    
     try:
-        user = User.query.get(session['user_id'])
+        user = current_user
         new_plan = MembershipPlan.query.get_or_404(plan_id)
         current_subscription = UserSubscription.query.filter_by(user_id=user.id).first()
         
@@ -410,7 +393,7 @@ def get_usage_statistics(user):
             from models.application import Application
             stats['monthly_applications'] = Application.query.filter(
                 Application.user_id == user.id,
-                Application.created_at >= current_month
+                Application.applied_date >= current_month
             ).count()
             
             stats['total_applications'] = Application.query.filter_by(user_id=user.id).count()
@@ -419,11 +402,11 @@ def get_usage_statistics(user):
             # Count job posts
             from models.job import Job
             stats['monthly_job_posts'] = Job.query.filter(
-                Job.hirer_id == user.id,
-                Job.created_at >= current_month
+                Job.employer_id == user.id,
+                Job.posted_date >= current_month
             ).count()
             
-            stats['total_job_posts'] = Job.query.filter_by(hirer_id=user.id).count()
+            stats['total_job_posts'] = Job.query.filter_by(employer_id=user.id).count()
         
         return stats
         

@@ -1,0 +1,247 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-1">My Job Postings</h1>
+                    <p class="text-muted mb-0">Manage all your job postings and track applications.</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('employer.new_job') }}" class="btn btn-primary">
+                        <i class="fas fa-plus-circle me-2"></i> Post New Job
+                    </a>
+                </div>
+            </div>
+
+            <!-- Jobs Summary Cards -->
+            <div class="row g-4 mb-4">
+                <div class="col-lg-3 col-md-6">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="bg-success bg-opacity-10 rounded-circle p-3">
+                                        <i class="fas fa-briefcase text-success fs-4"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h6 class="card-title mb-1">Active Jobs</h6>
+                                    <h3 class="mb-0">{{ jobs|selectattr('is_active')|list|length }}</h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-3 col-md-6">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="bg-primary bg-opacity-10 rounded-circle p-3">
+                                        <i class="fas fa-list text-primary fs-4"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h6 class="card-title mb-1">Total Jobs</h6>
+                                    <h3 class="mb-0">{{ jobs|length }}</h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-3 col-md-6">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="bg-info bg-opacity-10 rounded-circle p-3">
+                                        <i class="fas fa-users text-info fs-4"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h6 class="card-title mb-1">Total Applications</h6>
+                                    <h3 class="mb-0">
+                                        {% set total_apps = 0 %}
+                                        {% for job in jobs %}
+                                            {% set total_apps = total_apps + job_stats[job.id].total_applications %}
+                                        {% endfor %}
+                                        {{ total_apps }}
+                                    </h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-3 col-md-6">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="bg-warning bg-opacity-10 rounded-circle p-3">
+                                        <i class="fas fa-clock text-warning fs-4"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h6 class="card-title mb-1">Pending Reviews</h6>
+                                    <h3 class="mb-0">
+                                        {% set pending_apps = 0 %}
+                                        {% for job in jobs %}
+                                            {% set pending_apps = pending_apps + job_stats[job.id].pending %}
+                                        {% endfor %}
+                                        {{ pending_apps }}
+                                    </h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Jobs Table -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom">
+                    <h5 class="card-title mb-0">All Job Postings</h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if jobs %}
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Job Title</th>
+                                        <th>Sport</th>
+                                        <th>Location</th>
+                                        <th>Posted Date</th>
+                                        <th>Status</th>
+                                        <th>Applications</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for job in jobs %}
+                                    <tr>
+                                        <td>
+                                            <div>
+                                                <h6 class="mb-1">{{ job.title }}</h6>
+                                                <small class="text-muted">{{ job.job_type }}</small>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-light text-dark">{{ job.sport }}</span>
+                                        </td>
+                                        <td>
+                                            <div>
+                                                {% if job.city %}
+                                                    <i class="fas fa-map-marker-alt text-muted me-1"></i>
+                                                    {{ job.city }}{% if job.state %}, {{ job.state }}{% endif %}
+                                                {% else %}
+                                                    <span class="text-muted">{{ job.location }}</span>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <small class="text-muted">
+                                                {{ job.posted_date.strftime('%b %d, %Y') if job.posted_date else 'N/A' }}
+                                            </small>
+                                        </td>
+                                        <td>
+                                            {% if job.is_active %}
+                                                <span class="badge bg-success">Active</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">Inactive</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="d-flex flex-column">
+                                                <small><strong>{{ job_stats[job.id].total_applications }}</strong> total</small>
+                                                {% if job_stats[job.id].pending > 0 %}
+                                                    <small class="text-warning">{{ job_stats[job.id].pending }} pending</small>
+                                                {% endif %}
+                                                {% if job_stats[job.id].interviews > 0 %}
+                                                    <small class="text-info">{{ job_stats[job.id].interviews }} interviews</small>
+                                                {% endif %}
+                                                {% if job_stats[job.id].hired > 0 %}
+                                                    <small class="text-success">{{ job_stats[job.id].hired }} hired</small>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <a href="{{ url_for('employer.edit_job', job_id=job.id) }}" 
+                                                   class="btn btn-sm btn-outline-primary" title="Edit Job">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <form method="POST" action="{{ url_for('employer.toggle_job_status', job_id=job.id) }}" 
+                                                      class="d-inline">
+                                                    <button type="submit" 
+                                                            class="btn btn-sm btn-outline-{{ 'secondary' if job.is_active else 'success' }}"
+                                                            title="{{ 'Deactivate' if job.is_active else 'Activate' }} Job"
+                                                            onclick="return confirm('Are you sure you want to {{ 'deactivate' if job.is_active else 'activate' }} this job?')">
+                                                        <i class="fas fa-{{ 'pause' if job.is_active else 'play' }}"></i>
+                                                    </button>
+                                                </form>
+                                                {% if job_stats[job.id].total_applications > 0 %}
+                                                    <a href="{{ url_for('coach.applications') }}?job_id={{ job.id }}" 
+                                                       class="btn btn-sm btn-outline-info" title="View Applications">
+                                                        <i class="fas fa-users"></i>
+                                                    </a>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-briefcase text-muted" style="font-size: 3rem;"></i>
+                            <h5 class="mt-3 text-muted">No Jobs Posted Yet</h5>
+                            <p class="text-muted mb-4">Start by posting your first job to find the perfect coaches for your academy.</p>
+                            <a href="{{ url_for('employer.new_job') }}" class="btn btn-primary">
+                                <i class="fas fa-plus-circle me-2"></i> Post Your First Job
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.table th {
+    font-weight: 600;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #6c757d;
+}
+
+.btn-group .btn {
+    border-radius: 0.375rem !important;
+    margin-right: 0.25rem;
+}
+
+.btn-group .btn:last-child {
+    margin-right: 0;
+}
+
+.card-header {
+    padding: 1.25rem 1.5rem;
+}
+
+.badge {
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+</style>
+
+{% endblock %}

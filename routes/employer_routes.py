@@ -7,6 +7,8 @@ from core.membership_guard import require_employer_membership, check_usage_limit
 from models.job import Job
 from models.user import User
 from models.application import Application # Added import
+from services.ai_service import predict_salary
+from services.stats_service import get_employer_stats
 
 # ---------------------------
 # Blueprint
@@ -35,7 +37,9 @@ def login():
             flash("Invalid email or password")
             return redirect(url_for("employer.login"))
 
-    return render_template("employer_login.html")
+    # Get real-time stats for the login page
+    stats = get_employer_stats()
+    return render_template("employer_login.html", stats=stats)
 
 @employer_bp.route("/register", methods=["GET", "POST"])
 def register():
@@ -65,7 +69,9 @@ def register():
         flash("Account created successfully")
         return redirect(url_for("employer.dashboard"))
 
-    return render_template("employer_register.html")
+    # Get real-time stats for the register page
+    stats = get_employer_stats()
+    return render_template("employer_register.html", stats=stats)
 
 @employer_bp.route("/job/new", methods=["GET", "POST"])
 @login_required
@@ -80,13 +86,105 @@ def new_job():
         flash('You have reached your monthly job posting limit. Please upgrade your membership to post more jobs.', 'warning')
         return redirect(url_for('membership.plans'))
 
+    predicted_salary = None
+    ai_reason = None
+    form_data = {}
+
     if request.method == "POST":
+        # Get form data
+        title = request.form.get("title", "").strip()
+        sport = request.form.get("sport", "").strip()
+        description = request.form.get("description", "").strip()
+        venue = request.form.get("venue", "").strip()
+        city = request.form.get("city", "").strip()
+        state = request.form.get("state", "").strip()
+        country = request.form.get("country", "").strip()
+        requirements = request.form.get("requirements", "").strip()
+        screening_questions = request.form.get("screening_questions", "").strip()
+        job_type = request.form.get("job_type", "Full Time").strip()
+        working_hours = request.form.get("working_hours", "").strip()
+        salary = request.form.get("salary", "").strip()
+        
+        # Store form data for re-rendering
+        form_data = {
+            'title': title,
+            'sport': sport,
+            'description': description,
+            'venue': venue,
+            'city': city,
+            'state': state,
+            'country': country,
+            'requirements': requirements,
+            'screening_questions': screening_questions,
+            'job_type': job_type,
+            'working_hours': working_hours,
+            'salary': salary
+        }
+        
+        # Handle AI salary prediction
+        if 'predict' in request.form:
+            if title and sport and city:
+                try:
+                    predicted_salary, ai_reason = predict_salary(
+                        title=title,
+                        sport=sport,
+                        city=city,
+                        state=state,
+                        country=country,
+                        job_type=job_type,
+                        requirements=requirements
+                    )
+                    if predicted_salary:
+                        flash(f"💡 AI suggested salary: ₹{predicted_salary}/month", "success")
+                    else:
+                        flash("Unable to generate salary prediction. Please try again.", "warning")
+                except Exception as e:
+                    flash("Salary prediction service temporarily unavailable.", "warning")
+                    predicted_salary, ai_reason = None, None
+            else:
+                flash("Please fill in job title, sport, and city to get salary prediction.", "warning")
+            
+            return render_template("job_new.html", 
+                                 form_data=form_data, 
+                                 predicted_salary=predicted_salary, 
+                                 ai_reason=ai_reason)
+        
+        # Handle job creation
+        if not title or not sport or not description:
+            flash("Title, sport, and description are required.", "error")
+            return render_template("job_new.html", 
+                                 form_data=form_data, 
+                                 predicted_salary=predicted_salary, 
+                                 ai_reason=ai_reason)
+        
+        # Build location string from available components
+        location_parts = []
+        if venue:
+            location_parts.append(venue)
+        if city:
+            location_parts.append(city)
+        if state:
+            location_parts.append(state)
+        if country:
+            location_parts.append(country)
+        
+        location = ", ".join(location_parts) if location_parts else "Location not specified"
+        
         job = Job(
             employer_id=current_user.id,
-            title=request.form.get("title"),
-            sport=request.form.get("sport"),
-            description=request.form.get("description"),
-            city=request.form.get("city"),
+            title=title,
+            sport=sport,
+            description=description,
+            location=location,
+            venue=venue,
+            city=city,
+            state=state,
+            country=country,
+            requirements=requirements or None,
+            screening_questions=screening_questions or None,
+            job_type=job_type,
+            working_hours=working_hours or None,
+            salary_range=salary or None,
             is_active=True
         )
 
@@ -96,7 +194,10 @@ def new_job():
 
         return redirect(url_for("employer.dashboard"))
 
-    return render_template("job_new.html")
+    return render_template("job_new.html", 
+                         form_data=form_data, 
+                         predicted_salary=predicted_salary, 
+                         ai_reason=ai_reason)
 
 @employer_bp.route("/job/<int:job_id>/edit", methods=["GET", "POST"])
 @login_required
@@ -179,8 +280,50 @@ def dashboard():
     if current_user.role != "employer":
         return redirect(url_for("employer.dashboard"))
     
-    # Render the employer dashboard template
-    return render_template("employer_dashboard.html")
+    # Get employer's jobs for dashboard stats
+    jobs = Job.query.filter_by(employer_id=current_user.id).all()
+    active_jobs = [job for job in jobs if job.is_active]
+    
+    # Get applications for employer's jobs
+    applications = Application.query.join(Job).filter(Job.employer_id == current_user.id).all()
+    
+    # Calculate stats
+    stats = {
+        'active_jobs': len(active_jobs),
+        'total_jobs': len(jobs),
+        'total_applications': len(applications),
+        'pending_applications': len([app for app in applications if app.status == 'Applied']),
+        'interviews_scheduled': len([app for app in applications if app.status == 'Interview']),
+        'hired_count': len([app for app in applications if app.status == 'Hired'])
+    }
+    
+    # Recent jobs (last 5)
+    recent_jobs = Job.query.filter_by(employer_id=current_user.id).order_by(Job.created_at.desc()).limit(5).all()
+    
+    return render_template("employer_dashboard.html", stats=stats, recent_jobs=recent_jobs)
+
+@employer_bp.route("/jobs")
+@login_required
+def jobs():
+    """View all jobs posted by the employer"""
+    if current_user.role != "employer":
+        return redirect(url_for("employer.dashboard"))
+    
+    # Get all jobs for this employer
+    jobs = Job.query.filter_by(employer_id=current_user.id).order_by(Job.created_at.desc()).all()
+    
+    # Get application counts for each job
+    job_stats = {}
+    for job in jobs:
+        applications = Application.query.filter_by(job_id=job.id).all()
+        job_stats[job.id] = {
+            'total_applications': len(applications),
+            'pending': len([app for app in applications if app.status == 'Applied']),
+            'interviews': len([app for app in applications if app.status == 'Interview']),
+            'hired': len([app for app in applications if app.status == 'Hired'])
+        }
+    
+    return render_template("employer_jobs.html", jobs=jobs, job_stats=job_stats)
 
 
 @employer_bp.route("/explore")

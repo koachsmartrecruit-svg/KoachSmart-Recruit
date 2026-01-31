@@ -32,3 +32,4 @@ class Job(db.Model):
     # Status
     is_active = db.Column(db.Boolean, default=True)
     posted_date = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)  # Add for consistency

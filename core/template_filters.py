@@ -6,10 +6,35 @@ Provides localization and other utility filters for Jinja2 templates
 from flask import current_app
 from flask_login import current_user
 from services.language_service import language_engine, get_user_language
+from datetime import datetime
 
 
 def register_template_filters(app):
     """Register custom template filters with Flask app"""
+    
+    @app.template_filter('safe_strftime')
+    def safe_strftime_filter(date_value, format_string='%b %d, %Y'):
+        """
+        Safe date formatting filter that handles None values and non-datetime objects
+        Usage: {{ some_date|safe_strftime('%Y-%m-%d') }}
+        """
+        if not date_value:
+            return 'N/A'
+        
+        if isinstance(date_value, str):
+            # If it's already a string, return as is or try to parse
+            if date_value.lower() in ['pending', 'n/a', 'none']:
+                return 'Pending'
+            return date_value
+        
+        if isinstance(date_value, datetime):
+            try:
+                return date_value.strftime(format_string)
+            except (ValueError, AttributeError):
+                return 'Invalid Date'
+        
+        # For any other type, return a safe default
+        return 'N/A'
     
     @app.template_filter('localize')
     def localize_filter(content_key, **kwargs):

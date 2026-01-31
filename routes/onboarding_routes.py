@@ -31,7 +31,6 @@ from models.user import User
 from services.otp_service import send_mobile_otp, send_email_otp_service, verify_otp
 from services.email_service import send_welcome_email
 from services.reward_service import award_reward
-from services.referral_service import award_referral_bonus
 
 # ---------------------------
 # Blueprint
@@ -397,7 +396,15 @@ def handle_stage3_submission(profile):
     # Award referral bonus if user was referred
     if hasattr(current_user, 'referred_by') and current_user.referred_by:
         try:
-            award_referral_bonus(current_user.referred_by, 'orange_completion')
+            # Query by referral code, not by ID
+            referring_user = User.query.filter_by(referral_code=current_user.referred_by).first()
+            if referring_user:
+                # Award 1000 coins to referrer
+                if not referring_user.coins:
+                    referring_user.coins = 0
+                referring_user.coins += 1000
+                db.session.commit()
+                current_app.logger.info(f"Referral reward: {referring_user.username} earned 1000 coins")
         except Exception as e:
             current_app.logger.error(f"Error awarding referral bonus: {str(e)}")
     
@@ -574,7 +581,7 @@ def hirer_onboarding():
             current_user.employer_onboarding_step = 3
             db.session.commit()
 
-        # STEP 3 – Location
+        # STEP 3 – Location & Final Save
         elif current_step == 3:
             address_full = request.form.get("address_full", "").strip()
             city = request.form.get("city", "").strip()
@@ -583,6 +590,7 @@ def hirer_onboarding():
             pincode = request.form.get("pincode", "").strip()
             latitude = request.form.get("latitude", "").strip()
             longitude = request.form.get("longitude", "").strip()
+            google_maps_link = request.form.get("google_maps_link", "").strip()
 
             if not address_full or not city or not state or not is_valid_pincode(pincode):
                 flash("Address, city, state, and valid pincode are required.")
@@ -595,32 +603,11 @@ def hirer_onboarding():
                 "country": country or "India",
                 "pincode": pincode,
                 "latitude": float(latitude) if latitude else None,
-                "longitude": float(longitude) if longitude else None
+                "longitude": float(longitude) if longitude else None,
+                "google_maps_link": google_maps_link
             })
 
-            session["hirer_onboarding"] = data
-            current_user.employer_onboarding_step = 4
-            db.session.commit()
-
-        # STEP 4 – Final Save
-        elif current_step == 4:
-            hiring_mode = request.form.get("hiring_mode", "").strip()
-            hiring_count = request.form.get("hiring_count", "").strip()
-            google_maps_link = request.form.get("google_maps_link", "").strip()
-            notes = request.form.get("notes", "").strip()
-
-            if not hiring_mode:
-                flash("Hiring mode is required.")
-                return redirect(url_for("onboarding.hirer_onboarding"))
-
-            # Update data with final step info
-            data.update({
-                "hiring_mode": hiring_mode,
-                "hiring_count": int(hiring_count) if hiring_count else None,
-                "google_maps_link": google_maps_link,
-                "notes": notes
-            })
-
+            # Complete onboarding - create hirer record
             hirer = Hirer(
                 institute_name=data.get("institute_name") or "Unknown Institute",
                 contact_person_name=data.get("contact_person_name") or "Unknown Contact",
@@ -637,10 +624,10 @@ def hirer_onboarding():
                 pincode=data.get("pincode") or "000000",
                 latitude=data.get("latitude"),
                 longitude=data.get("longitude"),
-                hiring_mode=data.get("hiring_mode"),
-                hiring_count=data.get("hiring_count"),
+                hiring_mode="Multiple",  # Default value
+                hiring_count=None,  # No specific count
                 google_maps_link=data.get("google_maps_link"),
-                notes=data.get("notes"),
+                notes="",  # No notes field
                 gst_doc_path=data.get("gst_doc_path"),
                 registration_doc_path=data.get("registration_doc_path"),
                 owner_id_doc_path=data.get("owner_id_doc_path"),

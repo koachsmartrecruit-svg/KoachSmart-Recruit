@@ -10,6 +10,7 @@ from core.membership_guard import require_coach_membership, check_usage_limits
 from models.job import Job
 from models.application import Application
 from models.profile import Profile
+from models.user import User
 from services.ai_service import calculate_match_score
 
 # ---------------------------
@@ -421,3 +422,61 @@ def delete_profile():
     db.session.commit()
     flash("Account deleted.")
     return redirect(url_for("public.home"))
+
+# ---------------------------
+# Referral Dashboard
+# ---------------------------
+@coach_bp.route("/referrals")
+@login_required
+@require_onboarding_completion
+def referral_dashboard():
+    """Referral dashboard - shows referral stats and code"""
+    if current_user.role != "coach":
+        return redirect(url_for("employer.dashboard"))
+    
+    # Ensure user has a referral code
+    if not current_user.referral_code:
+        import secrets
+        current_user.referral_code = secrets.token_hex(4).upper()
+        db.session.commit()
+    
+    # Get basic referral statistics
+    from models.language import ReferralSystem
+    total_referrals = User.query.filter_by(referred_by=current_user.referral_code).count()
+    
+    # Calculate total rewards (1000 coins per successful referral)
+    successful_referrals = User.query.filter(
+        User.referred_by == current_user.referral_code,
+        User.onboarding_completed == True
+    ).count()
+    
+    total_rewards = successful_referrals * 1000
+    
+    # Get recent referrals
+    recent_referrals = User.query.filter_by(referred_by=current_user.referral_code).limit(5).all()
+    recent_list = []
+    for user in recent_referrals:
+        recent_list.append({
+            'username': user.username,
+            'date': user.onboarding_completed_at,  # Keep as datetime object or None
+            'milestone': 'orange_completion' if user.onboarding_completed else None,
+            'reward_awarded': user.onboarding_completed
+        })
+    
+    referral_stats = {
+        'referral_code': current_user.referral_code,
+        'total_referrals': total_referrals,
+        'successful_referrals': successful_referrals,
+        'total_rewards_earned': total_rewards,
+        'recent_referrals': recent_list
+    }
+    
+    # Simple leaderboard
+    leaderboard = []
+    
+    return render_template(
+        "referral_dashboard.html",
+        referral_stats=referral_stats,
+        leaderboard=leaderboard,
+        user=current_user
+    )

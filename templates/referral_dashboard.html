@@ -1,0 +1,329 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-gradient-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-users me-2"></i>
+                        Referral Dashboard
+                    </h4>
+                    <p class="mb-0 opacity-75">Invite friends and earn rewards!</p>
+                </div>
+                
+                <div class="card-body">
+                    <!-- Referral Code Section -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="card border-primary">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title text-primary">
+                                        <i class="fas fa-gift me-2"></i>
+                                        Your Referral Code
+                                    </h5>
+                                    <div class="referral-code-display mb-3">
+                                        <h2 class="text-primary fw-bold" id="referralCode">
+                                            {{ referral_stats.referral_code or 'Loading...' }}
+                                        </h2>
+                                        <button class="btn btn-outline-primary btn-sm" onclick="copyReferralCode()">
+                                            <i class="fas fa-copy me-1"></i>
+                                            Copy Code
+                                        </button>
+                                    </div>
+                                    <p class="text-muted small">
+                                        Share this code with friends to earn rewards when they complete onboarding!
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="card border-success">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title text-success">
+                                        <i class="fas fa-coins me-2"></i>
+                                        Referral Earnings
+                                    </h5>
+                                    <h2 class="text-success fw-bold">
+                                        {{ referral_stats.total_rewards_earned or 0 }} 
+                                        <small class="text-muted">coins</small>
+                                    </h2>
+                                    <p class="text-muted small">
+                                        Total earned from {{ referral_stats.successful_referrals or 0 }} successful referrals
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Stats Cards -->
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-user-plus fa-2x text-info mb-2"></i>
+                                    <h4 class="fw-bold">{{ referral_stats.total_referrals or 0 }}</h4>
+                                    <p class="text-muted mb-0">Total Referrals</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
+                                    <h4 class="fw-bold">{{ referral_stats.successful_referrals or 0 }}</h4>
+                                    <p class="text-muted mb-0">Completed Onboarding</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-percentage fa-2x text-warning mb-2"></i>
+                                    <h4 class="fw-bold">
+                                        {% if referral_stats.total_referrals > 0 %}
+                                            {{ ((referral_stats.successful_referrals / referral_stats.total_referrals) * 100) | round(1) }}%
+                                        {% else %}
+                                            0%
+                                        {% endif %}
+                                    </h4>
+                                    <p class="text-muted mb-0">Success Rate</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- How It Works -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fas fa-info-circle me-2"></i>
+                                How Referrals Work
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="d-flex align-items-start mb-3">
+                                        <div class="badge bg-primary rounded-pill me-3 mt-1">1</div>
+                                        <div>
+                                            <h6 class="fw-bold">Share Your Code</h6>
+                                            <p class="text-muted small mb-0">
+                                                Share your referral code with friends who want to join KoachSmart
+                                            </p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="d-flex align-items-start mb-3">
+                                        <div class="badge bg-primary rounded-pill me-3 mt-1">2</div>
+                                        <div>
+                                            <h6 class="fw-bold">They Sign Up</h6>
+                                            <p class="text-muted small mb-0">
+                                                Your friend registers using your referral code
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="d-flex align-items-start mb-3">
+                                        <div class="badge bg-success rounded-pill me-3 mt-1">3</div>
+                                        <div>
+                                            <h6 class="fw-bold">They Complete Onboarding</h6>
+                                            <p class="text-muted small mb-0">
+                                                When they finish the 3-step onboarding process
+                                            </p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="d-flex align-items-start mb-3">
+                                        <div class="badge bg-success rounded-pill me-3 mt-1">4</div>
+                                        <div>
+                                            <h6 class="fw-bold">You Earn Rewards!</h6>
+                                            <p class="text-muted small mb-0">
+                                                Get <strong>1000 coins</strong> for each successful referral
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Recent Referrals -->
+                    {% if referral_stats.recent_referrals %}
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fas fa-history me-2"></i>
+                                Recent Referrals
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>User</th>
+                                            <th>Date</th>
+                                            <th>Status</th>
+                                            <th>Reward</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for referral in referral_stats.recent_referrals %}
+                                        <tr>
+                                            <td>
+                                                <i class="fas fa-user-circle me-2"></i>
+                                                {{ referral.username }}
+                                            </td>
+                                            <td>{{ referral.date|safe_strftime('%b %d, %Y') }}</td>
+                                            <td>
+                                                {% if referral.reward_awarded %}
+                                                    <span class="badge bg-success">
+                                                        <i class="fas fa-check me-1"></i>
+                                                        Completed
+                                                    </span>
+                                                {% else %}
+                                                    <span class="badge bg-warning">
+                                                        <i class="fas fa-clock me-1"></i>
+                                                        Pending
+                                                    </span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if referral.reward_awarded %}
+                                                    <span class="text-success fw-bold">
+                                                        <i class="fas fa-coins me-1"></i>
+                                                        1000 coins
+                                                    </span>
+                                                {% else %}
+                                                    <span class="text-muted">-</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Leaderboard -->
+                    {% if leaderboard %}
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fas fa-trophy me-2"></i>
+                                Top Referrers
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Rank</th>
+                                            <th>User</th>
+                                            <th>Total Referrals</th>
+                                            <th>Successful</th>
+                                            <th>Total Rewards</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for leader in leaderboard %}
+                                        <tr {% if leader.username == user.username %}class="table-primary"{% endif %}>
+                                            <td>
+                                                {% if leader.rank <= 3 %}
+                                                    <i class="fas fa-medal text-warning"></i>
+                                                {% endif %}
+                                                #{{ leader.rank }}
+                                            </td>
+                                            <td>
+                                                <i class="fas fa-user-circle me-2"></i>
+                                                {{ leader.username }}
+                                                {% if leader.username == user.username %}
+                                                    <span class="badge bg-primary ms-2">You</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ leader.total_referrals }}</td>
+                                            <td>{{ leader.successful_referrals }}</td>
+                                            <td>
+                                                <span class="text-success fw-bold">
+                                                    <i class="fas fa-coins me-1"></i>
+                                                    {{ leader.total_rewards }}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function copyReferralCode() {
+    const codeElement = document.getElementById('referralCode');
+    const code = codeElement.textContent.trim();
+    
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(code).then(() => {
+            showToast('Referral code copied to clipboard!', 'success');
+        }).catch(() => {
+            fallbackCopyTextToClipboard(code);
+        });
+    } else {
+        fallbackCopyTextToClipboard(code);
+    }
+}
+
+function fallbackCopyTextToClipboard(text) {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    textArea.style.top = "0";
+    textArea.style.left = "0";
+    textArea.style.position = "fixed";
+    
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    
+    try {
+        document.execCommand('copy');
+        showToast('Referral code copied to clipboard!', 'success');
+    } catch (err) {
+        showToast('Failed to copy referral code', 'error');
+    }
+    
+    document.body.removeChild(textArea);
+}
+
+function showToast(message, type) {
+    // Simple toast notification
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type === 'success' ? 'success' : 'danger'} position-fixed`;
+    toast.style.top = '20px';
+    toast.style.right = '20px';
+    toast.style.zIndex = '9999';
+    toast.textContent = message;
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        document.body.removeChild(toast);
+    }, 3000);
+}
+</script>
+{% endblock %}

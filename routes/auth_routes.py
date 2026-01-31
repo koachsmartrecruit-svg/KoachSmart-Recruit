@@ -16,8 +16,7 @@ from google_auth_oauthlib.flow import Flow
 from core.extensions import db
 from models.user import User
 from models.profile import Profile
-
-from services.referral_service import generate_referral_code, apply_referral_bonus
+from services.stats_service import get_coach_stats
 
 # ---------------------------
 # Blueprint
@@ -38,18 +37,37 @@ def register():
             flash("Email already exists")
             return redirect(url_for("auth.register"))
 
+        # Get referral code from form if provided
+        referral_code_input = request.form.get("referral_code", "").strip()
+        
         user = User(
             username=request.form.get("username"),
             email=request.form.get("email"),
             role="coach",
             password=generate_password_hash(
                 request.form.get("password")
-            ),
-            referral_code=generate_referral_code()
+            )
         )
 
         db.session.add(user)
         db.session.commit()
+
+        # Generate referral code for the new user
+        if not user.referral_code:
+            # Simple referral code generation
+            import secrets
+            user.referral_code = secrets.token_hex(4).upper()
+            db.session.commit()
+        
+        # Apply referral if code was provided
+        if referral_code_input:
+            referring_user = User.query.filter_by(referral_code=referral_code_input).first()
+            if referring_user and referring_user.id != user.id:
+                user.referred_by = referring_user.referral_code  # Use referral code, not ID
+                db.session.commit()
+                flash(f"🎉 Referral applied! Your referrer will earn rewards when you complete onboarding.", "success")
+            else:
+                flash("Invalid referral code, but your account was created successfully.", "warning")
 
         profile = Profile(
             user_id=user.id,
@@ -58,12 +76,13 @@ def register():
         db.session.add(profile)
         db.session.commit()
 
-        apply_referral_bonus(user)
         login_user(user)
 
         return redirect(url_for("payment.show_plans"))
 
-    return render_template("register.html")
+    # Get real-time stats for the register page
+    stats = get_coach_stats()
+    return render_template("register.html", stats=stats)
 
 
 # ---------------------------
@@ -93,7 +112,9 @@ def login():
 
         flash("Invalid credentials")
 
-    return render_template("login.html")
+    # Get real-time stats for the login page
+    stats = get_coach_stats()
+    return render_template("login.html", stats=stats)
 
 
 # ---------------------------
@@ -130,14 +151,16 @@ def get_google_oauth_flow():
     
     flow = Flow.from_client_config(
         client_config,
-        scopes=["openid", "email", "profile"],
+        scopes=["https://www.googleapis.com/auth/userinfo.email", 
+                "https://www.googleapis.com/auth/userinfo.profile", 
+                "openid"],
         redirect_uri=f"{base_url}/authorize/google"
     )
     
     # Allow HTTP for development (disable HTTPS requirement)
-    import os
     if os.getenv("FLASK_ENV") == "development" or "127.0.0.1" in base_url or "localhost" in base_url:
-        os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
+        import os as os_module
+        os_module.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
     
     return flow
 
@@ -193,12 +216,17 @@ def process_google_user(google_id, email, name, picture):
             email=email,
             role="coach",  # Default role
             google_id=google_id,
-            profile_pic=picture,
-            referral_code=generate_referral_code()
+            profile_pic=picture
         )
         
         db.session.add(user)
         db.session.commit()
+        
+        # Generate referral code for the new user
+        if not user.referral_code:
+            import secrets
+            user.referral_code = secrets.token_hex(4).upper()
+            db.session.commit()
         
         # Create profile
         profile = Profile(
@@ -207,9 +235,6 @@ def process_google_user(google_id, email, name, picture):
         )
         db.session.add(profile)
         db.session.commit()
-        
-        # Apply referral bonus
-        apply_referral_bonus(user)
         
         login_user(user)
         flash(f"Welcome to KoachSmart, {user.username}! Your account has been created.", "success")
@@ -242,6 +267,7 @@ def login_google():
             state=state
         )
         
+        current_app.logger.info(f"Redirecting to Google OAuth: {authorization_url}")
         return redirect(authorization_url)
         
     except Exception as e:
@@ -261,7 +287,11 @@ def authorize_google():
         
         # Check for error in callback
         if request.args.get('error'):
-            flash("Google login was cancelled or failed.", "error")
+            error = request.args.get('error')
+            if error == 'access_denied':
+                flash("Google login was cancelled.", "info")
+            else:
+                flash("Google login failed. Please try again.", "error")
             return redirect(url_for("auth.login"))
         
         # Check if Google OAuth is configured
@@ -270,24 +300,40 @@ def authorize_google():
             return redirect(url_for("auth.login"))
         
         flow = get_google_oauth_flow()
-        flow.fetch_token(authorization_response=request.url)
+        
+        # Handle the authorization response
+        try:
+            flow.fetch_token(authorization_response=request.url)
+        except Exception as token_error:
+            current_app.logger.error(f"Token fetch error: {token_error}")
+            flash("Failed to authenticate with Google. Please try again.", "error")
+            return redirect(url_for("auth.login"))
         
         # Get user info from Google
         credentials = flow.credentials
         request_session = google_requests.Request()
         
         # Verify the token
-        id_info = id_token.verify_oauth2_token(
-            credentials.id_token,
-            request_session,
-            os.getenv("GOOGLE_CLIENT_ID")
-        )
+        try:
+            id_info = id_token.verify_oauth2_token(
+                credentials.id_token,
+                request_session,
+                os.getenv("GOOGLE_CLIENT_ID")
+            )
+        except Exception as verify_error:
+            current_app.logger.error(f"Token verification error: {verify_error}")
+            flash("Failed to verify Google authentication. Please try again.", "error")
+            return redirect(url_for("auth.login"))
         
         # Extract user information
         google_id = id_info.get('sub')
         email = id_info.get('email')
         name = id_info.get('name')
         picture = id_info.get('picture')
+        
+        if not email:
+            flash("Could not get email from Google. Please try again.", "error")
+            return redirect(url_for("auth.login"))
         
         return process_google_user(google_id, email, name, picture)
     

@@ -37,6 +37,10 @@ def unified_access_guard():
     # Coach enforcement
     # -------------------------
     if current_user.role == "coach":
+        # Skip if already on onboarding routes
+        if endpoint and endpoint.startswith('onboarding.'):
+            return
+        
         if not current_user.onboarding_completed:
             return redirect(url_for("onboarding.onboarding_unified"))
 
@@ -44,6 +48,10 @@ def unified_access_guard():
     # Employer enforcement
     # -------------------------
     if current_user.role == "employer":
+        # Skip if already on onboarding routes
+        if endpoint and endpoint.startswith('onboarding.'):
+            return
+        
         if not current_user.employer_onboarding_completed:
             return redirect(url_for("onboarding.hirer_onboarding"))
 from flask import abort

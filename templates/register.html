@@ -6,8 +6,59 @@
   <div class="auth-wrapper">
 
     <!-- LEFT : VISUAL -->
-    <div class="auth-visual">
-      <div class="auth-illustration-bg"></div>
+    <div class="auth-visual coach-visual">
+      <div class="auth-brand">
+        <a class="ks-logo-ref" href="{{ url_for('public.home') }}">
+          <span class="ks-box">
+            <span class="ks-letter ks-k">K</span>
+            <span class="ks-letter ks-s">S</span>
+          </span>
+          <span class="ks-text">
+            <span class="ks-title">KoachSmart</span>
+            <span class="ks-subtitle">RECRUITMENT</span>
+          </span>
+        </a>
+      </div>
+
+      <div class="auth-hero">
+        <h2>Start Your Journey</h2>
+        <p>Join thousands of coaches who've found their dream jobs</p>
+      </div>
+
+      <!-- Real-time Stats -->
+      <div class="auth-stats">
+        <div class="stat-card">
+          <div class="stat-number">{{ stats.active_jobs or 0 }}+</div>
+          <div class="stat-label">Active Jobs</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number">{{ stats.verified_coaches or 0 }}+</div>
+          <div class="stat-label">Verified Coaches</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number">{{ stats.success_rate or 0 }}%</div>
+          <div class="stat-label">Success Rate</div>
+        </div>
+      </div>
+
+      <div class="auth-features">
+        <div class="feature-item">
+          <i class="fas fa-rocket"></i>
+          <span>Quick Setup</span>
+        </div>
+        <div class="feature-item">
+          <i class="fas fa-shield-check"></i>
+          <span>Get Verified</span>
+        </div>
+        <div class="feature-item">
+          <i class="fas fa-brain"></i>
+          <span>AI Matching</span>
+        </div>
+        <div class="feature-item">
+          <i class="fas fa-trophy"></i>
+          <span>Earn Rewards</span>
+        </div>
+      </div>
     </div>
 
     <!-- RIGHT : FORM -->
@@ -23,35 +74,47 @@
 
           <!-- Username -->
           <div class="form-group">
-            <label>Username</label>
+            <label>
+              <i class="fas fa-user"></i>
+              Username
+            </label>
             <input
               type="text"
               name="username"
               class="form-control"
+              placeholder="Enter your username"
               required
             />
           </div>
 
           <!-- Email -->
           <div class="form-group">
-            <label>Email address</label>
+            <label>
+              <i class="fas fa-envelope"></i>
+              Email address
+            </label>
             <input
               type="email"
               name="email"
               class="form-control"
+              placeholder="Enter your email"
               required
             />
           </div>
 
           <!-- Password -->
           <div class="form-group">
-            <label>Password</label>
+            <label>
+              <i class="fas fa-lock"></i>
+              Password
+            </label>
 
             <div class="password-field">
               <input
                 type="password"
                 name="password"
                 class="form-control password-input"
+                placeholder="Create a secure password"
                 required
               >
               <button type="button" class="password-toggle">
@@ -59,10 +122,11 @@
               </button>
             </div>
           </div>
+
           <!-- 🆕 REFERRAL CODE FIELD -->
           <div class="form-group">
               <label for="referral_code">
-                  <i class="bi bi-gift"></i> Referral Code (Optional)
+                  <i class="fas fa-gift"></i> Referral Code (Optional)
               </label>
               <input 
                   type="text" 
@@ -73,14 +137,15 @@
                   value="{{ referral_code }}"
                   maxlength="8"
                   style="text-transform: uppercase;">
-              <small class="form-text text-muted">
+              <small class="form-help">
                   Earn 50 bonus coins by using a referral code!
               </small>
           </div>
 
           <!-- Submit -->
           <button type="submit" class="btn btn-primary w-100">
-            Create account →
+            <i class="fas fa-rocket me-2"></i>
+            Create account
           </button>
 
         </form>
@@ -91,6 +156,7 @@
         </p>
 
         <p class="auth-security">
+          <i class="fas fa-shield-alt me-1"></i>
           Secure signup · Privacy protected · No data sharing
         </p>
 
@@ -100,4 +166,440 @@
   </div>
 
 </div>
+
+<style>
+/* Auth Page Styles with Home Page Color Scheme */
+.auth-page {
+  min-height: 100vh;
+  background: var(--bg-light);
+  font-family: 'Inter', sans-serif;
+}
+
+.auth-wrapper {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* Left Visual Section */
+.auth-visual {
+  flex: 1;
+  background: linear-gradient(135deg, var(--primary-blue) 0%, var(--primary-dark) 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 3rem 2rem;
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-visual::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.05"/><circle cx="75" cy="75" r="1" fill="white" opacity="0.05"/><circle cx="50" cy="10" r="0.5" fill="white" opacity="0.03"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+  pointer-events: none;
+}
+
+.auth-brand {
+  margin-bottom: 3rem;
+  z-index: 2;
+}
+
+.auth-brand .ks-logo-ref {
+  color: white;
+}
+
+.auth-brand .ks-title,
+.auth-brand .ks-subtitle {
+  color: white !important;
+}
+
+.auth-brand .ks-box {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.auth-hero {
+  text-align: center;
+  margin-bottom: 3rem;
+  z-index: 2;
+}
+
+.auth-hero h2 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  color: white;
+}
+
+.auth-hero p {
+  font-size: 1.1rem;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.6;
+  max-width: 400px;
+}
+
+.auth-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  margin-bottom: 3rem;
+  z-index: 2;
+}
+
+.stat-card {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  padding: 1.5rem 1rem;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+.stat-number {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--accent-orange);
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.stat-label {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 500;
+}
+
+.auth-features {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  z-index: 2;
+}
+
+.feature-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  transition: all 0.3s ease;
+}
+
+.feature-item:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateX(5px);
+}
+
+.feature-item i {
+  color: var(--accent-green);
+  font-size: 1.25rem;
+  width: 20px;
+}
+
+.feature-item span {
+  color: white;
+  font-weight: 500;
+  font-size: 0.875rem;
+}
+
+/* Right Form Section */
+.auth-form {
+  flex: 1;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.auth-form-inner {
+  width: 100%;
+  max-width: 400px;
+}
+
+.auth-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin-bottom: 0.5rem;
+  text-align: center;
+}
+
+.auth-subtitle {
+  color: var(--text-gray);
+  text-align: center;
+  margin-bottom: 2rem;
+  font-size: 0.95rem;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-group label {
+  display: block;
+  font-weight: 600;
+  color: var(--text-dark);
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.form-group label i {
+  color: var(--primary-blue);
+  margin-right: 0.5rem;
+  width: 16px;
+}
+
+.form-control {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  border: 2px solid var(--border-color);
+  border-radius: 12px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  background: white;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: var(--primary-blue);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.password-field {
+  position: relative;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--text-gray);
+  font-size: 0.875rem;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.password-toggle:hover {
+  color: var(--primary-blue);
+}
+
+.form-help {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-light);
+  margin-top: 0.25rem;
+}
+
+.btn-primary {
+  background: var(--primary-blue);
+  border: none;
+  border-radius: 12px;
+  padding: 1rem 1.5rem;
+  font-weight: 600;
+  font-size: 1rem;
+  color: white;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.btn-primary:hover {
+  background: var(--primary-dark);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.auth-footer {
+  text-align: center;
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  color: var(--text-gray);
+  font-size: 0.875rem;
+}
+
+.auth-footer a {
+  color: var(--primary-blue);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.auth-footer a:hover {
+  text-decoration: underline;
+}
+
+.auth-security {
+  text-align: center;
+  color: var(--text-light);
+  font-size: 0.75rem;
+  margin: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 991px) {
+  .auth-wrapper {
+    flex-direction: column;
+  }
+  
+  .auth-visual {
+    min-height: 40vh;
+    padding: 2rem 1rem;
+  }
+  
+  .auth-hero h2 {
+    font-size: 2rem;
+  }
+  
+  .auth-stats {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+  }
+  
+  .stat-card {
+    padding: 1rem 0.5rem;
+  }
+  
+  .stat-number {
+    font-size: 1.5rem;
+  }
+  
+  .auth-features {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 576px) {
+  .auth-form {
+    padding: 1rem;
+  }
+  
+  .auth-visual {
+    padding: 1.5rem 1rem;
+  }
+  
+  .auth-stats {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  
+  .auth-features {
+    gap: 0.75rem;
+  }
+  
+  .feature-item {
+    padding: 0.75rem;
+  }
+}
+</style>
+
 {% endblock %}
+<script>
+// Password toggle functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const passwordToggle = document.querySelector('.password-toggle');
+    const passwordInput = document.querySelector('.password-input');
+    
+    if (passwordToggle && passwordInput) {
+        passwordToggle.addEventListener('click', function() {
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            this.textContent = type === 'password' ? 'Show' : 'Hide';
+        });
+    }
+    
+    // Live stats update functionality
+    function updateLiveStats() {
+        fetch('/api/stats/coach')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const stats = data.data;
+                    
+                    // Update stat numbers with animation
+                    updateStatNumber('.stat-card:nth-child(1) .stat-number', stats.active_jobs);
+                    updateStatNumber('.stat-card:nth-child(2) .stat-number', stats.verified_coaches);
+                    updateStatNumber('.stat-card:nth-child(3) .stat-number', stats.success_rate, '%');
+                    
+                    // Add pulse animation to indicate update
+                    document.querySelectorAll('.stat-card').forEach(card => {
+                        card.style.animation = 'pulse 0.5s ease-in-out';
+                        setTimeout(() => {
+                            card.style.animation = '';
+                        }, 500);
+                    });
+                }
+            })
+            .catch(error => {
+                console.log('Stats update failed:', error);
+            });
+    }
+    
+    function updateStatNumber(selector, value, suffix = '') {
+        const element = document.querySelector(selector);
+        if (element) {
+            const currentValue = parseInt(element.textContent) || 0;
+            const targetValue = value || 0;
+            
+            // Animate number change
+            animateNumber(element, currentValue, targetValue, suffix);
+        }
+    }
+    
+    function animateNumber(element, start, end, suffix = '') {
+        const duration = 1000; // 1 second
+        const startTime = performance.now();
+        
+        function update(currentTime) {
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            
+            // Easing function
+            const easeOut = 1 - Math.pow(1 - progress, 3);
+            const current = Math.round(start + (end - start) * easeOut);
+            
+            element.textContent = current + suffix + (suffix ? '' : '+');
+            
+            if (progress < 1) {
+                requestAnimationFrame(update);
+            }
+        }
+        
+        requestAnimationFrame(update);
+    }
+    
+    // Update stats every 30 seconds
+    updateLiveStats();
+    setInterval(updateLiveStats, 30000);
+    
+    // Add CSS for pulse animation
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+    `;
+    document.head.appendChild(style);
+});
+</script>

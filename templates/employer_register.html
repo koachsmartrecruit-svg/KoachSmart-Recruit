@@ -1,299 +1,314 @@
 {% extends "base.html" %}
 {% block content %}
 
-<div class="employer-registration-page">
-  <div class="container-fluid">
-    <div class="row min-vh-100">
-      <!-- Left Side - Branding -->
-      <div class="col-lg-6 employer-brand-section">
-        <div class="brand-content">
-          <div class="brand-header">
-            <div class="brand-logo">
-              <i class="fas fa-users"></i>
-            </div>
-            <h1>KoachSmart</h1>
-            <p>RECRUITMENT PLATFORM</p>
-          </div>
-          
-          <div class="brand-message">
-            <h2>Find Top Coaching Talent</h2>
-            <p>Connect with verified coaches and build your dream team</p>
-          </div>
-          
-          <div class="stats-grid">
-            <div class="stat-card">
-              <h3>500+</h3>
-              <p>Verified Coaches</p>
-            </div>
-            <div class="stat-card">
-              <h3>95%</h3>
-              <p>Success Rate</p>
-            </div>
-            <div class="stat-card">
-              <h3>7 Days</h3>
-              <p>Avg Hire Time</p>
-            </div>
-          </div>
-          
-          <div class="features-list">
-            <div class="feature-item">
-              <i class="fas fa-check-circle"></i>
-              <span>AI-Powered Matching</span>
-            </div>
-            <div class="feature-item">
-              <i class="fas fa-check-circle"></i>
-              <span>Pre-Verified Profiles</span>
-            </div>
-            <div class="feature-item">
-              <i class="fas fa-check-circle"></i>
-              <span>Direct Communication</span>
-            </div>
-            <div class="feature-item">
-              <i class="fas fa-check-circle"></i>
-              <span>Hiring Analytics</span>
-            </div>
-          </div>
+<div class="auth-page">
+  <div class="auth-wrapper">
+    
+    <!-- LEFT : VISUAL -->
+    <div class="auth-visual employer-visual">
+      <div class="auth-brand">
+        <a class="ks-logo-ref" href="{{ url_for('public.home') }}">
+          <span class="ks-box">
+            <span class="ks-letter ks-k">K</span>
+            <span class="ks-letter ks-s">S</span>
+          </span>
+          <span class="ks-text">
+            <span class="ks-title">KoachSmart</span>
+            <span class="ks-subtitle">RECRUITMENT</span>
+          </span>
+        </a>
+      </div>
+
+      <div class="auth-hero">
+        <h2>Find Top Coaching Talent</h2>
+        <p>Connect with verified coaches and build your dream team</p>
+      </div>
+
+      <!-- Real-time Stats -->
+      <div class="auth-stats">
+        <div class="stat-card">
+          <div class="stat-number">{{ stats.verified_coaches or 0 }}+</div>
+          <div class="stat-label">Verified Coaches</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number">{{ stats.success_rate or 0 }}%</div>
+          <div class="stat-label">Success Rate</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number">{{ stats.avg_hire_time or 7 }}</div>
+          <div class="stat-label">Days to Hire</div>
         </div>
       </div>
-      
-      <!-- Right Side - Registration Form -->
-      <div class="col-lg-6 employer-form-section">
-        <div class="form-container">
-          <div class="form-header">
-            <h2>Create Employer Account</h2>
-            <p>Get started with your free account and post your first job</p>
-          </div>
 
-          <form method="POST" class="registration-form">
-            <!-- Company Name Field -->
-            <div class="input-group-custom">
-              <label class="input-label">
-                <i class="fas fa-building"></i>
-                Academy / Company Name
-              </label>
-              <input 
-                type="text" 
-                name="company_name" 
-                class="form-input" 
-                placeholder="Enter your academy or company name" 
-                required
-              >
-            </div>
-
-            <!-- Email Field -->
-            <div class="input-group-custom">
-              <label class="input-label">
-                <i class="fas fa-envelope"></i>
-                Business Email
-              </label>
-              <input 
-                type="email" 
-                name="email" 
-                class="form-input" 
-                placeholder="name@company.com" 
-                required
-              >
-            </div>
-
-            <!-- Password Field -->
-            <div class="input-group-custom">
-              <label class="input-label">
-                <i class="fas fa-lock"></i>
-                Password
-              </label>
-              <input 
-                type="password" 
-                name="password" 
-                class="form-input" 
-                placeholder="Create a secure password" 
-                required 
-                minlength="8"
-              >
-              <small class="input-help">Minimum 8 characters required</small>
-            </div>
-
-            <!-- Terms Checkbox -->
-            <div class="checkbox-group">
-              <label class="checkbox-label">
-                <input type="checkbox" required>
-                <span class="checkmark"></span>
-                I agree to the <a href="#" class="link-primary">Terms of Service</a> and <a href="#" class="link-primary">Privacy Policy</a>
-              </label>
-            </div>
-
-            <!-- Submit Button -->
-            <button type="submit" class="submit-btn">
-              <i class="fas fa-rocket"></i>
-              Create Account & Start Hiring
-            </button>
-          </form>
-
-          <!-- Sign In Link -->
-          <div class="form-footer">
-            <p>Already have an account?</p>
-            <a href="{{ url_for('employer.login') }}" class="signin-link">
-              <i class="fas fa-sign-in-alt"></i>
-              Sign In to Existing Account
-            </a>
-          </div>
-          
-          <!-- Trust Indicators -->
-          <div class="trust-badges">
-            <div class="trust-item">
-              <i class="fas fa-shield-alt"></i>
-              <span>Secure & Encrypted</span>
-            </div>
-            <div class="trust-item">
-              <i class="fas fa-clock"></i>
-              <span>Setup in 5 Minutes</span>
-            </div>
-            <div class="trust-item">
-              <i class="fas fa-credit-card"></i>
-              <span>No Credit Card Required</span>
-            </div>
-          </div>
+      <div class="auth-features">
+        <div class="feature-item">
+          <i class="fas fa-brain"></i>
+          <span>AI-Powered Matching</span>
+        </div>
+        <div class="feature-item">
+          <i class="fas fa-shield-check"></i>
+          <span>Pre-Verified Profiles</span>
+        </div>
+        <div class="feature-item">
+          <i class="fas fa-comments"></i>
+          <span>Direct Communication</span>
+        </div>
+        <div class="feature-item">
+          <i class="fas fa-chart-bar"></i>
+          <span>Hiring Analytics</span>
         </div>
       </div>
     </div>
+
+    <!-- RIGHT : FORM -->
+    <div class="auth-form">
+      <div class="auth-form-inner">
+
+        <h2 class="auth-title">Create Employer Account</h2>
+        <p class="auth-subtitle">
+          Get started with your free account and post your first job
+        </p>
+
+        <form method="POST">
+
+          <!-- Company Name -->
+          <div class="form-group">
+            <label>
+              <i class="fas fa-building"></i>
+              Academy / Company Name
+            </label>
+            <input
+              type="text"
+              name="company_name"
+              class="form-control"
+              placeholder="Enter your academy or company name"
+              required
+            />
+          </div>
+
+          <!-- Email -->
+          <div class="form-group">
+            <label>
+              <i class="fas fa-envelope"></i>
+              Business Email
+            </label>
+            <input
+              type="email"
+              name="email"
+              class="form-control"
+              placeholder="name@company.com"
+              required
+            />
+          </div>
+
+          <!-- Password -->
+          <div class="form-group">
+            <label>
+              <i class="fas fa-lock"></i>
+              Password
+            </label>
+
+            <div class="password-field">
+              <input
+                type="password"
+                name="password"
+                class="form-control password-input"
+                placeholder="Create a secure password"
+                required
+                minlength="8"
+              >
+              <button type="button" class="password-toggle">
+                Show
+              </button>
+            </div>
+            <small class="form-help">Minimum 8 characters required</small>
+          </div>
+
+          <!-- Terms Checkbox -->
+          <div class="checkbox-group">
+            <label class="checkbox-label">
+              <input type="checkbox" required>
+              <span class="checkmark"></span>
+              I agree to the <a href="#" class="link-primary">Terms of Service</a> and <a href="#" class="link-primary">Privacy Policy</a>
+            </label>
+          </div>
+
+          <button type="submit" class="btn btn-primary w-100">
+            <i class="fas fa-rocket me-2"></i>
+            Create Account & Start Hiring
+          </button>
+
+        </form>
+
+        <p class="auth-footer">
+          Already have an account?
+          <a href="{{ url_for('employer.login') }}">Sign in to existing account</a>
+        </p>
+
+        <p class="auth-security">
+          <i class="fas fa-shield-alt me-1"></i>
+          Secure & encrypted · Setup in 5 minutes · No credit card required
+        </p>
+
+      </div>
+    </div>
+
   </div>
 </div>
 
 <style>
-/* Reset and Base Styles */
-.employer-registration-page {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+/* Auth Page Styles with Home Page Color Scheme */
+.auth-page {
+  min-height: 100vh;
+  background: var(--bg-light);
+  font-family: 'Inter', sans-serif;
+}
+
+.auth-wrapper {
+  display: flex;
   min-height: 100vh;
 }
 
-/* Left Brand Section */
-.employer-brand-section {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+/* Left Visual Section */
+.auth-visual {
+  flex: 1;
+  background: linear-gradient(135deg, var(--primary-blue) 0%, var(--primary-dark) 100%);
   display: flex;
-  align-items: center;
+  flex-direction: column;
   justify-content: center;
-  padding: 2rem;
+  align-items: center;
+  padding: 3rem 2rem;
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-visual::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.05"/><circle cx="75" cy="75" r="1" fill="white" opacity="0.05"/><circle cx="50" cy="10" r="0.5" fill="white" opacity="0.03"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+  pointer-events: none;
+}
+
+.auth-brand {
+  margin-bottom: 3rem;
+  z-index: 2;
+}
+
+.auth-brand .ks-logo-ref {
   color: white;
 }
 
-.brand-content {
-  max-width: 400px;
+.auth-brand .ks-title,
+.auth-brand .ks-subtitle {
+  color: white !important;
+}
+
+.auth-brand .ks-box {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.auth-hero {
   text-align: center;
-}
-
-.brand-header {
   margin-bottom: 3rem;
+  z-index: 2;
 }
 
-.brand-logo {
-  width: 80px;
-  height: 80px;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 1rem;
-  backdrop-filter: blur(10px);
-  border: 2px solid rgba(255, 255, 255, 0.3);
-}
-
-.brand-logo i {
-  font-size: 2rem;
-  color: white;
-}
-
-.brand-header h1 {
+.auth-hero h2 {
   font-size: 2.5rem;
-  font-weight: 800;
-  margin-bottom: 0.5rem;
-  color: white;
-}
-
-.brand-header p {
-  font-size: 0.875rem;
-  font-weight: 600;
-  letter-spacing: 2px;
-  color: rgba(255, 255, 255, 0.8);
-  margin: 0;
-}
-
-.brand-message {
-  margin-bottom: 3rem;
-}
-
-.brand-message h2 {
-  font-size: 2rem;
   font-weight: 700;
   margin-bottom: 1rem;
   color: white;
 }
 
-.brand-message p {
+.auth-hero p {
   font-size: 1.1rem;
   color: rgba(255, 255, 255, 0.9);
   line-height: 1.6;
+  max-width: 400px;
 }
 
-.stats-grid {
+.auth-stats {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 1rem;
+  gap: 1.5rem;
   margin-bottom: 3rem;
+  z-index: 2;
 }
 
 .stat-card {
   background: rgba(255, 255, 255, 0.15);
-  padding: 1.5rem 1rem;
-  border-radius: 15px;
-  text-align: center;
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  padding: 1.5rem 1rem;
+  text-align: center;
+  transition: all 0.3s ease;
 }
 
-.stat-card h3 {
-  font-size: 1.5rem;
+.stat-card:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+.stat-number {
+  font-size: 1.75rem;
   font-weight: 800;
-  color: #fbbf24;
+  color: var(--accent-orange);
+  display: block;
   margin-bottom: 0.5rem;
 }
 
-.stat-card p {
-  font-size: 0.75rem;
+.stat-label {
+  font-size: 0.875rem;
   color: rgba(255, 255, 255, 0.8);
-  margin: 0;
+  font-weight: 500;
 }
 
-.features-list {
+.auth-features {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, 1fr);
   gap: 1rem;
+  z-index: 2;
 }
 
 .feature-item {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem;
+  gap: 1rem;
+  padding: 1rem;
   background: rgba(255, 255, 255, 0.1);
   border-radius: 12px;
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.15);
+  transition: all 0.3s ease;
+}
+
+.feature-item:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateX(5px);
 }
 
 .feature-item i {
-  color: #10b981;
+  color: var(--accent-green);
   font-size: 1.25rem;
+  width: 20px;
 }
 
 .feature-item span {
-  font-size: 0.875rem;
-  font-weight: 500;
   color: white;
+  font-weight: 500;
+  font-size: 0.875rem;
 }
 
 /* Right Form Section */
-.employer-form-section {
+.auth-form {
+  flex: 1;
   background: white;
   display: flex;
   align-items: center;
@@ -301,72 +316,85 @@
   padding: 2rem;
 }
 
-.form-container {
-  max-width: 400px;
+.auth-form-inner {
   width: 100%;
+  max-width: 400px;
 }
 
-.form-header {
-  text-align: center;
-  margin-bottom: 2rem;
-}
-
-.form-header h2 {
+.auth-title {
   font-size: 1.75rem;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--text-dark);
   margin-bottom: 0.5rem;
+  text-align: center;
 }
 
-.form-header p {
-  color: #6b7280;
-  font-size: 0.95rem;
-  margin: 0;
-}
-
-/* Form Styles */
-.registration-form {
+.auth-subtitle {
+  color: var(--text-gray);
+  text-align: center;
   margin-bottom: 2rem;
+  font-size: 0.95rem;
 }
 
-.input-group-custom {
+.form-group {
   margin-bottom: 1.5rem;
 }
 
-.input-label {
+.form-group label {
   display: block;
   font-weight: 600;
-  color: #374151;
+  color: var(--text-dark);
   margin-bottom: 0.5rem;
   font-size: 0.875rem;
 }
 
-.input-label i {
-  color: #667eea;
+.form-group label i {
+  color: var(--primary-blue);
   margin-right: 0.5rem;
   width: 16px;
 }
 
-.form-input {
+.form-control {
   width: 100%;
   padding: 0.875rem 1rem;
-  border: 2px solid #e5e7eb;
+  border: 2px solid var(--border-color);
   border-radius: 12px;
   font-size: 1rem;
   transition: all 0.3s ease;
   background: white;
 }
 
-.form-input:focus {
+.form-control:focus {
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  border-color: var(--primary-blue);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
-.input-help {
+.password-field {
+  position: relative;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--text-gray);
+  font-size: 0.875rem;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.password-toggle:hover {
+  color: var(--primary-blue);
+}
+
+.form-help {
   display: block;
   font-size: 0.75rem;
-  color: #6b7280;
+  color: var(--text-light);
   margin-top: 0.25rem;
 }
 
@@ -379,7 +407,7 @@
   align-items: flex-start;
   gap: 0.75rem;
   font-size: 0.875rem;
-  color: #4b5563;
+  color: var(--text-gray);
   cursor: pointer;
   line-height: 1.5;
 }
@@ -388,11 +416,11 @@
   margin: 0;
   width: 18px;
   height: 18px;
-  accent-color: #667eea;
+  accent-color: var(--primary-blue);
 }
 
 .link-primary {
-  color: #667eea;
+  color: var(--primary-blue);
   text-decoration: none;
 }
 
@@ -400,123 +428,197 @@
   text-decoration: underline;
 }
 
-.submit-btn {
-  width: 100%;
-  background: linear-gradient(135deg, #667eea, #764ba2);
+.btn-primary {
+  background: var(--primary-blue);
   border: none;
   border-radius: 12px;
   padding: 1rem 1.5rem;
   font-weight: 600;
   font-size: 1rem;
   color: white;
-  cursor: pointer;
   transition: all 0.3s ease;
-  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
 }
 
-.submit-btn:hover {
-  background: linear-gradient(135deg, #5a67d8, #6b46c1);
+.btn-primary:hover {
+  background: var(--primary-dark);
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+  box-shadow: var(--shadow-lg);
 }
 
-.submit-btn i {
-  margin-right: 0.5rem;
-}
-
-/* Form Footer */
-.form-footer {
+.auth-footer {
   text-align: center;
-  margin-bottom: 2rem;
-}
-
-.form-footer p {
-  color: #6b7280;
+  margin-top: 2rem;
   margin-bottom: 1rem;
+  color: var(--text-gray);
   font-size: 0.875rem;
 }
 
-.signin-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: #667eea;
+.auth-footer a {
+  color: var(--primary-blue);
   text-decoration: none;
   font-weight: 600;
-  padding: 0.75rem 1.5rem;
-  border: 2px solid #667eea;
-  border-radius: 12px;
-  transition: all 0.3s ease;
 }
 
-.signin-link:hover {
-  background: #667eea;
-  color: white;
-  transform: translateY(-2px);
+.auth-footer a:hover {
+  text-decoration: underline;
 }
 
-/* Trust Badges */
-.trust-badges {
-  display: flex;
-  justify-content: space-between;
-  padding-top: 1.5rem;
-  border-top: 1px solid #e5e7eb;
-}
-
-.trust-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
-  flex: 1;
-}
-
-.trust-item i {
-  font-size: 1.25rem;
-  color: #10b981;
-}
-
-.trust-item span {
-  font-size: 0.75rem;
-  color: #6b7280;
+.auth-security {
   text-align: center;
-  font-weight: 500;
+  color: var(--text-light);
+  font-size: 0.75rem;
+  margin: 0;
 }
 
 /* Responsive Design */
 @media (max-width: 991px) {
-  .employer-brand-section {
-    display: none;
-  }
-  
-  .employer-form-section {
-    background: linear-gradient(135deg, #f8fafc, #e2e8f0);
-  }
-  
-  .trust-badges {
+  .auth-wrapper {
     flex-direction: column;
+  }
+  
+  .auth-visual {
+    min-height: 40vh;
+    padding: 2rem 1rem;
+  }
+  
+  .auth-hero h2 {
+    font-size: 2rem;
+  }
+  
+  .auth-stats {
+    grid-template-columns: repeat(3, 1fr);
     gap: 1rem;
   }
   
-  .trust-item {
-    flex-direction: row;
-    justify-content: center;
+  .stat-card {
+    padding: 1rem 0.5rem;
+  }
+  
+  .stat-number {
+    font-size: 1.5rem;
+  }
+  
+  .auth-features {
+    grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 576px) {
-  .form-container {
+  .auth-form {
     padding: 1rem;
   }
   
-  .stats-grid {
-    grid-template-columns: 1fr;
+  .auth-visual {
+    padding: 1.5rem 1rem;
   }
   
-  .features-list {
+  .auth-stats {
     grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  
+  .auth-features {
+    gap: 0.75rem;
+  }
+  
+  .feature-item {
+    padding: 0.75rem;
   }
 }
 </style>
 
 {% endblock %}
+<script>
+// Password toggle functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const passwordToggle = document.querySelector('.password-toggle');
+    const passwordInput = document.querySelector('.password-input');
+    
+    if (passwordToggle && passwordInput) {
+        passwordToggle.addEventListener('click', function() {
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            this.textContent = type === 'password' ? 'Show' : 'Hide';
+        });
+    }
+    
+    // Live stats update functionality
+    function updateLiveStats() {
+        fetch('/api/stats/employer')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const stats = data.data;
+                    
+                    // Update stat numbers with animation
+                    updateStatNumber('.stat-card:nth-child(1) .stat-number', stats.verified_coaches);
+                    updateStatNumber('.stat-card:nth-child(2) .stat-number', stats.success_rate, '%');
+                    updateStatNumber('.stat-card:nth-child(3) .stat-number', stats.avg_hire_time);
+                    
+                    // Add pulse animation to indicate update
+                    document.querySelectorAll('.stat-card').forEach(card => {
+                        card.style.animation = 'pulse 0.5s ease-in-out';
+                        setTimeout(() => {
+                            card.style.animation = '';
+                        }, 500);
+                    });
+                }
+            })
+            .catch(error => {
+                console.log('Stats update failed:', error);
+            });
+    }
+    
+    function updateStatNumber(selector, value, suffix = '') {
+        const element = document.querySelector(selector);
+        if (element) {
+            const currentValue = parseInt(element.textContent) || 0;
+            const targetValue = value || 0;
+            
+            // Animate number change
+            animateNumber(element, currentValue, targetValue, suffix);
+        }
+    }
+    
+    function animateNumber(element, start, end, suffix = '') {
+        const duration = 1000; // 1 second
+        const startTime = performance.now();
+        
+        function update(currentTime) {
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            
+            // Easing function
+            const easeOut = 1 - Math.pow(1 - progress, 3);
+            const current = Math.round(start + (end - start) * easeOut);
+            
+            element.textContent = current + suffix + (suffix ? '' : '+');
+            
+            if (progress < 1) {
+                requestAnimationFrame(update);
+            }
+        }
+        
+        requestAnimationFrame(update);
+    }
+    
+    // Update stats every 30 seconds
+    updateLiveStats();
+    setInterval(updateLiveStats, 30000);
+    
+    // Add CSS for pulse animation
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+    `;
+    document.head.appendChild(style);
+});
+</script>
